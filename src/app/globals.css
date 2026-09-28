@@ -547,7 +547,7 @@ main {
 /* value placeholders — the "unfilled form" */
 .v-empty {
   display: inline-block;
-  min-width: calc(var(--w, 4) * 1ch);
+  min-width: min(calc(var(--w, 4) * 1ch), 100%);
   height: 1.05em;
   vertical-align: -0.15em;
   border-bottom: 1.5px dotted var(--ink-3);
@@ -1590,7 +1590,24 @@ dialog.lightbox img {
   background: var(--field);
   padding: 12px 14px;
   border-radius: 2px;
-  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wp-card .dl dd {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wp-hint {
+  color: var(--ink-3) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 22px !important;
+  letter-spacing: 0 !important;
+  font-weight: 500 !important;
+}
+.wp-foot {
+  margin: auto 0 0;
 }
 .wp-name {
   font-family: var(--font-mono);
@@ -1600,6 +1617,10 @@ dialog.lightbox img {
   margin-bottom: 10px;
   display: flex;
   flex-direction: column;
+}
+.wp-name {
+  white-space: nowrap;
+  overflow: hidden;
 }
 .wp-name span {
   font-family: var(--font-cond);
@@ -1612,4 +1633,180 @@ dialog.lightbox img {
   .map-col {
     grid-column: auto !important;
   }
+}
+
+.brand {
+  color: inherit;
+  text-decoration: none;
+}
+.toc-foot {
+  margin-top: 16px;
+  padding-left: 12px;
+}
+.toc-link {
+  font-family: var(--font-cond);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 15px;
+}
+.toc-link:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  color: var(--ink);
+  text-decoration: none;
+}
+.btn-primary {
+  color: var(--sheet);
+}
+.btn-danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+.btn-danger:hover {
+  background: var(--red-bg);
+}
+.toggle {
+  color: var(--ink);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.toggle.danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+.linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--blue);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.linkish[aria-pressed="true"] {
+  color: var(--magenta);
+  text-decoration: none;
+}
+.radios {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+}
+.radios legend {
+  margin-bottom: 8px;
+}
+.radio {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--rule-strong);
+  background: var(--field);
+  padding: 10px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.radio.on {
+  border-color: var(--magenta);
+  box-shadow: inset 3px 0 0 var(--magenta);
+}
+.radio input {
+  margin-top: 3px;
+  accent-color: var(--magenta);
+}
+.radio > span {
+  display: flex;
+  flex-direction: column;
+}
+.radio b {
+  font-family: var(--font-cond);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.linkish {
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+@media (max-width: 640px) {
+  .fields .field[style*="span 2"] {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* Recent plans: same pill as the examples, but solid and inked so they read as "yours". */
+.chip-recent {
+  border-style: solid;
+  background: var(--sheet);
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip-recent b {
+  color: var(--magenta);
+  font-weight: 600;
+}
+.chip-recent:hover {
+  border-color: var(--magenta);
+}
+.chip-count {
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.examples-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--rule-strong);
+  margin: 0 4px;
+}
+
+/* Keep visually-hidden text inside scroll boxes, or it widens the page on phones. */
+.tbl-wrap,
+.v-empty {
+  position: relative;
+}
+
+.chip-blank {
+  border-style: solid;
+  background: var(--sheet);
+  color: var(--ink);
+  font-weight: 500;
+}
+.chip-blank:hover {
+  border-color: var(--ink);
+}
+
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tl-row + .tl-row {
+  margin-top: -4px;
+}
+.tl-label {
+  flex: 0 0 64px;
+  font-family: var(--font-cond);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.tl-track {
+  position: relative;
+  flex: 1;
+  display: block;
 }

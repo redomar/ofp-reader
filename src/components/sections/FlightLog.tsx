@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { useOfp } from "../context";
+import { useField, useFieldGroup, useOfp } from "../context";
 import { Act, Badge, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/ofp/format";
@@ -287,9 +287,9 @@ const TAIL: { k: keyof LogPoint | "latlon"; label: string; num?: boolean }[] = [
 export function FlightLogSection({ no }: { no: number }) {
   const { ofp } = useOfp();
   const [active, setActive] = useState<number | null>(null);
-  const [off, setOff] = useState("");
-  const [ato, setAto] = useState<Record<number, string>>({});
-  const [afob, setAfob] = useState<Record<number, string>>({});
+  const [off, setOff] = useField("log.off", "Flight log", "Actual take-off (OFF, UTC)");
+  const lg = useFieldGroup("log", "Flight log");
+  const wkey = (p: P) => String(p.i).padStart(3, "0");
   const pts = useMemo(() => (ofp ? prep(ofp.log) : []), [ofp]);
   const finAlt = ofp?.fuel.fmc.find((f) => f.label === "FINRES+ALTN")?.value;
   const minFuel = finAlt != null ? finAlt / 1000 : null;
@@ -396,54 +396,22 @@ export function FlightLogSection({ no }: { no: number }) {
         </div>
         <div>
           <Sub>Waypoint</Sub>
-          <div className="wp-card" aria-live="polite">
-            {a ? (
-              <>
-                <div className="wp-name">
-                  {a.name}
-                  {a.position && a.position !== a.name && <span>{a.position}</span>}
+          <div className="wp-card">
+            <div className="wp-name" aria-live="polite">
+              {a ? a.name : <span className="wp-hint">{pts.length ? "No waypoint selected" : "Not loaded"}</span>}
+              <span>{a?.position && a.position !== a.name ? a.position : "\u00a0"}</span>
+            </div>
+            <dl className="dl">
+              {wpRows(a).map(([k, v]) => (
+                <div key={k} style={{ display: "contents" }}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
                 </div>
-                <dl className="dl">
-                  <dt>Airway</dt>
-                  <dd>{a.awy ?? "—"}</dd>
-                  <dt>Level</dt>
-                  <dd>{a.alt ? `FL${a.alt}` : "Ground"}</dd>
-                  <dt>Wind</dt>
-                  <dd>
-                    {a.wind ?? "—"}
-                    {a.comp && ` · ${(signed(a.comp) ?? 0) < 0 ? `${Math.abs(signed(a.comp)!)} kt head` : `${signed(a.comp)} kt tail`}`}
-                  </dd>
-                  <dt>OAT / ISA</dt>
-                  <dd>{a.oat ? `${parseTemp(a.oat)} °C · ISA ${a.tdv ?? ""}` : "—"}</dd>
-                  <dt>Speeds</dt>
-                  <dd>{[a.mn && `Mach ${a.mn}`, a.tas && `TAS ${a.tas}`, a.gs && `GS ${a.gs}`].filter(Boolean).join(" · ") || "—"}</dd>
-                  <dt>Distance</dt>
-                  <dd>
-                    {a.cum} NM flown{a.rdis ? ` · ${a.rdis} to go` : ""}
-                  </dd>
-                  <dt>Time</dt>
-                  <dd>{a.ttlt ? `+${fmtHhmm(a.ttlt)} after take-off` : "—"}</dd>
-                  <dt>Fuel</dt>
-                  <dd>{a.efob ? `${a.efob} t on board · ${a.pbrn ?? "—"} t burnt` : "—"}</dd>
-                  <dt>MORA</dt>
-                  <dd>{a.mora ? `${(Number(a.mora) * 100).toLocaleString("en-GB")} ft` : "—"}</dd>
-                  <dt>Position</dt>
-                  <dd>
-                    {a.lat} {a.long}
-                  </dd>
-                  {a.freq && (
-                    <>
-                      <dt>Freq</dt>
-                      <dd>{a.freq}</dd>
-                    </>
-                  )}
-                </dl>
-              </>
-            ) : (
-              <p className="muted small" style={{ margin: 0 }}>
-                {pts.length ? "Hover the profile, map or a table row — or focus a chart and use the arrow keys — to inspect a waypoint." : "Waypoint details appear here once a plan is loaded."}
-              </p>
-            )}
+              ))}
+            </dl>
+            <p className="wp-foot small muted">
+              {pts.length ? "Hover the profile, map or a table row — or focus a chart and use the arrow keys." : "Waypoint details appear here once a plan is loaded."}
+            </p>
           </div>
         </div>
       </div>
@@ -511,9 +479,9 @@ export function FlightLogSection({ no }: { no: number }) {
                   </tr>
                 );
               const e = eto(p);
-              const atoV = ato[p.i];
+              const atoV = lg.get(`${wkey(p)}.ato`);
               const dAto = atoV && /^\d{4}$/.test(atoV) && e ? signedMin(e, atoV) : null;
-              const af = afob[p.i];
+              const af = lg.get(`${wkey(p)}.afob`);
               const dF = af && p.efob ? Number(af) - Number(p.efob) : null;
               const isFir = p.kind === "fir";
               return (
@@ -543,7 +511,7 @@ export function FlightLogSection({ no }: { no: number }) {
                   <td className="num">
                     {!isFir && (
                       <span className="row" style={{ gap: 4, justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                        <Act label={`Actual time over ${p.name}`} value={atoV ?? ""} onChange={(v) => setAto({ ...ato, [p.i]: v.replace(/\D/g, "").slice(0, 4) })} w={4} />
+                        <Act label={`Actual time over ${p.name}`} value={atoV ?? ""} onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))} w={4} />
                         {dAto != null && <span style={{ color: dAto > 0 ? "var(--red)" : "var(--green)", fontSize: 12 }}>{dAto > 0 ? `+${dAto}` : dAto}′</span>}
                       </span>
                     )}
@@ -552,7 +520,7 @@ export function FlightLogSection({ no }: { no: number }) {
                   <td className="num">
                     {!isFir && (
                       <span className="row" style={{ gap: 4, justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                        <Act label={`Actual fuel on board at ${p.name}, tonnes`} value={af ?? ""} onChange={(v) => setAfob({ ...afob, [p.i]: v.replace(/[^\d.]/g, "") })} w={4} inputMode="decimal" />
+                        <Act label={`Actual fuel on board at ${p.name}, tonnes`} value={af ?? ""} onChange={(v) => lg.put(`${wkey(p)}.afob`, `AFOB ${p.name} (t)`, v.replace(/[^\d.]/g, ""))} w={4} inputMode="decimal" />
                         {dF != null && !Number.isNaN(dF) && <span style={{ color: dF < 0 ? "var(--red)" : "var(--green)", fontSize: 12 }}>{dF >= 0 ? "+" : ""}{dF.toFixed(1)}</span>}
                       </span>
                     )}
@@ -585,6 +553,25 @@ export function FlightLogSection({ no }: { no: number }) {
       )}
     </Section>
   );
+}
+
+/** Always the same rows (dash when absent) so the card never changes height. */
+function wpRows(a: P | null): [string, string][] {
+  const d = "—";
+  const comp = a?.comp ? signed(a.comp) : null;
+  return [
+    ["Airway", a?.awy ?? d],
+    ["Level", a ? (a.alt ? `FL${a.alt}` : "Ground") : d],
+    ["Wind", a?.wind ? `${a.wind}${comp != null ? ` · ${comp < 0 ? `${-comp} kt head` : `${comp} kt tail`}` : ""}` : d],
+    ["OAT / ISA", a?.oat ? `${parseTemp(a.oat)} °C · ISA ${a.tdv ?? d}` : d],
+    ["Speeds", [a?.mn && `Mach ${a.mn}`, a?.tas && `TAS ${a.tas}`, a?.gs && `GS ${a.gs}`].filter(Boolean).join(" · ") || d],
+    ["Distance", a ? `${a.cum} NM flown${a.rdis ? ` · ${a.rdis} to go` : ""}` : d],
+    ["Time", a?.ttlt ? `+${fmtHhmm(a.ttlt)} after take-off` : d],
+    ["Fuel", a?.efob ? `${a.efob} t on board · ${a.pbrn ?? d} t burnt` : d],
+    ["MORA", a?.mora ? `${(Number(a.mora) * 100).toLocaleString("en-GB")} ft` : d],
+    ["Position", a?.lat ? `${a.lat} ${a.long ?? ""}` : d],
+    ["Freq", a?.freq ?? d],
+  ];
 }
 
 function signedMin(e: string, a: string) {

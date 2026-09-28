@@ -5,7 +5,7 @@ import { itemsToLines, type RawTextItem } from "./lines";
 import { parseOfp } from "./parse";
 import type { OFP } from "./types";
 
-export type Progress = { stage: "fetch" | "read" | "parse" | "done"; page?: number; total?: number };
+export type Progress = { stage: "cache" | "fetch" | "read" | "parse" | "done"; page?: number; total?: number };
 
 let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
 

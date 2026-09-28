@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useOfp } from "../context";
+import { useFieldGroup, useOfp } from "../context";
 import { Act, Badge, Field, Gauge, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { components } from "@/lib/ofp/metar";
@@ -109,7 +109,7 @@ function PerfTable({ t, planned }: { t: Table; planned?: string | null }) {
 }
 
 function ActualRow({ cols, label }: { cols: string[]; label: string }) {
-  const [vals, setVals] = useState<Record<string, string>>({});
+  const g = useFieldGroup(`tlr.${label.split(" ")[0].toLowerCase()}`, "Runway analysis");
   return (
     <div className="tbl-wrap" style={{ marginTop: 10 }}>
       <table className="tbl">
@@ -129,7 +129,7 @@ function ActualRow({ cols, label }: { cols: string[]; label: string }) {
           <tr>
             {cols.map((c) => (
               <td key={c}>
-                <Act label={`${label} ${c}`} value={vals[c] ?? ""} onChange={(v) => setVals({ ...vals, [c]: v })} w={c.includes("CONFIG") ? 12 : c === "WIND" ? 6 : 4} inputMode="text" />
+                <Act label={`${label} ${c}`} value={g.get(c)} onChange={(v) => g.put(c, `${label} ${c}`, v)} w={c.includes("CONFIG") ? 12 : c === "WIND" ? 6 : 4} inputMode="text" />
               </td>
             ))}
           </tr>

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useOfp } from "../context";
+import { useField, useOfp } from "../context";
 import { Section, Sub, Tip, V } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { fmtDur, fmtHhmm, fmtNum, hhmmToMin, pageOf, signed } from "@/lib/ofp/format";
@@ -57,7 +56,7 @@ export function RouteString({ route }: { route: string | null | undefined }) {
 
 export function RouteSection({ no }: { no: number }) {
   const { ofp } = useOfp();
-  const [clr, setClr] = useState("");
+  const [clr, setClr] = useField("route.atcClearance", "Alternate & routing", "Departure ATC clearance");
   const alts = ofp?.alternates.length ? ofp.alternates : [null];
   const impacts = ofp?.opImpacts ?? [];
   const maxTrip = Math.max(1, ...impacts.map((m) => m.trip ?? 0));

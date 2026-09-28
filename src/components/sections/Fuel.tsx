@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useOfp } from "../context";
+import { useField, useOfp } from "../context";
 import { Act, Badge, Field, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { fmtDur, fmtHhmm, fmtNum, hhmmToMin } from "@/lib/ofp/format";
@@ -19,9 +18,10 @@ const PLACEHOLDER_ROWS = ["TRIP", "CONT 15 MIN", "ALTN", "FINRES", "MINIMUM T/OF
 
 export function FuelSection({ no }: { no: number }) {
   const { ofp } = useOfp();
-  const [picExtra, setPicExtra] = useState("");
-  const [reason, setReason] = useState("");
-  const [sig, setSig] = useState("");
+  const S = "Planned fuel";
+  const [picExtra, setPicExtra] = useField("fuel.picExtra", S, "PIC extra fuel");
+  const [reason, setReason] = useField("fuel.picReason", S, "Reason for PIC extra");
+  const [sig, setSig] = useField("fuel.picSignature", S, "PIC signature");
   const f = ofp?.fuel;
   const unit = ofp?.header.unit ?? "KGS";
   const rows = f?.rows.length ? f.rows : PLACEHOLDER_ROWS.map((label) => ({ label, arpt: null, fuel: null, time: null }));
