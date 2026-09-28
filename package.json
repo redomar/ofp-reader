@@ -1,15 +1,38 @@
 {
   "name": "ofp-reader",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Interactive pilot-chart reader for SimBrief OFP PDFs. Parses the plan entirely in the browser.",
+  "keywords": [
+    "simbrief",
+    "ofp",
+    "flight-plan",
+    "aviation",
+    "nextjs",
+    "pdf"
+  ],
+  "author": {
+    "name": "Mohamed Omar",
+    "url": "https://github.com/redomar"
+  },
+  "license": "UNLICENSED",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.23.0",
   "scripts": {
+    "copy-worker": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs'),'public/pdf.worker.min.mjs')\"",
+    "predev": "pnpm copy-worker",
     "dev": "next dev",
+    "prebuild": "pnpm copy-worker",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "npx serve out",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.3.6",
+    "pdfjs-dist": "^6.3.289",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -20,6 +43,5 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "typescript": "^5"
-  },
-  "packageManager": "pnpm@10.23.0"
+  }
 }
