@@ -1810,3 +1810,64 @@ dialog.lightbox img {
   flex: 1;
   display: block;
 }
+
+/* ---------- build-info footer ---------- */
+
+.site-footer {
+  border-top: 3px solid var(--magenta);
+  background: var(--sheet);
+  margin-top: 28px;
+}
+.site-footer-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 12px 20px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+}
+.site-footer p {
+  margin: 0;
+}
+.site-footer-copy {
+  font-family: var(--font-cond);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.site-footer-nav {
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-cond);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 14px;
+}
+.site-footer a {
+  color: var(--blue);
+}
+.site-footer-build {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.site-footer-dirty {
+  color: var(--amber);
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .site-footer-inner {
+    padding: 10px 12px 14px;
+  }
+}
+@media print {
+  .site-footer {
+    display: none;
+  }
+}

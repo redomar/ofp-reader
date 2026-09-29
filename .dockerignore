@@ -1,8 +1,8 @@
+# Only gitignored paths belong here: the build reads .git for the footer's
+# commit/dirty info, and excluding tracked files would show as "uncommitted changes".
 node_modules
 .next
 out
-.git
-docs
 public/pdf.worker.min.mjs
 *.log
 .env*

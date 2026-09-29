@@ -1,6 +1,10 @@
 # Static export built with pnpm, served by nginx. Nothing runs server-side.
 FROM node:22-slim AS build
 WORKDIR /app
+# git: the footer's build info (commit, branch, dirty flag) is read from .git at build time
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && git config --global --add safe.directory /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
