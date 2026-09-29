@@ -80,6 +80,17 @@ pnpm build
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | TypeScript, no emit |
 
+### Docker
+
+The `Dockerfile` builds the static export and serves it with nginx on port 80 (`nginx.conf` maps `/settings` → `settings.html` and serves the `.mjs` pdf.js worker with a JavaScript MIME type):
+
+```bash
+docker build -t ofp-reader .
+docker run -p 8080:80 ofp-reader   # http://localhost:8080
+```
+
+Live at **[charts.massorbit.co.uk](https://charts.massorbit.co.uk)**, deployed with Dokploy from `main`.
+
 > To open the dev server from another device on your network, add its address to `allowedDevOrigins` in `next.config.ts`.
 
 ## Using it

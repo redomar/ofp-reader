@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+.git
+docs
+public/pdf.worker.min.mjs
+*.log
+.env*
