@@ -21,7 +21,7 @@
   },
   "packageManager": "pnpm@10.23.0",
   "scripts": {
-    "copy-worker": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs'),'public/pdf.worker.min.mjs')\"",
+    "copy-worker": "node scripts/copy-worker.mjs",
     "predev": "pnpm copy-worker",
     "dev": "next dev",
     "prebuild": "pnpm copy-worker",
