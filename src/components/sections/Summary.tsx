@@ -1,6 +1,11 @@
 "use client";
 
 import { useOfp } from "../context";
+import { FlightStrip } from "../FlightStrip";
+import { FlapBlank, FlapCode } from "../FlapCode";
+import { useStripMode } from "@/lib/stripPref";
+import { countryLabel, icaoCountry } from "@/lib/ofp/icaoCountry";
+import { useState } from "react";
 import { Badge, Field, Gauge, Section, Sub, Tip, V } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtDate, fmtDur, fmtHhmm, fmtNum, fmtReg, fmtSigned, parseWind, pct, signed } from "@/lib/ofp/format";
@@ -25,6 +30,7 @@ export function SummarySection({ no }: { no: number }) {
     if (dep?.name || arr?.name) return [dep?.name ?? null, arr?.name ?? null];
     return [h?.routeName ?? null, null];
   })();
+  const [stripMode] = useStripMode();
   const block = clockDiff(h?.outTime, h?.inTime);
   const air = clockDiff(h?.offTime, h?.onTime);
   const wind = parseWind(h?.avgWind);
@@ -87,8 +93,8 @@ export function SummarySection({ no }: { no: number }) {
       <div className="strip">
         <div className="strip-apt">
           <div className="strip-icao">
-            <V v={h?.dep} w={4} />
-            {h?.depIata && <span className="small muted mono"> /{h.depIata}</span>}
+            {h?.dep ? <FlapCode key={h.dep} code={h.dep} label={`Departure ${h.dep}`} /> : <FlapBlank />}
+            {h?.dep && <IataTag icao={h.dep} iata={h.depIata} side="dep" />}
           </div>
           <div className="strip-name">
             <V v={depName} w={14} />
@@ -104,13 +110,8 @@ export function SummarySection({ no }: { no: number }) {
             <V v={fmtHhmm(h?.offTime)} w={5} />Z
           </div>
         </div>
-        <div className="strip-mid" aria-hidden={!ofp}>
-          <svg viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M6 52 Q150 -14 294 52" className="gridline" fill="none" stroke="var(--rule)" strokeDasharray="2 4" />
-            {ofp && <path d="M6 52 Q150 -14 294 52" fill="none" stroke="var(--magenta)" strokeWidth="2.5" className="draw" pathLength={1} vectorEffect="non-scaling-stroke" />}
-            <circle cx="6" cy="52" r="4" fill="var(--sheet)" stroke="var(--ink)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-            <circle cx="294" cy="52" r="4" fill="var(--ink)" vectorEffect="non-scaling-stroke" />
-          </svg>
+        <div className="strip-mid">
+          <FlightStrip ofp={ofp} mode={stripMode} />
           <div className="mid-label">
             <Tip tip="Block time: OUT → IN (gate to gate)">BLOCK</Tip> <V v={fmtDur(block)} w={5} /> ·{" "}
             <Tip tip="Air time: OFF → ON (wheels up to touchdown)">AIR</Tip> <V v={fmtDur(air)} w={5} />
@@ -122,8 +123,8 @@ export function SummarySection({ no }: { no: number }) {
         </div>
         <div className="strip-apt arr">
           <div className="strip-icao">
-            {h?.arrIata && <span className="small muted mono">{h.arrIata}/ </span>}
-            <V v={h?.arr} w={4} />
+            {h?.arr && <IataTag icao={h.arr} iata={h.arrIata} side="arr" />}
+            {h?.arr ? <FlapCode key={h.arr} code={h.arr} label={`Arrival ${h.arr}`} /> : <FlapBlank />}
           </div>
           <div className="strip-name">
             <V v={arrName} w={14} />
@@ -285,6 +286,24 @@ export function SummarySection({ no }: { no: number }) {
         </div>
       </div>
     </Section>
+  );
+}
+
+/** Country flag stacked above the IATA code, beside the split-flap ICAO tiles. */
+function IataTag({ icao, iata, side }: { icao: string; iata: string | null; side: "dep" | "arr" }) {
+  const iso = icaoCountry(icao);
+  const [broken, setBroken] = useState(false);
+  const label = iso ? countryLabel(icao, iso) : null;
+  return (
+    <span className={`iata-stack ${side}`}>
+      {iso && !broken && (
+        <Tip tip={label} title={iso} plain>
+          {/* eslint-disable-next-line @next/next/no-img-element -- tiny static SVG from /public/flags */}
+          <img className="flag" src={`/flags/${iso.toLowerCase()}.svg`} alt={label?.split(" · ")[0] ?? iso} width={21} height={16} onError={() => setBroken(true)} />
+        </Tip>
+      )}
+      {iata && <span className="small muted mono">{side === "dep" ? `/${iata}` : `${iata}/`}</span>}
+    </span>
   );
 }
 

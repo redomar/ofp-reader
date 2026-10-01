@@ -510,13 +510,23 @@ export function FlightLogSection({ no }: { no: number }) {
                   </Tip>
                 </th>
               ))}
-              {(["ETO", "ATO", "EFOB"] as const).map((k) => (
+              {(["ETO", "ATO"] as const).map((k) => (
                 <th key={k} scope="col" className="num">
                   <Tip tip={G[k]} title={k}>
                     {k}
                   </Tip>
                 </th>
               ))}
+              <th scope="col" className="num delta">
+                <Tip tip="ATO minus ETO, in minutes (+ late, − early)" title="Δ time">
+                  Δ
+                </Tip>
+              </th>
+              <th scope="col" className="num">
+                <Tip tip={G.EFOB} title="EFOB">
+                  EFOB
+                </Tip>
+              </th>
               {pic && (
                 <th scope="col" className="num">
                   <Tip tip={G.TFOB} title="TFOB">
@@ -525,8 +535,13 @@ export function FlightLogSection({ no }: { no: number }) {
                 </th>
               )}
               <th scope="col" className="num">
-                <Tip tip={pic ? `${G.AFOB}. Compared with TFOB while PIC extra is included.` : G.AFOB} title="AFOB">
+                <Tip tip={G.AFOB} title="AFOB">
                   AFOB
+                </Tip>
+              </th>
+              <th scope="col" className="num delta">
+                <Tip tip={`AFOB minus ${pic ? "TFOB" : "EFOB"}, in tonnes (− below plan, + above)`} title="Δ fuel">
+                  Δ
                 </Tip>
               </th>
               {TAIL.map((c) => (
@@ -543,7 +558,7 @@ export function FlightLogSection({ no }: { no: number }) {
               if (!p)
                 return (
                   <tr key={r}>
-                    {Array.from({ length: COLS.length + TAIL.length + 5 + (pic ? 1 : 0) }, (_, c) => (
+                    {Array.from({ length: COLS.length + TAIL.length + 7 + (pic ? 1 : 0) }, (_, c) => (
                       <td key={c}>
                         <V v={null} w={c === 0 ? 6 : 3} />
                       </td>
@@ -583,12 +598,10 @@ export function FlightLogSection({ no }: { no: number }) {
                   })}
                   <td className="num muted">{isFir ? "" : fmtHhmm(e)}</td>
                   <td className="num">
-                    {!isFir && (
-                      <span className="row" style={{ gap: 4, justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                        <Act label={`Actual time over ${p.name}`} value={atoV ?? ""} onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))} w={4} />
-                        {dAto != null && <span style={{ color: dAto > 0 ? "var(--red)" : "var(--green)", fontSize: 12 }}>{dAto > 0 ? `+${dAto}` : dAto}′</span>}
-                      </span>
-                    )}
+                    {!isFir && <Act label={`Actual time over ${p.name}`} value={atoV ?? ""} onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))} w={4} />}
+                  </td>
+                  <td className="num delta" style={{ color: dAto ? (dAto > 0 ? "var(--red)" : "var(--green)") : undefined }}>
+                    {dAto != null ? `${dAto > 0 ? "+" : dAto < 0 ? "−" : "±"}${Math.abs(dAto)}′` : ""}
                   </td>
                   <td className="num">{p.efob ?? ""}</td>
                   {pic && (
@@ -605,12 +618,10 @@ export function FlightLogSection({ no }: { no: number }) {
                     </td>
                   )}
                   <td className="num">
-                    {!isFir && (
-                      <span className="row" style={{ gap: 4, justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                        <Act label={`Actual fuel on board at ${p.name}, tonnes`} value={af ?? ""} onChange={(v) => lg.put(`${wkey(p)}.afob`, `AFOB ${p.name} (t)`, v.replace(/[^\d.]/g, ""))} w={4} inputMode="decimal" />
-                        {dF != null && !Number.isNaN(dF) && <span style={{ color: dF < 0 ? "var(--red)" : "var(--green)", fontSize: 12 }}>{dF >= 0 ? "+" : ""}{dF.toFixed(1)}</span>}
-                      </span>
-                    )}
+                    {!isFir && <Act label={`Actual fuel on board at ${p.name}, tonnes`} value={af ?? ""} onChange={(v) => lg.put(`${wkey(p)}.afob`, `AFOB ${p.name} (t)`, v.replace(/[^\d.]/g, ""))} w={4} inputMode="decimal" />}
+                  </td>
+                  <td className="num delta" style={{ color: dF != null && !Number.isNaN(dF) && Math.abs(dF) >= 0.05 ? (dF < 0 ? "var(--red)" : "var(--green)") : undefined }}>
+                    {dF != null && !Number.isNaN(dF) ? `${dF >= 0.05 ? "+" : dF <= -0.05 ? "−" : "±"}${Math.abs(dF).toFixed(1)}` : ""}
                   </td>
                   {TAIL.map((c) => {
                     if (c.k === "latlon")

@@ -427,11 +427,37 @@ main {
   right: -5px;
   border-width: 0 2px 2px 0;
 }
+.sheet-heading {
+  margin: 0;
+  font: inherit;
+}
+/* The whole header strip is a button that collapses the section. */
 .sheet-head {
   display: flex;
   align-items: stretch;
-  border-bottom: 3px double var(--rule-strong);
+  width: 100%;
   min-height: 42px;
+  padding: 0;
+  border: 0;
+  border-bottom: 3px double var(--rule-strong);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sheet-head:hover {
+  background: var(--sunk);
+}
+.sheet-head:focus-visible {
+  outline-offset: -2px;
+}
+.sheet.is-collapsed .sheet-head {
+  border-bottom: 0;
+}
+/* hidden="until-found" keeps the box (content-visibility: hidden), so drop its padding */
+.sheet-body[hidden] {
+  padding: 0 !important;
 }
 .sheet-no {
   font-family: var(--font-mono);
@@ -444,7 +470,7 @@ main {
   padding: 0 12px;
   letter-spacing: 0.05em;
 }
-.sheet-head h2 {
+.sheet-title {
   margin: 0;
   display: flex;
   align-items: center;
@@ -473,7 +499,7 @@ main {
   .sheet-body {
     padding: 12px 10px;
   }
-  .sheet-head h2 {
+  .sheet-title {
     font-size: 16px;
   }
 }
@@ -814,10 +840,11 @@ table.tbl {
   text-align: center;
   min-width: 0;
 }
-.strip-mid svg {
+.fs-wrap {
   width: 100%;
-  height: 60px;
-  overflow: visible;
+  min-height: 60px;
+  display: flex;
+  justify-content: center;
 }
 .strip-mid .mid-label {
   font-family: var(--font-mono);
@@ -1981,4 +2008,274 @@ dialog.lightbox img {
 }
 .navlog-notes dd {
   margin: 0;
+}
+
+/* ---------- collapsible sections ---------- */
+
+.toc-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px 12px;
+}
+.toc-top .toc-title {
+  margin: 0;
+}
+.toc-all {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: var(--font-cond);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--blue);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.toc-all:hover {
+  text-decoration: underline;
+}
+.toc li {
+  display: flex;
+  align-items: stretch;
+}
+.toc li > a {
+  flex: 1;
+  min-width: 0;
+}
+.toc-caret {
+  flex: none;
+  width: 26px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.toc-caret:hover {
+  color: var(--ink);
+  background: var(--sunk);
+}
+.toc li.closed > a {
+  color: var(--ink-3);
+}
+.status-all {
+  font-size: 13px;
+}
+@media (min-width: 1101px) {
+  .status-all {
+    display: none;
+  }
+}
+@media print {
+  .sheet-body[hidden] {
+    display: block !important;
+    content-visibility: visible !important;
+  }
+}
+.toc-caret {
+  display: grid;
+  place-items: center;
+}
+.toc-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Δ columns beside ATO / AFOB: fixed width so typing a value doesn't shift the table */
+.tbl th.delta,
+.tbl td.delta {
+  width: 7ch;
+  min-width: 7ch;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- flight strip graphic ---------- */
+
+.fs {
+  display: block;
+  overflow: visible;
+  font-family: var(--font-mono);
+}
+.fs-line {
+  fill: none;
+  stroke: var(--magenta);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+.fs-area {
+  fill: var(--magenta);
+  opacity: 0.08;
+}
+.fs-base {
+  stroke: var(--rule);
+}
+.fs-direct {
+  stroke: var(--rule-strong);
+  stroke-dasharray: 2 4;
+}
+.fs-placeholder {
+  fill: none;
+  stroke: var(--rule-strong);
+  stroke-dasharray: 2 4;
+}
+.fs-dep {
+  fill: var(--sheet);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.fs-arr {
+  fill: var(--ink);
+}
+.fs-mark {
+  fill: var(--magenta);
+}
+.fs-wpt {
+  fill: var(--sheet);
+  stroke: var(--ink);
+  stroke-width: 0.9;
+}
+.fs-hit {
+  fill: transparent;
+  cursor: help;
+}
+.fs-tick {
+  stroke: var(--ink-3);
+  stroke-width: 1;
+}
+.fs-text {
+  font-size: 11px;
+  fill: var(--ink-2);
+}
+.fs-strong {
+  font-weight: 600;
+  fill: var(--ink);
+}
+.fs-level {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--magenta);
+}
+.fs-taxi {
+  fill: var(--amber);
+}
+.fs-air {
+  fill: var(--magenta);
+  opacity: 0.7;
+}
+.fs-cruise {
+  fill: var(--magenta);
+}
+.strip-icon {
+  margin-top: 6px;
+  fill: none;
+  stroke: var(--magenta);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.strip-icon .ic-taxi {
+  stroke: var(--amber);
+  stroke-width: 4;
+}
+.radio-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+/* ---------- split-flap airport codes ---------- */
+
+.flap {
+  display: inline-flex;
+  gap: 0.09em;
+  vertical-align: bottom;
+}
+.flap-tile {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 0.78em;
+  height: 1.12em;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--field);
+}
+/* the hinge: a hairline across the middle, as on a split-flap board */
+.flap-tile::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid var(--rule);
+}
+.flap-ch {
+  line-height: 1;
+  animation: flap-drop 70ms ease-out;
+}
+@keyframes flap-drop {
+  from {
+    transform: translateY(-45%);
+    opacity: 0.2;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.flap-blank .flap-tile {
+  border-style: dashed;
+  border-color: var(--rule-strong);
+  background: transparent;
+}
+.flap-blank .flap-tile::after {
+  border-top-style: dashed;
+}
+.fs-plane {
+  fill: var(--magenta);
+  stroke: var(--sheet);
+  stroke-width: 0.8;
+}
+
+/* ---------- flag + IATA beside the split-flap code ---------- */
+
+/* Same height as the split-flap tiles: code on their bottom edge, flag centred on
+   their middle (level with the hinge line), both centred horizontally. */
+.iata-stack {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 1.12em;
+  vertical-align: bottom;
+  margin: 0 10px;
+  line-height: 1;
+}
+.iata-stack > .tip,
+.iata-stack > .flag {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 0;
+}
+.flag {
+  display: block;
+  width: 21px;
+  height: 16px;
+  object-fit: cover;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+.iata-stack .small {
+  font-size: 13px;
 }

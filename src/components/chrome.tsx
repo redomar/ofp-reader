@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { applyTheme, readTheme } from "@/lib/storage";
+import { BoxToggleIcon, CollapseAllButton, useCollapse } from "./collapse";
 
 export function Brand({ sub }: { sub: ReactNode }) {
   return (
@@ -72,18 +73,39 @@ export function Toc({ sections, footer }: { sections: readonly (readonly [string
     return () => io.disconnect();
   }, [ids]);
 
+  const { isCollapsed, toggle, open, ready } = useCollapse();
+  const sectionIds = sections.map(([id]) => id);
+
   return (
     <nav className="toc" aria-label="Sections">
-      <p className="toc-title">Contents</p>
+      <div className="toc-top">
+        <p className="toc-title">Contents</p>
+        {ready && <CollapseAllButton ids={sectionIds} className="toc-all" />}
+      </div>
       <ol>
-        {sections.map(([id, label], i) => (
-          <li key={id}>
-            <a href={`#${id}`} aria-current={active === id ? "true" : undefined}>
-              <span className="n">{String(i + 1).padStart(2, "0")}</span>
-              {label}
-            </a>
-          </li>
-        ))}
+        {sections.map(([id, label], i) => {
+          const closed = isCollapsed(id);
+          return (
+            <li key={id} className={closed ? "closed" : undefined}>
+              {/* Jumping to a closed section opens it first. */}
+              <a href={`#${id}`} aria-current={active === id ? "true" : undefined} onClick={() => open(id)}>
+                <span className="n">{String(i + 1).padStart(2, "0")}</span>
+                {label}
+              </a>
+              <button
+                type="button"
+                className="toc-caret"
+                aria-expanded={!closed}
+                aria-controls={`${id}-body`}
+                aria-label={`${closed ? "Expand" : "Collapse"} ${label}`}
+                title={closed ? "Expand" : "Collapse"}
+                onClick={() => toggle(id)}
+              >
+                <BoxToggleIcon open={!closed} />
+              </button>
+            </li>
+          );
+        })}
       </ol>
       {footer && <div className="toc-foot">{footer}</div>}
     </nav>

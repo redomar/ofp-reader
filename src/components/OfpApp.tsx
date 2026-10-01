@@ -7,6 +7,7 @@ import { fetchPdf, readOfp, type Progress } from "@/lib/ofp/pdf";
 import Link from "next/link";
 import { FormContext, OfpContext, type FormApi } from "./context";
 import { Brand, SettingsLink, ThemeToggle, Toc } from "./chrome";
+import { CollapseAllButton, CollapseProvider } from "./collapse";
 import {
   findByUrl,
   getServerVersion,
@@ -329,6 +330,7 @@ export function OfpApp() {
   return (
     <OfpContext.Provider value={ctx}>
       <FormContext.Provider value={form}>
+        <CollapseProvider>
       <a href="#main" className="skip">
         Skip to flight plan
       </a>
@@ -370,6 +372,7 @@ export function OfpApp() {
               }}
             />
           </form>
+          <CollapseAllButton ids={SECTIONS.map(([id]) => id)} className="btn status-all" />
           <SettingsLink />
           <ThemeToggle />
         </div>
@@ -488,6 +491,7 @@ export function OfpApp() {
         </div>
       )}
       <TooltipLayer />
+        </CollapseProvider>
       </FormContext.Provider>
     </OfpContext.Provider>
   );

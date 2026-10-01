@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useCollapse } from "./collapse";
 import { isBlank } from "@/lib/ofp/format";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
@@ -87,6 +88,11 @@ export function Field({
   );
 }
 
+/**
+ * A page section ("sheet"). The whole header strip is the collapse toggle; there is
+ * no caret on it (the Contents rail shows state). Collapsed bodies use
+ * hidden="until-found", so the browser's find-in-page still reaches and reopens them.
+ */
 export function Section({
   id,
   no,
@@ -100,16 +106,44 @@ export function Section({
   meta?: ReactNode;
   children: ReactNode;
 }) {
+  const { isCollapsed, toggle, open } = useCollapse();
+  const collapsed = isCollapsed(id);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // React only writes `hidden` as a boolean, so set "until-found" directly; browsers
+  // without support treat it as plain hidden.
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    if (collapsed) el.setAttribute("hidden", "until-found");
+    else el.removeAttribute("hidden");
+  }, [collapsed]);
+
+  // Find-in-page match inside a collapsed section: expand it.
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const onMatch = () => open(id);
+    el.addEventListener("beforematch", onMatch);
+    return () => el.removeEventListener("beforematch", onMatch);
+  }, [id, open]);
+
   return (
-    <section id={id} className="sheet" aria-labelledby={`${id}-h`} style={{ ["--sec" as string]: no }}>
-      <header className="sheet-head">
-        <span className="sheet-no" aria-hidden="true">
-          {String(no).padStart(2, "0")}
-        </span>
-        <h2 id={`${id}-h`}>{title}</h2>
-        {meta && <div className="sheet-meta">{meta}</div>}
-      </header>
-      <div className="sheet-body">{children}</div>
+    <section id={id} className={cx("sheet", collapsed && "is-collapsed")} aria-labelledby={`${id}-h`} style={{ ["--sec" as string]: no }}>
+      <h2 className="sheet-heading">
+        <button type="button" className="sheet-head" aria-expanded={!collapsed} aria-controls={`${id}-body`} onClick={() => toggle(id)}>
+          <span className="sheet-no" aria-hidden="true">
+            {String(no).padStart(2, "0")}
+          </span>
+          <span className="sheet-title" id={`${id}-h`}>
+            {title}
+          </span>
+          {meta && <span className="sheet-meta">{meta}</span>}
+        </button>
+      </h2>
+      <div className="sheet-body" id={`${id}-body`} ref={bodyRef}>
+        {children}
+      </div>
     </section>
   );
 }

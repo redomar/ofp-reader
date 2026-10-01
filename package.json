@@ -1,6 +1,6 @@
 {
   "name": "ofp-reader",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Interactive pilot-chart reader for SimBrief OFP PDFs. Parses the plan entirely in the browser.",
   "keywords": [
     "simbrief",
@@ -21,16 +21,17 @@
   },
   "packageManager": "pnpm@10.23.0",
   "scripts": {
-    "copy-worker": "node scripts/copy-worker.mjs",
-    "predev": "pnpm copy-worker",
+    "copy-assets": "node scripts/copy-assets.mjs",
+    "predev": "pnpm copy-assets",
     "dev": "next dev",
-    "prebuild": "pnpm copy-worker",
+    "prebuild": "pnpm copy-assets",
     "build": "next build",
     "start": "npx serve out",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "flag-icons": "^7.5.0",
     "next": "16.3.6",
     "pdfjs-dist": "^6.3.289",
     "react": "19.2.8",

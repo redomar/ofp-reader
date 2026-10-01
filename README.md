@@ -30,7 +30,7 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 
 - **No server, no uploads.** The PDF is fetched straight from SimBrief (which allows cross-origin requests) or read from a local file, then parsed with [pdf.js](https://mozilla.github.io/pdf.js/) in the browser. The app is a static site.
 - **Every section of the OFP, in OFP order.** Summary, fuel, alternate & routing, times & weights, flight log, winds, ICAO flight plan, runway analysis (TLR), airport weather, NOTAMs, company NOTAMs, the attached charts, and the full source text.
-- **A blank form first.** On load you see the whole plan as an unfilled template; values ink in as the PDF is decoded.
+- **A blank form first.** On load you see the whole plan as an unfilled template; values ink in as the PDF is decoded, the airport codes flip in on split-flap tiles, and the flight graphic draws in from left to right.
 - **Smart, not just pretty.**
   - Fuel: block composition bar, landing fuel, margin above ALTN + FINRES, endurance, burn per NM, PIC extra → total fuel.
   - Weights: max vs estimated gauges, and whether the take-off weight is actually landing-weight limited.
@@ -43,6 +43,7 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 - **Hover (or focus) to learn.** Almost every label explains itself: OFP abbreviations, ICAO equipment and PBN codes, METAR groups, TLR columns.
 - **Fill it in as you fly.** Actual times, weights, ATIS, clearance, RVSM check, ATO / AFOB per waypoint, TLR actuals: all saved per flight in your browser.
 - **Reopens instantly, even after SimBrief expires it.** Each PDF is kept locally, so returning to a plan (same link, reload, recent chip or Settings) doesn't download it again. SimBrief only keeps OFP PDFs for a limited time, so the saved copy is often the only one left.
+- **Your layout.** Collapse any section (or all of them) from its header or the Contents rail; it stays the way you left it. Pick the flight summary graphic: vertical profile, profile + times, route silhouette, progress timeline or classic arc.
 - **Day and night themes**, both meeting WCAG AA contrast.
 
 ## Screenshots
@@ -105,6 +106,8 @@ Live at **[charts.massorbit.co.uk](https://charts.massorbit.co.uk)**, deployed w
 | See fuel with PIC extra | Enter **PIC extra** in Planned fuel, then switch on **Include PIC extra** in the nav log |
 | Start over | **← Blank plan** |
 | Inspect a waypoint | Hover the profile, map or a nav-log row, or focus a chart and use the arrow keys |
+| Hide sections | Click a section's header, or the ⊟ boxes / **Collapse all** in Contents |
+| Change the summary graphic | ⚙ **Settings → Appearance** |
 | Manage saved data | ⚙ **Settings**: saved flights, stored entries, export JSON, delete, theme |
 
 ## How it works
@@ -133,6 +136,8 @@ Everything stays in the browser. Nothing is sent anywhere.
 | Form entries + flight details | `localStorage` | `ofp-reader:flight:<id>` (index: `ofp-reader:flights`) |
 | The PDF itself | IndexedDB `ofp-reader` → `pdfs` | `<id>` |
 | Theme preference | `localStorage` | `ofp-theme` |
+| Collapsed sections | `localStorage` | `ofp-reader:collapsed` |
+| Summary graphic style | `localStorage` | `ofp-reader:strip` |
 
 **One record per flight plan.** The id is `FLIGHT_DATE_ROUTE_OFPn`, e.g. `EZY0714_27SEP2026_LFSBLEBL_OFP1`. Flight numbers repeat daily, so the date and route are part of the key, and each re-release (new OFP number) gets its own storage. Plans without a flight or OFP number fall back to a fingerprint of the OFP's first page, which includes the release time.
 
@@ -143,7 +148,7 @@ Clearing site data or using a private window removes everything; **Export JSON**
 ```
 src/
 ├── app/
-│   ├── layout.tsx            fonts, theme boot script
+│   ├── layout.tsx            fonts, theme + collapsed-section boot scripts, footer
 │   ├── page.tsx              reader
 │   ├── settings/page.tsx     settings
 │   └── globals.css           design tokens (day / night) and all styles
@@ -151,6 +156,10 @@ src/
 │   ├── OfpApp.tsx            loading, status row, form state
 │   ├── SettingsApp.tsx       saved flights, stored data, appearance, storage
 │   ├── chrome.tsx            brand, theme toggle, contents rail
+│   ├── collapse.tsx          collapsible-section state, Collapse all
+│   ├── FlightStrip.tsx       summary graphic (profile, times, route, timeline, arc)
+│   ├── FlapCode.tsx          split-flap airport codes
+│   ├── SiteFooter.tsx        build-info footer
 │   ├── TooltipLayer.tsx      one floating tooltip for every [data-tip]
 │   ├── ui.tsx                Section, Field, V (value / blank), Tip, Gauge, Act (input)
 │   ├── context.tsx           OFP + saved-field contexts (useField)
@@ -164,12 +173,16 @@ src/
     │   ├── pdf.ts            fetch / read / chart rendering (browser)
     │   ├── metar.ts          METAR / TAF decoding, flight category, wind components
     │   ├── glossary.ts       tooltip text, ICAO equipment / PBN tables
+    │   ├── icaoCountry.ts    ICAO prefix → country (for flags)
+    │   ├── picExtra.ts       PIC extra / TFOB model
     │   └── format.ts         time, number and unit helpers
     ├── storage.ts            per-flight localStorage records
+    ├── stripPref.ts          summary graphic preference
+    ├── build-info.ts         version / commit / dirty flag for the footer
     └── pdfCache.ts           per-flight PDF copies in IndexedDB
 ```
 
-**Stack:** Next.js 16 (static export) · React 19 · TypeScript · pdf.js 6. No UI framework; styles are plain CSS with design tokens.
+**Stack:** Next.js 16 (static export) · React 19 · TypeScript · pdf.js 6 · [flag-icons](https://github.com/lipis/flag-icons) (MIT) for country flags. No UI framework; styles are plain CSS with design tokens.
 
 ## Accessibility
 

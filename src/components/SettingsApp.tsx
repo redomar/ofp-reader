@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
+import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
 import { Badge, Field, Section, Sub, Tip, V, cx } from "./ui";
 import { fmtDate } from "@/lib/ofp/format";
@@ -21,6 +22,7 @@ import {
   type ThemePref,
 } from "@/lib/storage";
 import { clearPdfs, deletePdf } from "@/lib/pdfCache";
+import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
 
 const SECTIONS = [
   ["flights", "Saved flights"],
@@ -56,6 +58,33 @@ function exportFlight(r: FlightRecord) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+/** Tiny schematic of each flight-summary graphic for the Appearance picker. */
+function StripIcon({ mode }: { mode: StripMode }) {
+  const paths: Record<StripMode, React.ReactNode> = {
+    profile: <path d="M4 22 L18 7 L62 7 L76 22" />,
+    "profile-times": (
+      <>
+        <path d="M4 17 L18 4 L62 4 L76 17" />
+        <path d="M4 17v4M18 17v7M62 17v7M76 17v4" strokeWidth="1" />
+      </>
+    ),
+    route: <path d="M4 14 L14 19 L26 17 L36 9 L48 13 L60 16 L76 14" />,
+    timeline: (
+      <>
+        <path d="M4 13h12" className="ic-taxi" />
+        <path d="M18 13h52" strokeWidth="4" />
+        <path d="M70 13h6" className="ic-taxi" />
+      </>
+    ),
+    arc: <path d="M4 22 Q40 -6 76 22" />,
+  };
+  return (
+    <svg width="80" height="26" viewBox="0 0 80 26" className="strip-icon" aria-hidden="true">
+      {paths[mode]}
+    </svg>
+  );
+}
+
 export function SettingsApp() {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const ready = version >= 0;
@@ -65,6 +94,7 @@ export function SettingsApp() {
   const bytes = useMemo(() => (version >= 0 ? storageBytes() : 0), [version]);
   const pdfBytes = flights.reduce((s, f) => s + (f.meta.pdfSize ?? 0), 0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [stripMode, setStripMode] = useStripMode();
   const sel = flights.find((f) => f.meta.id === selectedId) ?? flights[0] ?? null;
 
   const groups = useMemo(() => {
@@ -84,7 +114,7 @@ export function SettingsApp() {
   const count = (r: FlightRecord) => Object.keys(r.fields).length;
 
   return (
-    <>
+    <CollapseProvider>
       <a href="#main" className="skip">
         Skip to settings
       </a>
@@ -92,6 +122,7 @@ export function SettingsApp() {
         <div className="topbar-inner">
           <Brand sub="· Settings" />
           <span style={{ flex: 1 }} />
+          <CollapseAllButton ids={SECTIONS.map(([id]) => id)} className="btn status-all" />
           <Link href="/" className="btn">
             ← Back to reader
           </Link>
@@ -370,6 +401,22 @@ export function SettingsApp() {
                 </label>
               ))}
             </fieldset>
+            <fieldset className="radios" style={{ marginTop: 18 }}>
+              <legend className="field-label">Flight summary graphic</legend>
+              {STRIP_MODES.map((m) => (
+                <label key={m.value} className={cx("radio", ready && stripMode === m.value && "on")}>
+                  <input type="radio" name="strip" value={m.value} checked={ready && stripMode === m.value} onChange={() => setStripMode(m.value)} />
+                  <span>
+                    <b className="radio-title">
+                      {m.label}
+                      {m.value === DEFAULT_STRIP && <span className="badge b-ink">Default</span>}
+                    </b>
+                    <span className="small muted">{m.desc}</span>
+                    <StripIcon mode={m.value} />
+                  </span>
+                </label>
+              ))}
+            </fieldset>
           </Section>
 
           <Section id="storage" no={4} title="Storage & privacy" meta={<span>{ready ? fmtBytes(bytes + pdfBytes) : "—"}</span>}>
@@ -409,6 +456,6 @@ export function SettingsApp() {
         </main>
       </div>
       <TooltipLayer />
-    </>
+    </CollapseProvider>
   );
 }
