@@ -32,7 +32,7 @@ export async function fetchPdf(url: string, onProgress?: (p: Progress) => void):
     res = await fetch(normaliseUrl(url), { mode: "cors" });
   } catch {
     throw new Error(
-      "The browser could not download that link. The host may block cross-origin requests — download the PDF and drop it here instead.",
+      "Couldn't download that link. SimBrief removes older OFPs, so it may have expired (generate the plan again), or the host may block browser downloads. If you have the PDF, drop it here instead.",
     );
   }
   if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}. The OFP may have expired on SimBrief's server.`);

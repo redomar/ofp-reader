@@ -6,6 +6,7 @@ import { Act, Badge, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/ofp/format";
 import type { LogPoint } from "@/lib/ofp/types";
+import { picExtraModel, type PicExtraModel } from "@/lib/ofp/picExtra";
 
 interface P extends LogPoint {
   i: number;
@@ -37,13 +38,27 @@ function prep(log: LogPoint[]): P[] {
   return pts;
 }
 
-function Profile({ pts, active, setActive, minFuel, onKey }: { pts: P[]; active: number | null; setActive: (i: number | null) => void; minFuel: number | null; onKey: (e: KeyboardEvent) => void }) {
+function Profile({
+  pts,
+  active,
+  setActive,
+  minFuel,
+  onKey,
+  pic,
+}: {
+  pts: P[];
+  active: number | null;
+  setActive: (i: number | null) => void;
+  minFuel: number | null;
+  onKey: (e: KeyboardEvent) => void;
+  pic: PicExtraModel | null;
+}) {
   const H = 280;
   const m = { l: 46, r: 46, t: 16, b: 30 };
   const total = pts.at(-1)?.cum || 1;
   const maxAlt = Math.max(100, ...pts.map((p) => p.alt), ...pts.map((p) => Number(p.mora ?? 0)));
   const yMax = Math.ceil((maxAlt + 30) / 50) * 50;
-  const fuels = pts.map((p) => Number(p.efob)).filter((n) => !Number.isNaN(n));
+  const fuels = pts.flatMap((p) => [Number(p.efob), pic?.tfob(p.efob, p.pbrn) ?? NaN]).filter((n) => !Number.isNaN(n));
   const fMax = Math.ceil(Math.max(1, ...fuels));
   const x = (d: number) => m.l + (d / total) * (W - m.l - m.r);
   const y = (fl: number) => H - m.b - (fl / yMax) * (H - m.t - m.b);
@@ -62,8 +77,15 @@ function Profile({ pts, active, setActive, minFuel, onKey }: { pts: P[]; active:
     .filter((p) => p.efob)
     .map((p, k) => `${k ? "L" : "M"}${x(p.cum).toFixed(1)} ${yf(Number(p.efob)).toFixed(1)}`)
     .join(" ");
+  const picLine = pic
+    ? wpts
+        .filter((p) => p.efob)
+        .map((p, k) => `${k ? "L" : "M"}${x(p.cum).toFixed(1)} ${yf(pic.tfob(p.efob, p.pbrn)!).toFixed(1)}`)
+        .join(" ")
+    : null;
   const ticks = Array.from({ length: yMax / 50 + 1 }, (_, k) => k * 50);
   const a = active != null ? pts[active] : null;
+  const boxW = pic ? 250 : 206;
 
   const move = (e: PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -124,6 +146,7 @@ function Profile({ pts, active, setActive, minFuel, onKey }: { pts: P[]; active:
           </g>
         ))}
       <path d={fuelLine} className="fuel draw" pathLength={1} />
+      {picLine && <path d={picLine} className="fuel-pic" />}
       <path d={line} className="route draw" pathLength={1} />
       {wpts.map((p) => {
         const isTc = /T O [CD]/.test(p.position ?? "");
@@ -147,12 +170,12 @@ function Profile({ pts, active, setActive, minFuel, onKey }: { pts: P[]; active:
       {a && (
         <g pointerEvents="none">
           <line x1={x(a.cum)} x2={x(a.cum)} y1={m.t} y2={H - m.b} className="cursor" />
-          <rect x={Math.min(x(a.cum) + 8, W - m.r - 214)} y={m.t + 18} width={206} height={52} rx={2} fill="var(--ink)" />
-          <text x={Math.min(x(a.cum) + 16, W - m.r - 206)} y={m.t + 36} style={{ fill: "var(--sheet)", fontWeight: 600, fontSize: 13 }}>
+          <rect x={Math.min(x(a.cum) + 8, W - m.r - boxW - 8)} y={m.t + 18} width={boxW} height={52} rx={2} fill="var(--ink)" />
+          <text x={Math.min(x(a.cum) + 16, W - m.r - boxW)} y={m.t + 36} style={{ fill: "var(--sheet)", fontWeight: 600, fontSize: 13 }}>
             {a.name}
           </text>
-          <text x={Math.min(x(a.cum) + 16, W - m.r - 206)} y={m.t + 54} style={{ fill: "var(--sheet)" }}>
-            {a.alt ? `FL${a.alt}` : "GND"} · {a.cum} NM · {a.efob ?? "—"}t
+          <text x={Math.min(x(a.cum) + 16, W - m.r - boxW)} y={m.t + 54} style={{ fill: "var(--sheet)" }}>
+            {a.alt ? `FL${a.alt}` : "GND"} · {a.cum} NM · {a.efob ?? "—"}t{pic && a.efob ? ` (${pic.tfob(a.efob, a.pbrn)!.toFixed(1)})` : ""}
           </text>
         </g>
       )}
@@ -289,6 +312,8 @@ export function FlightLogSection({ no }: { no: number }) {
   const [active, setActive] = useState<number | null>(null);
   const [off, setOff] = useField("log.off", "Flight log", "Actual take-off (OFF, UTC)");
   const lg = useFieldGroup("log", "Flight log");
+  const [picExtraRaw] = useField("fuel.picExtra", "Planned fuel", "PIC extra fuel");
+  const [picOn, setPicOn] = useField("log.includePic", "Flight log", "Include PIC extra in nav log");
   const wkey = (p: P) => String(p.i).padStart(3, "0");
   const pts = useMemo(() => (ofp ? prep(ofp.log) : []), [ofp]);
   const finAlt = ofp?.fuel.fmc.find((f) => f.label === "FINRES+ALTN")?.value;
@@ -296,6 +321,9 @@ export function FlightLogSection({ no }: { no: number }) {
   const plannedOff = ofp?.header.offTime ?? null;
   const offTime = /^\d{4}$/.test(off) ? off : plannedOff;
   const a = active != null ? pts[active] : null;
+  const picKg = Number(picExtraRaw) || 0;
+  const pic = useMemo(() => (ofp && picKg > 0 && picOn === "on" ? picExtraModel(ofp, picKg) : null), [ofp, picKg, picOn]);
+  const unitShort = ofp?.header.unit === "LBS" ? "lb" : "kg";
 
   const crit = ofp?.criticalMora?.match(/MORA\s+(\d+)\s+FEET AT\s+(\S+?)\/\/\/MXSHR\s+(\d+)\s+AT\s+(\S+)/);
 
@@ -367,7 +395,7 @@ export function FlightLogSection({ no }: { no: number }) {
       </div>
 
       <Sub>Vertical profile</Sub>
-      <div className="chart-frame">{pts.length ? <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} /> : <EmptyChart label="Profile" />}</div>
+      <div className="chart-frame">{pts.length ? <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} pic={pic} /> : <EmptyChart label="Profile" />}</div>
       <div className="legend small" aria-hidden="true">
         <span>
           <i style={{ background: "var(--magenta)" }} />
@@ -381,6 +409,12 @@ export function FlightLogSection({ no }: { no: number }) {
           <i style={{ background: "var(--blue)" }} />
           EFOB, tonnes (right axis)
         </span>
+        {pic && (
+          <span>
+            <i style={{ background: "var(--green)" }} />
+            TFOB · with PIC extra
+          </span>
+        )}
         <span>
           <i style={{ background: "var(--red)" }} />
           Minimum landing fuel
@@ -402,7 +436,7 @@ export function FlightLogSection({ no }: { no: number }) {
               <span>{a?.position && a.position !== a.name ? a.position : "\u00a0"}</span>
             </div>
             <dl className="dl">
-              {wpRows(a).map(([k, v]) => (
+              {wpRows(a, pic).map(([k, v]) => (
                 <div key={k} style={{ display: "contents" }}>
                   <dt>{k}</dt>
                   <dd>{v}</dd>
@@ -424,14 +458,40 @@ export function FlightLogSection({ no }: { no: number }) {
       <Sub>Navigation log</Sub>
       <div className="row small" style={{ marginBottom: 8 }}>
         <label className="row" style={{ gap: 6 }}>
-          <Tip tip="Enter the actual take-off time to recompute every ETO. Defaults to the planned OFF time.">
+          <Tip tip="ETO = OFF + TTLT. Enter the actual take-off time to recompute every ETO; defaults to the planned OFF time.">
             <span className="field-label" style={{ margin: 0 }}>
               Actual OFF
             </span>
           </Tip>
           <Act label="Actual take-off time UTC" value={off} onChange={(v) => setOff(v.replace(/\D/g, "").slice(0, 4))} w={4} placeholder={plannedOff ?? "HHMM"} />
         </label>
-        <span className="muted">ETO = OFF + TTLT. Type ATO / AFOB as you fly; differences are coloured.</span>
+        <span
+          className="switch-wrap"
+          data-tip={!picKg ? "Add PIC extra in Planned fuel to enable" : "Adds a TFOB column: EFOB plus the PIC extra still on board"}
+          data-tip-title="Include PIC extra"
+        >
+          <button
+            type="button"
+            role="switch"
+            aria-checked={picOn === "on" && picKg > 0}
+            disabled={!picKg}
+            className="switch"
+            onClick={() => setPicOn(picOn === "on" ? "" : "on")}
+            aria-describedby="navlog-tfob-note"
+          >
+            <span className="switch-main">
+              <span className="switch-track" aria-hidden="true">
+                <span className="switch-thumb" />
+              </span>
+              Include PIC extra
+            </span>
+            {picKg > 0 && (
+              <span className="switch-value">
+                +{picKg.toLocaleString("en-GB")} {unitShort}
+              </span>
+            )}
+          </button>
+        </span>
       </div>
       <div className="tbl-wrap" style={{ maxHeight: 620 }}>
         <table className="tbl">
@@ -450,13 +510,25 @@ export function FlightLogSection({ no }: { no: number }) {
                   </Tip>
                 </th>
               ))}
-              {(["ETO", "ATO", "EFOB", "AFOB"] as const).map((k) => (
+              {(["ETO", "ATO", "EFOB"] as const).map((k) => (
                 <th key={k} scope="col" className="num">
                   <Tip tip={G[k]} title={k}>
                     {k}
                   </Tip>
                 </th>
               ))}
+              {pic && (
+                <th scope="col" className="num">
+                  <Tip tip={G.TFOB} title="TFOB">
+                    TFOB
+                  </Tip>
+                </th>
+              )}
+              <th scope="col" className="num">
+                <Tip tip={pic ? `${G.AFOB}. Compared with TFOB while PIC extra is included.` : G.AFOB} title="AFOB">
+                  AFOB
+                </Tip>
+              </th>
               {TAIL.map((c) => (
                 <th key={c.label} scope="col" className={c.num ? "num" : undefined}>
                   <Tip tip={G[c.label.split(" ")[0]] ?? `${G.LAT} / ${G.LONG}`} title={c.label}>
@@ -471,7 +543,7 @@ export function FlightLogSection({ no }: { no: number }) {
               if (!p)
                 return (
                   <tr key={r}>
-                    {Array.from({ length: COLS.length + TAIL.length + 5 }, (_, c) => (
+                    {Array.from({ length: COLS.length + TAIL.length + 5 + (pic ? 1 : 0) }, (_, c) => (
                       <td key={c}>
                         <V v={null} w={c === 0 ? 6 : 3} />
                       </td>
@@ -482,7 +554,9 @@ export function FlightLogSection({ no }: { no: number }) {
               const atoV = lg.get(`${wkey(p)}.ato`);
               const dAto = atoV && /^\d{4}$/.test(atoV) && e ? signedMin(e, atoV) : null;
               const af = lg.get(`${wkey(p)}.afob`);
-              const dF = af && p.efob ? Number(af) - Number(p.efob) : null;
+              const tf = pic ? pic.tfob(p.efob, p.pbrn) : null;
+              const ref = tf ?? (p.efob ? Number(p.efob) : null);
+              const dF = af && ref != null ? Number(af) - ref : null;
               const isFir = p.kind === "fir";
               return (
                 <tr key={p.i} className={cx(isFir && "fir", active === p.i && "active")} onPointerEnter={() => setActive(p.i)} onPointerLeave={() => setActive(null)}>
@@ -517,6 +591,19 @@ export function FlightLogSection({ no }: { no: number }) {
                     )}
                   </td>
                   <td className="num">{p.efob ?? ""}</td>
+                  {pic && (
+                    <td
+                      className="num tfob"
+                      data-tip={
+                        tf != null
+                          ? `EFOB ${p.efob} t + ${Math.round(pic.extraAt(p.pbrn))} ${unitShort} PIC extra still on board (${picKg} loaded − ${Math.round(picKg - pic.extraAt(p.pbrn))} burnt carrying it)`
+                          : undefined
+                      }
+                      data-tip-title={tf != null ? `TFOB ${tf.toFixed(2)} t` : undefined}
+                    >
+                      {tf != null ? tf.toFixed(1) : ""}
+                    </td>
+                  )}
                   <td className="num">
                     {!isFir && (
                       <span className="row" style={{ gap: 4, justifyContent: "flex-end", flexWrap: "nowrap" }}>
@@ -545,6 +632,22 @@ export function FlightLogSection({ no }: { no: number }) {
           </tbody>
         </table>
       </div>
+      <dl className="navlog-notes small" aria-label="How these columns are worked out">
+        <dt>ETO</dt>
+        <dd>
+          Actual OFF{plannedOff ? ` (or planned ${fmtHhmm(plannedOff)}Z)` : ""} + TTLT. Type ATO and AFOB as you fly; differences from plan are coloured.
+        </dd>
+        <dt>TFOB</dt>
+        <dd id="navlog-tfob-note">
+          {!picKg
+            ? "Add PIC extra in Planned fuel, then switch on Include PIC extra to see fuel on board with it."
+            : !pic
+              ? "Switch on Include PIC extra to add a TFOB column; AFOB is then compared with TFOB."
+              : pic.burnPer1000
+                ? `EFOB + PIC extra, less ${pic.burnPer1000} ${unitShort} per tonne carried (from Operational impacts), taken off in proportion to fuel burnt. Lands with +${Math.round(pic.extraAt(pts.at(-1)?.pbrn ?? null))} ${unitShort}; AFOB is compared with TFOB.`
+                : "EFOB + PIC extra; AFOB is compared with TFOB."}
+        </dd>
+      </dl>
       {pts.length > 0 && (
         <p className="note">
           Legs: {pts.filter((p) => p.kind === "wpt").length - 1} · FIR crossings: {firs.length} · planned air time {fmtHhmm(pts.at(-1)?.ttlt)} ·{" "}
@@ -556,7 +659,7 @@ export function FlightLogSection({ no }: { no: number }) {
 }
 
 /** Always the same rows (dash when absent) so the card never changes height. */
-function wpRows(a: P | null): [string, string][] {
+function wpRows(a: P | null, pic: PicExtraModel | null): [string, string][] {
   const d = "—";
   const comp = a?.comp ? signed(a.comp) : null;
   return [
@@ -567,7 +670,7 @@ function wpRows(a: P | null): [string, string][] {
     ["Speeds", [a?.mn && `Mach ${a.mn}`, a?.tas && `TAS ${a.tas}`, a?.gs && `GS ${a.gs}`].filter(Boolean).join(" · ") || d],
     ["Distance", a ? `${a.cum} NM flown${a.rdis ? ` · ${a.rdis} to go` : ""}` : d],
     ["Time", a?.ttlt ? `+${fmtHhmm(a.ttlt)} after take-off` : d],
-    ["Fuel", a?.efob ? `${a.efob} t on board · ${a.pbrn ?? d} t burnt` : d],
+    ["Fuel", a?.efob ? `${a.efob} t on board${pic ? ` (${pic.tfob(a.efob, a.pbrn)!.toFixed(1)} with PIC)` : ""} · ${a.pbrn ?? d} t burnt` : d],
     ["MORA", a?.mora ? `${(Number(a.mora) * 100).toLocaleString("en-GB")} ft` : d],
     ["Position", a?.lat ? `${a.lat} ${a.long ?? ""}` : d],
     ["Freq", a?.freq ?? d],

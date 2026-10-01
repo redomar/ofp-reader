@@ -36,12 +36,13 @@ and every value gets context: derived margins, decoded weather, a vertical profi
   - Weights: max vs estimated gauges, and whether the take-off weight is actually landing-weight limited.
   - Times: taxi / airborne / block durations, local UTC offsets, and a **planned vs actual timeline** on a shared clock.
   - Flight log: vertical profile with MORA terrain, fuel on board and minimum-fuel line, a route map from the waypoint coordinates, FIR crossings, and a navigation log where ETOs follow your actual take-off time.
+  - PIC extra: switch it into the nav log to get a **TFOB** column (and profile line): EFOB plus the extra still on board, less the cost of carrying it, taken from the OFP's own weight-change impact.
   - Runway analysis: V-speed cards, FLEX, head- and crosswind components for the planned runway, and factored landing distance against runway length.
   - Weather: METAR / TAF decoded token by token, flight category (VFR → LIFR) and hazard flags.
   - NOTAMs: search, category filters, "critical" (CLSD, U/S, NOT AVBL…) and "mentions my planned runway" filters.
 - **Hover (or focus) to learn.** Almost every label explains itself: OFP abbreviations, ICAO equipment and PBN codes, METAR groups, TLR columns.
 - **Fill it in as you fly.** Actual times, weights, ATIS, clearance, RVSM check, ATO / AFOB per waypoint, TLR actuals: all saved per flight in your browser.
-- **Reopens instantly.** Each PDF is kept locally, so returning to a plan (same link, reload, recent chip or Settings) doesn't download it again.
+- **Reopens instantly, even after SimBrief expires it.** Each PDF is kept locally, so returning to a plan (same link, reload, recent chip or Settings) doesn't download it again. SimBrief only keeps OFP PDFs for a limited time, so the saved copy is often the only one left.
 - **Day and night themes**, both meeting WCAG AA contrast.
 
 ## Screenshots
@@ -100,7 +101,8 @@ Live at **[charts.massorbit.co.uk](https://charts.massorbit.co.uk)**, deployed w
 | Load a plan | Paste a SimBrief PDF link and press **Load**, click **Upload**, or drop a PDF anywhere on the page |
 | Share or bookmark a plan | Use the address bar: `/?ofp=<simbrief pdf url>` |
 | Reopen a saved plan | Click a **Recent** chip, or **Open** in Settings (`/?flight=<id>`) |
-| Get a fresh copy from SimBrief | **Re-download** in the status row |
+| Get a fresh copy from SimBrief | **Re-download** in the status row (only while SimBrief still has the OFP) |
+| See fuel with PIC extra | Enter **PIC extra** in Planned fuel, then switch on **Include PIC extra** in the nav log |
 | Start over | **← Blank plan** |
 | Inspect a waypoint | Hover the profile, map or a nav-log row, or focus a chart and use the arrow keys |
 | Manage saved data | ⚙ **Settings**: saved flights, stored entries, export JSON, delete, theme |

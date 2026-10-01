@@ -1871,3 +1871,114 @@ dialog.lightbox img {
     display: none;
   }
 }
+
+/* ---------- PIC extra in the nav log ---------- */
+
+.chart .fuel-pic {
+  stroke: var(--green);
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 7 4;
+}
+.tbl td.tfob {
+  color: var(--green);
+  font-weight: 600;
+  background: var(--green-bg);
+}
+.switch-wrap {
+  margin-left: auto;
+}
+/* Pill split in two: label half with a rounded ")" edge over the value half. */
+.switch {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--green-bg);
+  font-family: var(--font-cond);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.switch-main {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px 3px 4px;
+  background: var(--sheet);
+  border-radius: 0 999px 999px 0;
+}
+.switch-value {
+  display: inline-flex;
+  align-items: center;
+  margin-left: -14px;
+  padding: 3px 12px 3px 24px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--green);
+}
+.switch[disabled] {
+  cursor: not-allowed;
+  color: var(--ink-3);
+  background: var(--sheet);
+  /* Recede until a PIC extra is entered; firm up on hover so the hint is findable. */
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.switch-wrap:hover .switch[disabled] {
+  opacity: 0.8;
+}
+.switch-track {
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--sunk);
+  border: 1px solid var(--rule-strong);
+  position: relative;
+  transition: background 0.15s;
+}
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  transition: transform 0.15s, background 0.15s;
+}
+.switch[aria-checked="true"] .switch-track {
+  background: var(--green-bg);
+  border-color: var(--green);
+}
+.switch[aria-checked="true"] .switch-thumb {
+  transform: translateX(12px);
+  background: var(--green);
+}
+
+.navlog-notes {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--rule-strong);
+  color: var(--ink-2);
+}
+.navlog-notes dt {
+  font-family: var(--font-cond);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.navlog-notes dd {
+  margin: 0;
+}

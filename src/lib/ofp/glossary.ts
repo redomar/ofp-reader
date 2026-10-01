@@ -95,6 +95,7 @@ export const G: Record<string, string> = {
   TRP: "Tropopause height (flight level)",
   EFOB: "Estimated Fuel On Board at this point (tonnes)",
   AFOB: "Actual Fuel On Board — fill in en-route",
+  TFOB: "Total fuel on board with PIC extra: EFOB plus the extra loaded, less the extra fuel burnt carrying it (from the OFP's weight-change impact)",
   PBRN: "Planned fuel burnt since take-off (tonnes)",
   ABRN: "Actual fuel burnt — fill in en-route",
   TOC: "Top of Climb",

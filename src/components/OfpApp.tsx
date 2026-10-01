@@ -52,11 +52,39 @@ const SECTIONS = [
   ["source", "Source text"],
 ] as const;
 
+/**
+ * Sample SimBrief OFP links once shown as "Try" chips in the status row.
+ *
+ * @deprecated No longer rendered. SimBrief only keeps generated OFP PDFs for a
+ * limited time, after which these links return 404 (seen as a CORS failure in the
+ * browser), so built-in samples go stale. Plans a user has opened are kept in their
+ * browser and offered as "Recent" chips instead. Kept for reference; re-enable only
+ * with links that don't expire (e.g. a self-hosted sample PDF).
+ */
 const EXAMPLES = [
   "https://www.simbrief.com/ofp/flightplans/LFSBLEBL_PDF_1790544580.4961f06b.pdf",
   "https://www.simbrief.com/ofp/flightplans/EKCHLFSB_PDF_1790528775.06b00640.pdf",
   "https://www.simbrief.com/ofp/flightplans/EDDBEKCH_PDF_1790516669.325d777a.pdf",
 ];
+
+/**
+ * "Try:" chips that open the sample OFPs in {@link EXAMPLES}.
+ *
+ * @deprecated Not rendered: the sample links have expired on SimBrief. See {@link EXAMPLES}.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- deprecated, kept for reference
+function ExampleChips({ onPick }: { onPick: (url: string) => void }) {
+  return (
+    <>
+      <span>Try:</span>
+      {EXAMPLES.map((u) => (
+        <button key={u} type="button" className="chip-btn" onClick={() => onPick(u)}>
+          {u.split("/").pop()!.slice(0, 8).replace(/(....)(....)/, "$1→$2")}
+        </button>
+      ))}
+    </>
+  );
+}
 
 type Status =
   | { kind: "idle" }
@@ -372,13 +400,7 @@ export function OfpApp() {
                   <span className="examples-sep" aria-hidden="true" />
                 </>
               )}
-              <span>Try:</span>
-              {EXAMPLES.map((u) => (
-                <button key={u} type="button" className="chip-btn" onClick={() => loadUrl(u)}>
-                  {u.split("/").pop()!.slice(0, 8).replace(/(....)(....)/, "$1→$2")}
-                </button>
-              ))}
-              <span className="muted">or drop a PDF anywhere</span>
+              <span className="muted">Paste a SimBrief link, upload, or drop a PDF anywhere</span>
             </div>
           )}
           {status.kind === "busy" && (
