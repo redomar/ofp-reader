@@ -2,6 +2,17 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-10-01
+
+### Fixed
+
+- Refreshing the page no longer lands ~160px below the top. Chrome re-pinned the summary while the saved plan was still reopening behind the blank-form banner; scroll position is now saved per page and restored once the plan has loaded (links to `#section` still jump to it).
+
+### Changed
+
+- Graphics animate as they come into view and replay when you scroll back: operational-impact bars grow from the centre line, fuel and timeline bars wipe in, gauges and runway bars grow, wind barbs spin into direction, V-speed cards and chart thumbnails rise in, and the summary strip, plane and split-flap codes replay.
+- The vertical profile animates once, and again only after the Flight log section is collapsed and reopened; the route map stays static, since it's scrolled past constantly while logging.
+
 ## [1.3.0] - 2026-10-01
 
 ### Added
@@ -58,6 +69,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.3.1]: https://github.com/redomar/ofp-reader/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/redomar/ofp-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/redomar/ofp-reader/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/redomar/ofp-reader/compare/v1.0.0...v1.1.0

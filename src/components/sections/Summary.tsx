@@ -2,7 +2,8 @@
 
 import { useOfp } from "../context";
 import { FlightStrip } from "../FlightStrip";
-import { FlapBlank, FlapCode } from "../FlapCode";
+import { FlapBlank, ReplayFlapCode } from "../FlapCode";
+import { Replay } from "../replay";
 import { useStripMode } from "@/lib/stripPref";
 import { countryLabel, icaoCountry } from "@/lib/ofp/icaoCountry";
 import { useState } from "react";
@@ -90,10 +91,10 @@ export function SummarySection({ no }: { no: number }) {
         </span>
       </div>
 
-      <div className="strip">
+      <Replay className="strip">
         <div className="strip-apt">
           <div className="strip-icao">
-            {h?.dep ? <FlapCode key={h.dep} code={h.dep} label={`Departure ${h.dep}`} /> : <FlapBlank />}
+            {h?.dep ? <ReplayFlapCode code={h.dep} label={`Departure ${h.dep}`} /> : <FlapBlank />}
             {h?.dep && <IataTag icao={h.dep} iata={h.depIata} side="dep" />}
           </div>
           <div className="strip-name">
@@ -124,7 +125,7 @@ export function SummarySection({ no }: { no: number }) {
         <div className="strip-apt arr">
           <div className="strip-icao">
             {h?.arr && <IataTag icao={h.arr} iata={h.arrIata} side="arr" />}
-            {h?.arr ? <FlapCode key={h.arr} code={h.arr} label={`Arrival ${h.arr}`} /> : <FlapBlank />}
+            {h?.arr ? <ReplayFlapCode code={h.arr} label={`Arrival ${h.arr}`} /> : <FlapBlank />}
           </div>
           <div className="strip-name">
             <V v={arrName} w={14} />
@@ -140,7 +141,7 @@ export function SummarySection({ no }: { no: number }) {
             <V v={fmtHhmm(h?.inTime)} w={5} />Z
           </div>
         </div>
-      </div>
+      </Replay>
 
       <div className="fields">
         <Field label="CRZ SYS" tip={G["CRZ SYS"]}>

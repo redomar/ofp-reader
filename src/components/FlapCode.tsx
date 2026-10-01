@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useReplay } from "./replay";
 
 const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const STEP_MS = 60;
@@ -54,6 +55,12 @@ export function FlapCode({ code, label }: { code: string; label?: string }) {
       ))}
     </span>
   );
+}
+
+/** FlapCode that replays its flip whenever its <Replay> wrapper scrolls back into view. */
+export function ReplayFlapCode({ code, label }: { code: string; label?: string }) {
+  const round = useReplay();
+  return <FlapCode key={`${code}-${round}`} code={code} label={label} />;
 }
 
 /** Empty tiles for the blank form. */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useField, useFieldGroup, useOfp } from "../context";
+import { Replay } from "../replay";
 import { Act, Badge, Field, Gauge, Section, Sub, Tip, V } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtDur, fmtHhmm, fmtOffset, hhmmToMin, pageOf, utcOffset } from "@/lib/ofp/format";
@@ -323,11 +324,12 @@ function Timeline({ phases, est, act }: { phases: Phase[]; est: Clock; act: Cloc
     return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
   };
 
-  const row = (label: string, segs: typeof planned, other: typeof planned) => (
+  const row = (label: string, segs: typeof planned, other: typeof planned, i: number) => (
     <div className="tl-row">
       <span className="tl-label">{label}</span>
       <div
-        className="fuelbar tl-track"
+        className="fuelbar tl-track a-wipe"
+        style={{ ["--i" as string]: i }}
         role="img"
         aria-label={`${label}: ${segs.map((s) => `${s.k} ${s.to - s.from} minutes`).join(", ")}`}
       >
@@ -351,9 +353,9 @@ function Timeline({ phases, est, act }: { phases: Phase[]; est: Clock; act: Cloc
   );
 
   return (
-    <div style={{ marginTop: 10 }} className="stack">
-      {row("Planned", planned, actual)}
-      {actual.length > 0 && row("Actual", actual, planned)}
+    <Replay className="stack" style={{ marginTop: 10 }}>
+      {row("Planned", planned, actual, 0)}
+      {actual.length > 0 && row("Actual", actual, planned, 1)}
       <div className="tl-row small mono muted">
         <span className="tl-label" />
         <span className="row" style={{ justifyContent: "space-between", flex: 1 }}>
@@ -362,7 +364,7 @@ function Timeline({ phases, est, act }: { phases: Phase[]; est: Clock; act: Cloc
           <span>{clockAt(t1)}Z</span>
         </span>
       </div>
-    </div>
+    </Replay>
   );
 }
 

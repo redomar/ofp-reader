@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useReplay } from "./replay";
 import type { OFP } from "@/lib/ofp/types";
 import { hhmmToMin } from "@/lib/ofp/format";
 import type { StripMode } from "@/lib/stripPref";
@@ -395,6 +396,7 @@ function Placeholder({ mode, w }: { mode: StripMode; w: number }) {
 /** The graphic in the middle of the flight-summary strip. */
 export function FlightStrip({ ofp, mode }: { ofp: OFP | null; mode: StripMode }) {
   const [ref, w] = useWidth();
+  const round = useReplay(); // remount on each scroll-in so the SMIL animation restarts
   const d = useMemo(() => (ofp ? prep(ofp) : null), [ofp]);
   let body: ReactNode = null;
   if (w > 0) {
@@ -406,7 +408,7 @@ export function FlightStrip({ ofp, mode }: { ofp: OFP | null; mode: StripMode })
   }
   return (
     <div ref={ref} className="fs-wrap" data-mode={mode}>
-      {body}
+      <Fragment key={round}>{body}</Fragment>
     </div>
   );
 }

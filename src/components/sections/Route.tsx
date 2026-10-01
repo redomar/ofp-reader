@@ -1,6 +1,7 @@
 "use client";
 
 import { useField, useOfp } from "../context";
+import { Replay } from "../replay";
 import { Section, Sub, Tip, V } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { fmtDur, fmtHhmm, fmtNum, hhmmToMin, pageOf, signed } from "@/lib/ofp/format";
@@ -202,6 +203,7 @@ export function RouteSection({ no }: { no: number }) {
           Operational impacts
         </Tip>
       </Sub>
+      <Replay>
       <div className="tbl-wrap">
         <table className="tbl">
           <thead>
@@ -239,7 +241,9 @@ export function RouteSection({ no }: { no: number }) {
                       <div style={{ position: "relative", height: 12, background: "var(--sunk)" }}>
                         <span style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "var(--ink-3)" }} />
                         <span
+                          className={d >= 0 ? "a-grow-x" : "a-grow-x-r"}
                           style={{
+                            ["--i" as string]: i,
                             position: "absolute",
                             top: 0,
                             bottom: 0,
@@ -260,6 +264,7 @@ export function RouteSection({ no }: { no: number }) {
           </tbody>
         </table>
       </div>
+      </Replay>
       <p className="note">Red = more fuel burnt than planned, green = less. Use these to judge a different cruise level, speed or late load change.</p>
     </Section>
   );

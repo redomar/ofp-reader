@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useOfp } from "../context";
 import { Section } from "../ui";
 import { renderChart } from "@/lib/ofp/pdf";
+import { Replay } from "../replay";
 
 interface Img {
   page: number;
@@ -56,18 +57,18 @@ export function ChartsSection({ no }: { no: number }) {
       <p className="small muted" style={{ marginTop: 0 }}>
         Route map, wind/temperature charts and cross-section attached to the OFP. Rendered from the PDF in your browser — select one to enlarge.
       </p>
-      <div className="thumbs">
+      <Replay className="thumbs">
         {list.map((p, i) => {
           const img = p ? imgs[p] : undefined;
           return (
-            <button key={p || `ph${i}`} type="button" className="thumb" disabled={!img} onClick={() => img && setOpen(img)} aria-label={p ? `Open chart on PDF page ${p}` : "Chart placeholder"}>
+            <button key={p || `ph${i}`} type="button" className="thumb a-rise" style={{ ["--i" as string]: i }} disabled={!img} onClick={() => img && setOpen(img)} aria-label={p ? `Open chart on PDF page ${p}` : "Chart placeholder"}>
               {/* eslint-disable-next-line @next/next/no-img-element -- local blob URL */}
               {img ? <img src={img.url} alt={`Chart, PDF page ${p}`} /> : <div className="ph">{p ? "rendering…" : "chart"}</div>}
               <figcaption>{p ? `Chart ${i + 1} · p.${p}` : `Chart ${i + 1}`}</figcaption>
             </button>
           );
         })}
-      </div>
+      </Replay>
       <dialog ref={dlg} className="lightbox" onClose={() => setOpen(null)} aria-label={open ? `Chart, PDF page ${open.page}` : "Chart"}>
         {open && (
           <>

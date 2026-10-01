@@ -105,6 +105,39 @@ function BlankChip({ onClick }: { onClick: () => void }) {
   );
 }
 
+/*
+ * Scroll restoration is manual: Chrome restores by re-pinning the element that was at
+ * the top of the viewport, but on reload the blank-form banner briefly sits above the
+ * summary (until the saved plan reopens), so it pinned ~160px too low. We save the
+ * position per URL for this tab and restore it once the plan has loaded.
+ */
+const SCROLL_KEY = "ofp-reader:scroll";
+const here = () => window.location.pathname + window.location.search;
+
+function saveScroll() {
+  try {
+    sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ url: here(), y: Math.round(window.scrollY) }));
+  } catch {
+    /* ignore */
+  }
+}
+
+function restoreScroll() {
+  const id = decodeURIComponent(window.location.hash.slice(1));
+  if (id) {
+    document.getElementById(id)?.scrollIntoView();
+    return;
+  }
+  let y = 0;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) ?? "null");
+    if (saved?.url === here() && typeof saved.y === "number") y = saved.y;
+  } catch {
+    /* ignore */
+  }
+  window.scrollTo(0, y);
+}
+
 /** Keeps the address bar reloadable: ?ofp=<link> or ?flight=<saved id>. */
 function setParam(key: "ofp" | "flight", value: string) {
   const q = new URL(window.location.href);
@@ -140,6 +173,7 @@ export function OfpApp() {
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const loadId = useRef(0);
+  const restorePending = useRef(false);
 
   const load = useCallback(async (getData: (p: (x: Progress) => void) => Promise<Source>, label: string, sourceUrl: string | null) => {
     const id = ++loadId.current;
@@ -168,6 +202,11 @@ export function OfpApp() {
       setFields(rec.fields);
       setOfp(res.ofp);
       setStatus({ kind: "ready", label, saving: true, origin, sourceUrl: rec.meta.sourceUrl });
+      // A deep-linked/reloaded plan: restore the scroll position once it has rendered.
+      if (restorePending.current) {
+        restorePending.current = false;
+        requestAnimationFrame(() => requestAnimationFrame(restoreScroll));
+      }
     } catch (e) {
       if (id !== loadId.current) return;
       setStatus({ kind: "error", message: e instanceof Error ? e.message : String(e) });
@@ -259,7 +298,15 @@ export function OfpApp() {
     // Deferred so the initial render commits before loading starts.
     if (u) queueMicrotask(() => loadUrl(u));
     else if (fid) queueMicrotask(() => loadSaved(fid));
+    else requestAnimationFrame(restoreScroll); // blank page: nothing to wait for
+    restorePending.current = Boolean(u || fid);
   }, [loadUrl, loadSaved]);
+
+  useEffect(() => {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.addEventListener("pagehide", saveScroll);
+    return () => window.removeEventListener("pagehide", saveScroll);
+  }, []);
 
   // Drag & drop anywhere
   useEffect(() => {

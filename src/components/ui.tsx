@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { useCollapse } from "./collapse";
+import { Replay } from "./replay";
 import { isBlank } from "@/lib/ofp/format";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
@@ -190,6 +191,7 @@ export function Gauge({
       <Tip tip={tip} title={label}>
         <span style={{ fontFamily: "var(--font-cond)", fontWeight: 600, letterSpacing: "0.06em" }}>{label}</span>
       </Tip>
+      <Replay>
       <div
         className="gauge-track"
         role="meter"
@@ -198,8 +200,9 @@ export function Gauge({
         aria-valuemax={max ?? 100}
         aria-valuenow={value ?? 0}
       >
-        <span className={cx("gauge-fill", cls)} style={{ width: `${p}%` }} />
+        <span className={cx("gauge-fill a-grow-x", cls)} style={{ width: `${p}%` }} />
       </div>
+      </Replay>
       <span>{display}</span>
     </div>
   );

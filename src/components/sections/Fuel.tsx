@@ -1,6 +1,7 @@
 "use client";
 
 import { useField, useOfp } from "../context";
+import { Replay } from "../replay";
 import { Act, Badge, Field, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { fmtDur, fmtHhmm, fmtNum, hhmmToMin } from "@/lib/ofp/format";
@@ -130,7 +131,8 @@ export function FuelSection({ no }: { no: number }) {
 
         <div>
           <Sub>Block fuel composition</Sub>
-          <div className="fuelbar" role="img" aria-label={ofp ? `Block fuel ${block} ${unit}: ${segs.filter((s) => s.value).map((s) => `${s.key} ${s.value}`).join(", ")}` : "Block fuel composition, not loaded"}>
+          <Replay>
+          <div className="fuelbar a-wipe" role="img" aria-label={ofp ? `Block fuel ${block} ${unit}: ${segs.filter((s) => s.value).map((s) => `${s.key} ${s.value}`).join(", ")}` : "Block fuel composition, not loaded"}>
             {segs
               .filter((s) => s.value > 0)
               .map((s) => (
@@ -152,6 +154,7 @@ export function FuelSection({ no }: { no: number }) {
               </span>
             ))}
           </div>
+          </Replay>
 
           <div className="fields" style={{ marginTop: 14 }}>
             <Field label="Landing fuel" tip="Fuel expected on board at touchdown at destination (T/OFF fuel − trip)" sub={unit}>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFieldGroup, useOfp } from "../context";
 import { Act, Badge, Field, Gauge, Section, Sub, Tip, V, cx } from "../ui";
+import { Replay } from "../replay";
 import { G } from "@/lib/ofp/glossary";
 import { components } from "@/lib/ofp/metar";
 import { fmtNum, pageOf } from "@/lib/ofp/format";
@@ -211,11 +212,12 @@ export function TlrSection({ no }: { no: number }) {
       <Sub>Takeoff · planned</Sub>
       <div className="cols" style={{ ["--min" as string]: "300px" }}>
         <div className="stack">
+          <Replay>
           <div className="vspeeds" role="group" aria-label="Planned V-speeds">
-            {(["V1", "VR", "V2"] as const).map((k) => {
+            {(["V1", "VR", "V2"] as const).map((k, i) => {
               const s = vs(to?.[k]);
               return (
-                <div className="vspeed" key={k}>
+                <div className="vspeed a-rise" key={k} style={{ ["--i" as string]: i }}>
                   <Tip tip={G[k]} title={k} plain>
                     <span className="k">{k}</span>
                   </Tip>
@@ -226,7 +228,7 @@ export function TlrSection({ no }: { no: number }) {
                 </div>
               );
             })}
-            <div className="vspeed">
+            <div className="vspeed a-rise" style={{ ["--i" as string]: 3 }}>
               <Tip tip={G.MT} title="FLEX" plain>
                 <span className="k">FLEX</span>
               </Tip>
@@ -235,7 +237,7 @@ export function TlrSection({ no }: { no: number }) {
               </span>
               <span className="u">°C</span>
             </div>
-            <div className="vspeed">
+            <div className="vspeed a-rise" style={{ ["--i" as string]: 4 }}>
               <Tip tip={G.FLP} title="FLAP" plain>
                 <span className="k">FLAP</span>
               </Tip>
@@ -245,6 +247,7 @@ export function TlrSection({ no }: { no: number }) {
               <span className="u">CONF</span>
             </div>
           </div>
+          </Replay>
           <Gauge
             label="PTOW"
             value={x10(to?.PTOW)}
@@ -320,13 +323,13 @@ export function TlrSection({ no }: { no: number }) {
               ].map(([k, d]) => {
                 const p = ((d as number) / ldRwyLen) * 100;
                 return (
-                  <div key={k as string}>
+                  <Replay key={k as string}>
                     <div className="rwybar" role="meter" aria-label={`${k} factored distance ${d} of ${ldRwyLen} ft`} aria-valuemin={0} aria-valuemax={ldRwyLen} aria-valuenow={d as number}>
-                      <span style={{ width: `${Math.min(100, p)}%`, background: p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)" }}>
+                      <span className="a-grow-x" style={{ width: `${Math.min(100, p)}%`, background: p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)" }}>
                         {k} {fmtNum(d as number)} ft · {p.toFixed(0)}%
                       </span>
                     </div>
-                  </div>
+                  </Replay>
                 );
               })}
               <p className="small muted" style={{ margin: "4px 0 0" }}>

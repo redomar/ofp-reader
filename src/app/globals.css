@@ -1574,16 +1574,6 @@ dialog.lightbox img {
     transform: none;
   }
 }
-.is-filled .draw {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: draw 1.4s 0.2s cubic-bezier(0.3, 0.6, 0.2, 1) forwards;
-}
-@keyframes draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2278,4 +2268,70 @@ dialog.lightbox img {
 }
 .iata-stack .small {
   font-size: 13px;
+}
+
+/* ---------- replayable animations (see components/replay.tsx) ----------
+   Each runs only while its <Replay> wrapper has .play; outside it the element just
+   shows its final state. Stagger with style={{ "--i": n }}. */
+
+@keyframes a-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes a-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: none; }
+}
+@keyframes a-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: none; }
+}
+@keyframes a-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes a-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes a-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes a-spin {
+  from { opacity: 0; transform: rotate(-140deg) scale(0.6); }
+  to { opacity: 1; transform: none; }
+}
+
+.replay.play .a-draw {
+  stroke-dasharray: 1;
+  animation: a-draw 1.4s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
+.replay.play .a-grow-x,
+.replay.play .a-grow-x-r {
+  animation: a-grow-x 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.a-grow-x { transform-origin: left center; }
+.a-grow-x-r { transform-origin: right center; }
+.replay.play .a-grow-y {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: a-grow-y 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.replay.play .a-wipe {
+  animation: a-wipe 1s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 150ms);
+}
+.replay.play .a-rise {
+  animation: a-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+.replay.play .a-fade {
+  animation: a-fade 0.4s ease-out both;
+  animation-delay: calc(300ms + var(--i, 0) * 35ms);
+}
+.replay.play .a-spin {
+  animation: a-spin 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 25ms);
 }

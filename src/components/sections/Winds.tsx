@@ -3,6 +3,7 @@
 import { useOfp } from "../context";
 import { Section, V, cx } from "../ui";
 import { pageOf } from "@/lib/ofp/format";
+import { Replay } from "../replay";
 
 /** Standard meteorological wind barb; the staff points to where the wind comes from. */
 export function WindBarb({ dir, spd, size = 26 }: { dir: number; spd: number; size?: number }) {
@@ -58,7 +59,7 @@ export function WindsSection({ no }: { no: number }) {
           </>
         )}
       </p>
-      <div className="windgrid">
+      <Replay className="windgrid">
         {stations.map((s, k) => {
           const cfl = s.name ? cruiseAt(s.name) : null;
           const nearest = cfl != null && s.levels.length ? s.levels.reduce((a, b) => (Math.abs(Number(b.fl) - cfl) < Math.abs(Number(a.fl) - cfl) ? b : a)).fl : null;
@@ -74,7 +75,12 @@ export function WindsSection({ no }: { no: number }) {
                   l ? (
                     <li key={i} className={cx(nearest === l.fl && "cruise")}>
                       <span>{Number(l.fl)}</span>
-                      <span data-tip={`Wind from ${l.dir}° true at ${l.spd} kt, ${l.temp}°C`} data-tip-title={`FL${Number(l.fl)}`}>
+                      <span
+                        className="a-spin"
+                        style={{ display: "inline-block", ["--i" as string]: k * 5 + i }}
+                        data-tip={`Wind from ${l.dir}° true at ${l.spd} kt, ${l.temp}°C`}
+                        data-tip-title={`FL${Number(l.fl)}`}
+                      >
                         <WindBarb dir={l.dir} spd={l.spd} size={24} />
                       </span>
                       <span className="v">
@@ -98,7 +104,7 @@ export function WindsSection({ no }: { no: number }) {
             </div>
           );
         })}
-      </div>
+      </Replay>
     </Section>
   );
 }

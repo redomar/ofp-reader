@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useField, useFieldGroup, useOfp } from "../context";
+import { Replay } from "../replay";
 import { Act, Badge, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/ofp/format";
@@ -126,7 +127,7 @@ function Profile({
           {t}t
         </text>
       ))}
-      <path d={terr} className="terrain" />
+      <path d={terr} className="terrain a-grow-y" />
       {minFuel != null && (
         <g>
           <line x1={m.l} x2={W - m.r} y1={yf(minFuel)} y2={yf(minFuel)} stroke="var(--red)" strokeDasharray="6 4" />
@@ -145,13 +146,13 @@ function Profile({
             </text>
           </g>
         ))}
-      <path d={fuelLine} className="fuel draw" pathLength={1} />
-      {picLine && <path d={picLine} className="fuel-pic" />}
-      <path d={line} className="route draw" pathLength={1} />
-      {wpts.map((p) => {
+      <path d={fuelLine} className="fuel a-draw" pathLength={1} />
+      {picLine && <path d={picLine} className="fuel-pic a-fade" />}
+      <path d={line} className="route a-draw" pathLength={1} />
+      {wpts.map((p, wi) => {
         const isTc = /T O [CD]/.test(p.position ?? "");
         return (
-          <g key={p.i}>
+          <g key={p.i} className="a-fade" style={{ ["--i" as string]: wi }}>
             <circle cx={x(p.cum)} cy={y(p.alt)} r={active === p.i ? 6 : isTc ? 4.5 : 3} className={cx("wpt", active === p.i && "active")} />
             {isTc && (
               <text x={x(p.cum)} y={y(p.alt) - 10} textAnchor="middle" className="label-mag">
@@ -244,7 +245,7 @@ function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number 
           </text>
         </g>
       ))}
-      <path d={path} className="route draw" pathLength={1} />
+      <path d={path} className="route" />
       {geo
         .filter((p) => p.kind === "fir")
         .map((p) => (
@@ -395,7 +396,7 @@ export function FlightLogSection({ no }: { no: number }) {
       </div>
 
       <Sub>Vertical profile</Sub>
-      <div className="chart-frame">{pts.length ? <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} pic={pic} /> : <EmptyChart label="Profile" />}</div>
+      <Replay className="chart-frame" mode="once" sectionId="log">{pts.length ? <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} pic={pic} /> : <EmptyChart label="Profile" />}</Replay>
       <div className="legend small" aria-hidden="true">
         <span>
           <i style={{ background: "var(--magenta)" }} />
