@@ -239,16 +239,19 @@ function bpmFor(kt: number, c: Cfg) {
 type Cat = "calm" | "light" | "moderate" | "strong" | "gale" | "storm";
 
 /**
- * Wind categories on a cool-to-warm scale (calm slate → blue → teal → amber → red →
- * storm violet), as --wc-* tokens with day and night values that keep AA contrast.
+ * Wind categories on the weather-severity ramp: grey still air, green gentle, then the
+ * Met Office warning colours yellow → amber → red, and purple for storm (beyond red,
+ * as on wind maps). Fills are vivid, so arrows carry an ink outline and badges are
+ * filled chips whose text colour (--wc-*-ink) passes AA. Neighbouring colours stay
+ * apart for red-green and blue-yellow colour blindness too.
  */
-const CATS: Record<Cat, { label: string; color: string; rule: (calmKt: number) => string }> = {
-  calm: { label: "Calm", color: "var(--wc-calm)", rule: (c) => `≤ ${c} kt` },
-  light: { label: "Light", color: "var(--wc-light)", rule: (c) => `${c + 1}–10 kt` },
-  moderate: { label: "Moderate", color: "var(--wc-moderate)", rule: () => "11–19 kt" },
-  strong: { label: "Strong", color: "var(--wc-strong)", rule: () => "≥ 20 kt or gusts ≥ 28" },
-  gale: { label: "Gale", color: "var(--wc-gale)", rule: () => "≥ 34 kt or gusts ≥ 43" },
-  storm: { label: "Storm", color: "var(--wc-storm)", rule: () => "≥ 48 kt" },
+const CATS: Record<Cat, { label: string; color: string; ink: string; rule: (calmKt: number) => string }> = {
+  calm: { label: "Calm", color: "var(--wc-calm)", ink: "var(--wc-calm-ink)", rule: (c) => `≤ ${c} kt` },
+  light: { label: "Light", color: "var(--wc-light)", ink: "var(--wc-light-ink)", rule: (c) => `${c + 1}–10 kt` },
+  moderate: { label: "Moderate", color: "var(--wc-moderate)", ink: "var(--wc-moderate-ink)", rule: () => "11–19 kt" },
+  strong: { label: "Strong", color: "var(--wc-strong)", ink: "var(--wc-strong-ink)", rule: () => "≥ 20 kt or gusts ≥ 28" },
+  gale: { label: "Gale", color: "var(--wc-gale)", ink: "var(--wc-gale-ink)", rule: () => "≥ 34 kt or gusts ≥ 43" },
+  storm: { label: "Storm", color: "var(--wc-storm)", ink: "var(--wc-storm-ink)", rule: () => "≥ 48 kt" },
 };
 
 /** Met Office strong-wind warning (20 kt mean / 28 kt gusts), gale (34 / 43) and storm (48, force 10); calm from the config. */
@@ -330,7 +333,7 @@ function Arrow({ dir, amp, chaosAmp, size, guides, swayRef }: { dir: number; amp
       <span className="wl-sway" ref={swayRef}>
         <svg width={size} height={size} viewBox="-8 -8 16 16" aria-hidden="true">
           <g transform={`rotate(${dir + 180})`}>
-            <path d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z" fill="var(--cat, var(--blue))" />
+            <path d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z" fill="var(--cat, var(--blue))" stroke="var(--ink)" strokeWidth={size < 24 ? 0.9 : 0.45} strokeLinejoin="round" />
           </g>
         </svg>
       </span>
@@ -405,7 +408,7 @@ function Card({ s, i, cfg, phase }: { s: Sample; i: number; cfg: Cfg; phase: num
   const input: SwayInput = { amp: d.amp, chaosAmp: d.chaosAmp, swingMs: d.swingMs, spread: d.kickSpread, ease, seed, chaos: cfg.chaos, maxDeg: d.limit + 10 };
   const { bindBig, bindSmall, canvas } = useMotion(input, cfg.reduced);
   return (
-    <article className="wl-card" data-cat={d.cat} style={{ ["--cat" as string]: cfg.catColour ? CATS[d.cat].color : "var(--blue)" }}>
+    <article className="wl-card" data-cat={d.cat} style={{ ["--cat" as string]: cfg.catColour ? CATS[d.cat].color : "var(--blue)", ["--cat-ink" as string]: cfg.catColour ? CATS[d.cat].ink : "var(--sheet)" }}>
       <header>
         <span className="wl-kind" data-k={s.kind}>
           {kindLabel[s.kind]}
@@ -470,6 +473,7 @@ export default function WindLab() {
   const [cfg, setCfg] = useState<Cfg>(PROPOSAL);
   const [filter, setFilter] = useState<Kind | "ALL">("ALL");
   const [catFilter, setCatFilter] = useState<Cat | "ALL">("ALL");
+  const [panelOpen, setPanelOpen] = useState(true);
   const [custom, setCustom] = useState({ dir: 240, spd: 22, gust: 34, s0: "", s1: "" });
   const set = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
   const setChaos = <K extends keyof ChaosCfg>(k: K, v: ChaosCfg[K]) => setCfg((c) => ({ ...c, chaos: { ...c.chaos, [k]: v } }));
@@ -522,14 +526,11 @@ export default function WindLab() {
     <div className="wl">
       <style>{CSS}</style>
       <header className="wl-head">
-        <div>
-          <h1>Wind Lab</h1>
-          <p>
-            Demonstration only — not committed. Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One <b>beat</b> ={" "}
-            {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}.
-          </p>
-        </div>
+        <h1>Wind Lab</h1>
         <div className="wl-row">
+          <button aria-expanded={panelOpen} aria-controls="wl-panel" onClick={() => setPanelOpen(!panelOpen)}>
+            {panelOpen ? "▴ Hide controls" : "▾ Show controls"}
+          </button>
           <button onClick={() => set("paused", !cfg.paused)}>{cfg.paused ? "▶ Play" : "❚❚ Pause"}</button>
           <button onClick={() => setCfg(PROPOSAL)}>Reset to proposal</button>
           <button
@@ -542,8 +543,12 @@ export default function WindLab() {
           </button>
         </div>
       </header>
+      <p className="wl-intro">
+        Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One <b>beat</b> ={" "}
+        {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}. Only the bar above stays on screen while you scroll.
+      </p>
 
-      <section className="wl-panel">
+      <section className="wl-panel" id="wl-panel" hidden={!panelOpen}>
         <div className="wl-group">
           <h2>Presets</h2>
           <div className="wl-row">
@@ -726,7 +731,7 @@ export default function WindLab() {
           Any strength
         </button>
         {(Object.keys(CATS) as Cat[]).map((k) => (
-          <button key={k} className="wl-catbtn" aria-pressed={catFilter === k} onClick={() => setCatFilter(catFilter === k ? "ALL" : k)} style={{ ["--cat" as string]: CATS[k].color }}>
+          <button key={k} className="wl-catbtn" aria-pressed={catFilter === k} onClick={() => setCatFilter(catFilter === k ? "ALL" : k)} style={{ ["--cat" as string]: CATS[k].color, ["--cat-ink" as string]: CATS[k].ink }}>
             <i aria-hidden="true" />
             {CATS[k].label}
             <small>{CATS[k].rule(cfg.calmKt)}</small>
@@ -771,9 +776,12 @@ const CSS = `
 .wl p { margin: 4px 0 0; color: var(--ink-2); }
 .wl button { border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink); padding: 5px 10px; font-family: var(--font-cond); font-weight: 600; letter-spacing: .04em; cursor: pointer; border-radius: 2px; }
 .wl button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); }
-.wl-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+.wl-head { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0 -20px 10px; padding: 8px 20px; background: var(--paper); border-bottom: 1px solid var(--rule-strong); box-shadow: var(--shadow); }
+.wl-head h1 { font-size: 20px !important; }
 .wl-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.wl-panel { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; background: var(--sheet); border: 1px solid var(--rule-strong); padding: 12px; box-shadow: var(--shadow); max-height: 46vh; overflow: auto; }
+.wl-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; background: var(--sheet); border: 1px solid var(--rule-strong); padding: 12px; }
+.wl-panel[hidden] { display: none; }
+.wl-intro { margin: 0 0 12px !important; }
 .wl-group { border-left: 2px solid var(--rule); padding-left: 10px; }
 .wl-ctl { display: flex; flex-direction: column; gap: 2px; font-size: 13px; margin-bottom: 8px; }
 .wl-ctl span { display: flex; justify-content: space-between; color: var(--ink-2); }
@@ -793,20 +801,19 @@ const CSS = `
 .wl-card header { display: flex; justify-content: space-between; align-items: center; }
 .wl-kind { font-family: var(--font-cond); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; color: var(--ink-3); }
 .wl-kind[data-k=CUSTOM] { color: var(--magenta); }
-.wl-cat { font-family: var(--font-cond); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; border: 1px solid var(--cat); color: var(--cat); padding: 0 6px; border-radius: 2px; cursor: help; }
+.wl-cat { font-family: var(--font-cond); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; border: 1px solid var(--ink); background: var(--cat); color: var(--cat-ink); padding: 0 6px; border-radius: 2px; cursor: help; }
 .wl-card { border-top: 3px solid var(--cat, var(--rule-strong)) !important; }
-:root { --wc-calm: #4f6478; --wc-light: #0f5aa6; --wc-moderate: #0a6b6b; --wc-strong: #8a5100; --wc-gale: #b0241b; --wc-storm: #6d28a8; }
+:root { --wc-calm: #a3acb9; --wc-calm-ink: #111827; --wc-light: #5cc46c; --wc-light-ink: #111827; --wc-moderate: #f5cc2a; --wc-moderate-ink: #111827; --wc-strong: #e4610e; --wc-strong-ink: #111827; --wc-gale: #b81d1d; --wc-gale-ink: #ffffff; --wc-storm: #7a3cc0; --wc-storm-ink: #ffffff; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --wc-calm: #9fb0c4; --wc-light: #7db8f0; --wc-moderate: #5ccfc4; --wc-strong: #f2be5c; --wc-gale: #ff9a8f; --wc-storm: #c9a2ff; }
+  :root:not([data-theme="light"]) { --wc-calm: #8f9bab; --wc-calm-ink: #111827; --wc-light: #62d977; --wc-light-ink: #111827; --wc-moderate: #f7d64a; --wc-moderate-ink: #111827; --wc-strong: #f07a22; --wc-strong-ink: #111827; --wc-gale: #d9302c; --wc-gale-ink: #ffffff; --wc-storm: #a875ee; --wc-storm-ink: #111827; }
 }
-:root[data-theme="dark"] { --wc-calm: #9fb0c4; --wc-light: #7db8f0; --wc-moderate: #5ccfc4; --wc-strong: #f2be5c; --wc-gale: #ff9a8f; --wc-storm: #c9a2ff; }
+:root[data-theme="dark"] { --wc-calm: #8f9bab; --wc-calm-ink: #111827; --wc-light: #62d977; --wc-light-ink: #111827; --wc-moderate: #f7d64a; --wc-moderate-ink: #111827; --wc-strong: #f07a22; --wc-strong-ink: #111827; --wc-gale: #d9302c; --wc-gale-ink: #ffffff; --wc-storm: #a875ee; --wc-storm-ink: #111827; }
 .wl-cats { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 14px; }
 .wl-catbtn { display: inline-flex; align-items: center; gap: 6px; }
-.wl-catbtn i { width: 10px; height: 10px; border-radius: 50%; background: var(--cat); display: inline-block; }
+.wl-catbtn i { width: 11px; height: 11px; border-radius: 50%; background: var(--cat); border: 1px solid var(--ink); display: inline-block; }
 .wl-catbtn small { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--ink-3); letter-spacing: 0; }
-.wl-catbtn[aria-pressed="true"] { background: var(--cat) !important; color: var(--sheet) !important; border-color: var(--cat) !important; }
-.wl-catbtn[aria-pressed="true"] i { background: var(--sheet); }
-.wl-catbtn[aria-pressed="true"] small { color: var(--sheet); }
+.wl-catbtn[aria-pressed="true"] { background: var(--cat) !important; color: var(--cat-ink) !important; border-color: var(--ink) !important; }
+.wl-catbtn[aria-pressed="true"] small { color: var(--cat-ink); }
 .wl-raw { font-family: var(--font-mono); font-weight: 600; font-size: 15px; }
 .wl-note { font-size: 12px; color: var(--ink-2); min-height: 16px; }
 .wl-stage { display: flex; align-items: center; gap: 14px; padding: 8px 0; border-top: 1px dashed var(--rule); border-bottom: 1px dashed var(--rule); margin: 4px 0; }
