@@ -106,12 +106,13 @@ export function RouteExplain() {
 
   const navaids = log.filter((p) => p.freq);
 
-  const node = (name: string, end?: "dep" | "dest") => {
+  // Bands: each fix and the leg leaving it share a band, alternating down the paper.
+  const node = (name: string, end?: "dep" | "dest", band = 0) => {
     const nav = navOf(name);
     const k = nav?.freq ? navaidKind(nav.freq) : null;
     const t = end === "dep" ? 0 : rows.find((r) => r.leg.to === name)?.m?.t1;
     return (
-      <div className={cx("rx-node", end && "end", end)}>
+      <div className={cx("rx-node", end && "end", end, band % 2 === 1 && "band")}>
         <span className="rx-time mono">{t != null && off != null ? clock(off + t).replace("Z", "") : ""}</span>
         <span className="rx-rail" aria-hidden="true">
           <span className="rx-dot" />
@@ -143,10 +144,10 @@ export function RouteExplain() {
         <div className="rx-head" aria-hidden="true">
           <span className="rx-time">ETO Z</span>
         </div>
-        {node(dep, "dep")}
+        {node(dep, "dep", 0)}
         {rows.map(({ leg, m }, k) => (
           <div key={k}>
-            <div className="rx-leg">
+            <div className={cx("rx-leg", k % 2 === 1 && "band")}>
               <span className="rx-time" aria-hidden="true" />
               <span className="rx-rail" aria-hidden="true" />
               <div className="rx-leg-body">
@@ -205,7 +206,7 @@ export function RouteExplain() {
                 ))}
               </div>
             </div>
-            {node(leg.to, leg.to === dest ? "dest" : undefined)}
+            {node(leg.to, leg.to === dest ? "dest" : undefined, k + 1)}
           </div>
         ))}
       </div>

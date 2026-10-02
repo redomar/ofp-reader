@@ -3540,9 +3540,22 @@ hr.ldg-split {
   align-self: start;
 }
 .rx-route-paper .rx-route {
-  padding: 8px 12px 10px 4px;
+  padding: 8px 0 10px;
   color: var(--pp-ink);
-  background: repeating-linear-gradient(to bottom, var(--pp) 0 22px, var(--pp-band) 22px 44px);
+  background: var(--pp);
+}
+.rx-route-paper .rx-route > p,
+.rx-route-paper .rx-head {
+  padding: 0 12px 0 4px;
+}
+.rx-route-paper .rx-node,
+.rx-route-paper .rx-leg {
+  padding-right: 12px;
+  padding-left: 4px;
+}
+/* one band per fix and its outgoing leg */
+.rx-route-paper .band {
+  background: var(--pp-band);
 }
 .rx-route-paper .rx-dot {
   background: var(--pp);
