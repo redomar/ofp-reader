@@ -3493,15 +3493,14 @@ hr.ldg-split {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) 22px;
   margin: 0;
-  background: var(--pp);
   box-shadow: 0 1px 0 var(--rule), 0 6px 14px -10px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
-/* tractor-feed strips: punched holes and a perforation line */
+/* tractor-feed strips: the holes are cut out (masked), so whatever is behind shows through */
 .rx-feed {
-  background:
-    radial-gradient(circle at 50% 11px, var(--field) 0 4.5px, transparent 5px) 0 0 / 22px 22px repeat-y,
-    var(--pp-edge);
+  background: var(--pp-edge);
+  -webkit-mask: radial-gradient(circle at 50% 11px, transparent 0 4.5px, #000 5px) 0 0 / 22px 22px repeat-y;
+  mask: radial-gradient(circle at 50% 11px, transparent 0 4.5px, #000 5px) 0 0 / 22px 22px repeat-y;
 }
 .rx-feed.left {
   border-right: 1px dashed var(--rule-strong);
@@ -3512,6 +3511,7 @@ hr.ldg-split {
 .rx-paper {
   margin: 0;
   padding: 0;
+  background: var(--pp);
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -3530,10 +3530,124 @@ hr.ldg-split {
 .rx-pline:nth-child(even) {
   background: var(--pp-band);
 }
-/* MCDU set-up sheet: the listing at a readable width */
-.mcdu-sheet {
+/* MCDU set-up sheet: the print button and the full-screen sheet */
+.mcdu-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
   max-width: 640px;
-  margin-top: 10px;
+  padding: 12px 16px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 var(--magenta);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.mcdu-btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--magenta);
+}
+.mcdu-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--magenta);
+}
+.mcdu-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
+}
+.mcdu-btn-icon {
+  flex: none;
+  color: var(--magenta);
+}
+.mcdu-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.mcdu-btn-text b {
+  font-family: var(--font-cond);
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mcdu-btn-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mcdu-btn-pages span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 6px;
+  border: 1px solid var(--rule-strong);
+  background: var(--pp);
+  color: var(--pp-ink);
+  border-radius: 2px;
+}
+.mcdu-btn-sub {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+hr.mcdu-rule {
+  border: none;
+  border-top: 1px solid var(--rule-strong);
+  margin: 16px 0 14px;
+}
+.mcdu-dialog {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: auto;
+}
+.mcdu-dialog::backdrop {
+  background: rgba(8, 12, 20, 0.74);
+  backdrop-filter: blur(2px);
+}
+.mcdu-dialog-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  pointer-events: none;
+}
+.mcdu-dialog-bar .btn {
+  pointer-events: auto;
+}
+/* the paper hugs its content and feeds in from the top */
+.mcdu-dialog-paper {
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  margin: 0 auto 40px;
+  animation: mcdu-feed 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.mcdu-dialog-paper .rx-print {
+  grid-template-columns: 22px auto 22px;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.6);
+}
+@keyframes mcdu-feed {
+  from {
+    transform: translateY(-40px);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
 }
 /* the route diagram printed on the same paper */
 .rx-route-paper {

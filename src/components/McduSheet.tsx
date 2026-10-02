@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useField, useFieldGroup, useOfp } from "./context";
 import { legMetrics, ident, listing, printout } from "./RouteExplain";
 import { hhmmToMin } from "@/lib/ofp/format";
@@ -99,4 +100,64 @@ export function McduSheet() {
   lines.push(RULE, "", `${col("", 12)}*** END OF LISTING ***`);
   const title = [`${col("OFP READER  MCDU SET-UP SHEET", 40)}${col("PAGE 001", 12, true)}`, `${col(h.flightNo, 9)}${col(`${dep}-${dest}`, 11)}${col(h.date, 11)}${col(h.acType, 6)}${col(h.reg, 15)}`];
   return printout([...title, ...lines]);
+}
+
+const PAGES = ["INIT A", "INIT B", "F-PLN", "PERF T/O", "RAD NAV", "WINDS"];
+
+/**
+ * The button that "prints" the MCDU set-up sheet: opens it full screen over a dimmed
+ * page (a modal dialog, so Esc and focus work), with the paper's punched holes see-through.
+ */
+export function McduPrint() {
+  const { ofp } = useOfp();
+  const ref = useRef<HTMLDialogElement>(null);
+  const [copied, setCopied] = useState(false);
+  const open = () => ref.current?.showModal();
+  const close = () => ref.current?.close();
+  const copy = async () => {
+    const paper = ref.current?.querySelector<HTMLElement>(".rx-paper");
+    const text = paper ? [...paper.querySelectorAll(".rx-pline")].map((l) => l.textContent?.replace(/\s+$/, "") ?? "").join("\n") : "";
+    try {
+      await navigator.clipboard.writeText(text.replace(/\n+$/, ""));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked: nothing to do */
+    }
+  };
+  return (
+    <>
+      <button type="button" className="mcdu-btn" onClick={open} disabled={!ofp?.fpl} aria-haspopup="dialog">
+        <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" className="mcdu-btn-icon">
+          <path d="M7 9V3h10v6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="3" y="9" width="18" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M7 14h10v7H7z" fill="var(--pp)" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M9 17h6M9 19h4" stroke="currentColor" strokeWidth="1.2" />
+          <circle cx="18" cy="12" r="0.9" fill="currentColor" />
+        </svg>
+        <span className="mcdu-btn-text">
+          <b>Print MCDU set-up sheet</b>
+          <span className="mcdu-btn-pages">
+            {PAGES.map((p) => (
+              <span key={p}>{p}</span>
+            ))}
+          </span>
+          <span className="mcdu-btn-sub">The plan in MCDU page order, ready to type in.</span>
+        </span>
+      </button>
+      <dialog ref={ref} className="mcdu-dialog" aria-label="MCDU set-up sheet" onClick={(e) => e.target === ref.current && close()}>
+        <div className="mcdu-dialog-bar">
+          <button type="button" className="btn" onClick={copy}>
+            {copied ? "Copied ✓" : "Copy text"}
+          </button>
+          <button type="button" className="btn" onClick={close} autoFocus>
+            Close ✕
+          </button>
+        </div>
+        <div className="mcdu-dialog-paper">
+          <McduSheet />
+        </div>
+      </dialog>
+    </>
+  );
 }
