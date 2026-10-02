@@ -7,20 +7,10 @@ import { Replay } from "../replay";
 import { useStripMode } from "@/lib/stripPref";
 import { countryLabel, icaoCountry } from "@/lib/ofp/icaoCountry";
 import { useState } from "react";
+import { WindArrow } from "../WindArrow";
 import { Badge, Field, Gauge, Section, Sub, Tip, V } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtDate, fmtDur, fmtHhmm, fmtNum, fmtReg, fmtSigned, parseWind, pct, signed } from "@/lib/ofp/format";
-
-export function WindArrow({ dir, size = 16, label }: { dir: number; size?: number; label?: string }) {
-  // Arrow points where the wind blows TO (dir is where it comes FROM).
-  return (
-    <svg width={size} height={size} viewBox="-8 -8 16 16" role="img" aria-label={label ?? `Wind from ${dir}°`} style={{ flex: "none" }}>
-      <g transform={`rotate(${dir + 180})`}>
-        <path d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z" fill="var(--blue)" />
-      </g>
-    </svg>
-  );
-}
 
 export function SummarySection({ no }: { no: number }) {
   const { ofp } = useOfp();
@@ -160,7 +150,7 @@ export function SummarySection({ no }: { no: number }) {
           <V v={h?.gcDist} w={4} />
         </Field>
         <Field label="AVG WIND" tip={G["AVG WIND"]}>
-          {wind && <WindArrow dir={wind.dir} label={`Average wind from ${wind.dir} degrees at ${wind.spd} knots`} />}
+          {wind && <WindArrow kind="AVG" dir={wind.dir} spd={wind.spd} label={`Average wind from ${wind.dir} degrees at ${wind.spd} knots`} />}
           <V v={h?.avgWind} w={7} />
         </Field>
         <Field

@@ -4,7 +4,7 @@ import { useOfp } from "../context";
 import { Badge, Section, Sub, Tip, V } from "../ui";
 import { CATEGORY_TIP, decodeMetar, decodeToken, type Category } from "@/lib/ofp/metar";
 import { pageOf } from "@/lib/ofp/format";
-import { WindArrow } from "./Summary";
+import { WindArrow, parseSector } from "../WindArrow";
 
 const CAT_TONE: Record<Category, "green" | "blue" | "red" | "mag"> = { VFR: "green", MVFR: "blue", IFR: "red", LIFR: "mag" };
 
@@ -102,7 +102,16 @@ export function WxSection({ no }: { no: number }) {
                   {d ? (
                     <>
                       <span className="wx-fact">
-                        {d.wind?.dir != null && <WindArrow dir={d.wind.dir} />}
+                        {d.wind?.dir != null && (
+                          <WindArrow
+                            kind="METAR"
+                            dir={d.wind.dir}
+                            spd={d.wind.spd}
+                            gust={d.wind.gust}
+                            sector={parseSector(d.wind.variable)}
+                            label={`Wind from ${d.wind.dir} degrees at ${d.wind.spd} knots${d.wind.gust ? `, gusting ${d.wind.gust}` : ""}${d.wind.variable ? `, varying ${d.wind.variable}` : ""}`}
+                          />
+                        )}
                         {d.wind ? `${d.wind.dir ?? "VRB"}° ${d.wind.spd}${d.wind.gust ? `G${d.wind.gust}` : ""} kt` : "—"}
                         {d.wind?.variable && <span className="muted"> ({d.wind.variable})</span>}
                       </span>

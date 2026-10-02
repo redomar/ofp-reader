@@ -612,6 +612,19 @@ main {
 #ofp-tip[hidden] {
   display: none;
 }
+#ofp-tip .tip-chip {
+  display: block;
+  width: fit-content;
+  margin-bottom: 5px;
+  padding: 1px 7px;
+  border: 1px solid var(--sheet);
+  border-radius: 2px;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 #ofp-tip b {
   display: block;
   font-family: var(--font-mono);
@@ -2384,4 +2397,74 @@ dialog.lightbox img {
   padding-left: 10px;
   border-left: 2px solid var(--magenta);
   line-height: 1.35;
+}
+
+/* ---------- wind categories (arrows, wind lab) ----------
+   Weather-severity ramp: grey calm, green light, Met Office warning yellow → amber →
+   red, purple storm. Vivid fills, so arrows carry an ink outline; -ink is the AA text
+   colour on a filled chip. */
+:root {
+  --wc-calm: #a3acb9;
+  --wc-calm-ink: #111827;
+  --wc-light: #5cc46c;
+  --wc-light-ink: #111827;
+  --wc-moderate: #f5cc2a;
+  --wc-moderate-ink: #111827;
+  --wc-high: #e4610e;
+  --wc-high-ink: #111827;
+  --wc-gale: #b81d1d;
+  --wc-gale-ink: #ffffff;
+  --wc-storm: #7a3cc0;
+  --wc-storm-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wc-calm: #8f9bab;
+    --wc-calm-ink: #111827;
+    --wc-light: #62d977;
+    --wc-light-ink: #111827;
+    --wc-moderate: #f7d64a;
+    --wc-moderate-ink: #111827;
+    --wc-high: #f07a22;
+    --wc-high-ink: #111827;
+    --wc-gale: #d9302c;
+    --wc-gale-ink: #ffffff;
+    --wc-storm: #a875ee;
+    --wc-storm-ink: #111827;
+  }
+}
+:root[data-theme="dark"] {
+  --wc-calm: #8f9bab;
+  --wc-calm-ink: #111827;
+  --wc-light: #62d977;
+  --wc-light-ink: #111827;
+  --wc-moderate: #f7d64a;
+  --wc-moderate-ink: #111827;
+  --wc-high: #f07a22;
+  --wc-high-ink: #111827;
+  --wc-gale: #d9302c;
+  --wc-gale-ink: #ffffff;
+  --wc-storm: #a875ee;
+  --wc-storm-ink: #111827;
+}
+
+/* Swaying wind arrow (components/WindArrow.tsx) */
+.wind-arrow {
+  display: inline-block;
+  margin-right: 4px;
+  cursor: help;
+  border-radius: 2px;
+  flex: none;
+  line-height: 0;
+  vertical-align: -2px;
+}
+.wind-sway {
+  display: inline-block;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+@media print {
+  .wind-sway {
+    transform: none !important;
+  }
 }

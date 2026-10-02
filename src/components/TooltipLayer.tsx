@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 interface TipState {
   title: string | null;
+  /** Optional filled chip above the text (data-tip-chip, coloured by data-tip-chip-color / -ink). */
+  chip: { label: string; color: string; ink: string } | null;
   text: string;
   x: number;
   y: number;
@@ -27,8 +29,10 @@ export function TooltipLayer() {
       if (!text) return;
       const r = el.getBoundingClientRect();
       const below = r.top < 90;
+      const chip = el.getAttribute("data-tip-chip");
       setTip({
         title: el.getAttribute("data-tip-title"),
+        chip: chip ? { label: chip, color: el.getAttribute("data-tip-chip-color") ?? "var(--blue)", ink: el.getAttribute("data-tip-chip-ink") ?? "var(--sheet)" } : null,
         text,
         x: r.left + r.width / 2,
         y: below ? r.bottom + 8 : r.top - 8,
@@ -82,6 +86,11 @@ export function TooltipLayer() {
 
   return (
     <div id="ofp-tip" ref={ref} hidden={!tip} aria-hidden="true">
+      {tip?.chip && (
+        <span className="tip-chip" style={{ background: tip.chip.color, color: tip.chip.ink }}>
+          {tip.chip.label}
+        </span>
+      )}
       {tip?.title && <b>{tip.title}</b>}
       {tip?.text}
     </div>

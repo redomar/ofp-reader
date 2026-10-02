@@ -8,7 +8,7 @@ import { G } from "@/lib/ofp/glossary";
 import { components } from "@/lib/ofp/metar";
 import { fmtNum, pageOf } from "@/lib/ofp/format";
 import type { KeyedRow, Table } from "@/lib/ofp/types";
-import { WindArrow } from "./Summary";
+import { WindArrow } from "../WindArrow";
 
 const LIMIT: Record<string, string> = {
   AFM: "Limited by the certified (AFM) structural maximum — not by the runway",
@@ -158,7 +158,7 @@ function Planned({ p, kind, fallback }: { p: KeyedRow | null; kind: "to" | "ld";
           if (k === "PWIND" && w) {
             shown = (
               <>
-                <WindArrow dir={w.dir} label={`Wind from ${w.dir} degrees magnetic at ${w.spd} knots`} />
+                <WindArrow kind="PWIND" dir={w.dir} spd={w.spd} label={`Wind from ${w.dir} degrees magnetic at ${w.spd} knots`} />
                 {v}
               </>
             );
