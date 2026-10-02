@@ -2,6 +2,17 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **Weather cards in the reader.** Airport weather now shows each airport's METAR and TAF as the same cards as the weather page (sky picture, headline, swaying wind arrow, visibility and cloud diagrams, TAF timeline and change groups, raw text with tooltips), under the existing airport header with its role, name, category and "Watch" hazards. The blank template is unchanged.
+- Weather cards: observation cards share a row and each TAF takes the full width below, so a lone METAR no longer leaves half the row empty.
+
+### Fixed
+
+- TAF change groups after a CAVOK base kept saying "CAVOK" even when they brought cloud, showers or lower visibility, and their cloud layers were dropped.
+
 ## [1.4.0] - 2026-10-02
 
 ### Added

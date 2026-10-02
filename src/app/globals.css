@@ -2505,8 +2505,11 @@ dialog.lightbox img {
   min-width: 0;
 }
 .wxc-taf {
-  grid-column: 1 / -1;
   border-top-color: var(--blue);
+}
+.wxc-grid + .wxc-taf,
+.wxc-taf + .wxc-taf {
+  margin-top: 14px;
 }
 .wxc-head {
   display: flex;
@@ -2824,4 +2827,11 @@ dialog.lightbox img {
   color: var(--ink);
   font-size: 13px;
   line-height: 1.45;
+}
+/* Reader: airport weather blocks holding the weather cards */
+.wx-airports {
+  gap: 16px;
+}
+.wx-airports .wx-card .body {
+  gap: 12px;
 }

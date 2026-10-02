@@ -150,6 +150,8 @@ export function mergeConditions(base: Conditions, change: Conditions, text: stri
     out.ceilingFt = change.ceilingFt;
   }
   if (change.wx.length || /\bNSW\b/.test(text)) out.wx = change.wx;
+  // CAVOK no longer holds once the group brings cloud, weather or lower visibility.
+  if (!change.cavok && (change.clouds.length || change.wx.length || (change.visM != null && change.visM < 10000))) out.cavok = false;
   out.category = category(out.visM, out.ceilingFt ?? (out.visM != null ? 99999 : null));
   return out;
 }
