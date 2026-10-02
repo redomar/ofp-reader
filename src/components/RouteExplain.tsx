@@ -29,7 +29,7 @@ function legMetrics(legs: RouteLeg[], log: LogPoint[], dep: string, dest: string
     const fls = span.filter((p) => p.kind === "wpt" && p.fl).map((p) => Number(p.fl));
     const between = log.slice(i0 + 1, i1).filter((p) => p.kind === "wpt").map(ident);
     const firs = log.slice(i0 + 1, i1 + 1).filter((p) => p.kind === "fir").map((p) => ({ name: p.firName ?? p.position ?? "FIR", t: hhmmToMin(p.ttlt) ?? 0 }));
-    return { leg, m: { dist, t0, t1, flMin: fls.length ? Math.min(...fls) : null, flMax: fls.length ? Math.max(...fls) : null, between, firs } };
+    return { leg, m: { dist, t0, t1, flMin: fls.length ? Math.min(...fls) : null, flMax: fls.length ? Math.max(...fls) : null, trend: fls.length > 1 ? Math.sign(fls[fls.length - 1] - fls[0]) : 0, between, firs } };
   });
 }
 
@@ -60,7 +60,11 @@ export function RouteExplain() {
     const t = end === "dep" ? 0 : rows.find((r) => r.leg.to === name)?.m?.t1;
     return (
       <div className={cx("rx-node", end && "end")}>
-        <span className="rx-dot" aria-hidden="true" />
+        <span className="rx-time mono">{t != null && off != null ? clock(off + t).replace("Z", "") : ""}</span>
+        <span className="rx-rail" aria-hidden="true">
+          <span className="rx-dot" />
+        </span>
+        <span className="rx-fix">
         <b className="mono">{name}</b>
         {end && <span className="small muted">{end === "dep" ? (ofp.header.dep === name ? "departure" : "") : "destination"}</span>}
         {nav && (
@@ -69,7 +73,7 @@ export function RouteExplain() {
           </Badge>
         )}
         {nav?.position && nav.position !== name && <span className="small muted">{nav.position}</span>}
-        {t != null && off != null && <span className="small mono muted rx-time">{clock(off + t)}</span>}
+        </span>
       </div>
     );
   };
@@ -82,11 +86,15 @@ export function RouteExplain() {
             Filed cruise <Badge tone="mag">{initial.speed}</Badge> <Badge tone="mag">{initial.level}</Badge>
           </p>
         )}
+        <div className="rx-head" aria-hidden="true">
+          <span className="rx-time">ETO Z</span>
+        </div>
         {node(dep, "dep")}
         {rows.map(({ leg, m }, k) => (
           <div key={k}>
             <div className="rx-leg">
-              <span className="rx-line" aria-hidden="true" />
+              <span className="rx-time" aria-hidden="true" />
+              <span className="rx-rail" aria-hidden="true" />
               <div className="rx-leg-body">
                 <span className="row" style={{ gap: 6 }}>
                   {leg.via === "SID" ? (
@@ -103,9 +111,19 @@ export function RouteExplain() {
                     </Badge>
                   )}
                   {m && (
-                    <span className="small mono">
-                      {Math.round(m.dist)} NM · {plus(m.t1 - m.t0)}
-                      {m.flMin != null && ` · ${m.flMin === m.flMax ? `FL${String(m.flMin).padStart(3, "0")}` : `FL${String(m.flMin).padStart(3, "0")}–${String(m.flMax).padStart(3, "0")}`}`}
+                    <span className="rx-stats">
+                      <span>
+                        <b>{Math.round(m.dist)}</b> NM
+                      </span>
+                      <span>
+                        <b>{m.t1 - m.t0}</b> min
+                      </span>
+                      {m.flMin != null && (
+                        <span>
+                          <b>{m.flMin === m.flMax ? `FL${String(m.flMin).padStart(3, "0")}` : `FL${String(m.flMin).padStart(3, "0")}–${String(m.flMax).padStart(3, "0")}`}</b>
+                          {m.trend !== 0 && <i>{m.trend > 0 ? " climbing" : " descending"}</i>}
+                        </span>
+                      )}
                     </span>
                   )}
                   {leg.change && (
@@ -138,6 +156,7 @@ export function RouteExplain() {
         ))}
       </div>
 
+      <span className="rx-vr" aria-hidden="true" />
       <div className="rx-navaids">
         <span className="field-label">Radio navaids on the route</span>
         {navaids.length ? (
