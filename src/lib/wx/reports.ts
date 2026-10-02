@@ -164,6 +164,17 @@ const ATIS_START = /^(?:\S+\s+){0,4}?(?:ARR\s+|DEP\s+|ARRIVAL\s+|DEPARTURE\s+)?(
 const START_RE = /^(METAR|SPECI|TAF)\b|^[A-Z]{4}\s+\d{6}Z?\b/;
 const CHANGE_LINE = /^(TEMPO|BECMG|PROB\d\d|FM\d{6}|RMK)\b/;
 
+/** The information letter: the first phonetic word or single letter after INFORMATION / INFO / ATIS. */
+function atisLetter(s: string): string | null {
+  for (const m of s.matchAll(/\b(?:INFORMATION|INFO|ATIS)\s+([A-Z][A-Z-]*)\b/g)) {
+    const w = m[1];
+    if (/^(INFORMATION|INFO|ARR|DEP|ARRIVAL|DEPARTURE|IS|AT)$/.test(w)) continue;
+    const l = PHONETIC[w] ?? (w.length === 1 ? w : null);
+    if (l) return l;
+  }
+  return null;
+}
+
 export function splitReports(text: string): string[] {
   const blocks = text
     .toUpperCase()
@@ -175,7 +186,10 @@ export function splitReports(text: string): string[] {
   for (const block of blocks) {
     let cur: string[] = [];
     for (const line of block.split("\n").map((l) => l.trim()).filter(Boolean)) {
-      const starts = (START_RE.test(line) || ATIS_START.test(line)) && !CHANGE_LINE.test(line);
+      // Inside an ATIS, a line naming the same information ("THIS WAS … INFORMATION B") continues it.
+      const inAtis = cur.length > 0 && ATIS_START.test(cur[0]);
+      const sameAtis = inAtis && ATIS_START.test(line) && (/THIS (WAS|IS)$/.test(cur.at(-1)!) || atisLetter(line) === atisLetter(cur.join(" ")));
+      const starts = (START_RE.test(line) || ATIS_START.test(line)) && !CHANGE_LINE.test(line) && !sameAtis;
       if (cur.length && starts) {
         out.push(cur.join(" "));
         cur = [];
@@ -288,7 +302,7 @@ const BOILERPLATE = /\b(ADVISE|ADVS|ACKNOWLEDGE|ACK|ON (INITIAL )?(CONTACT|CTC)|
 /** Coded METAR-style groups (D-ATIS weather after a full stop isn't a notice). */
 const CODED_GROUP = /\b(?:(?:VRB|\d{3})\d{2,3}(?:G\d{2,3})?(?:KT|MPS)|Q\d{4}|A\d{4}|(?:FEW|SCT|BKN|OVC)\d{3}|M?\d{2}\/M?\d{2}|CAVOK)\b/;
 /** Sentences already shown as fields. */
-const FIELD_SENTENCE = /^(?:\S+\s+){0,3}?(INFO|INFORMATION|ATIS)\b|^\d{4}Z?$|^TIME\b|\b(RWYS?|RUNWAYS?)\b|^(SURFACE )?WIND\b|^(VIS|VISIBILITY|CAVOK)\b|^(FEW|SCT|BKN|OVC|SCATTERED|BROKEN|OVERCAST|NO SIGNIFICANT CLOUD|SKY CLEAR)\b|^(TEMP|TEMPERATURE|DEW ?POINT|DP)\b|^(QNH|ALTIMETER)\b|^(TRL|TL|TRANSITION LEVEL)\b|^(EXP|EXPECT)\s+(ILS|RNP|RNAV|VOR|NDB|LOC|VISUAL)\b|^(LIGHT|HEAVY|MODERATE)?\s*(RAIN|DRIZZLE|SNOW|FOG|MIST|HAZE|SHOWERS?|THUNDERSTORMS?)\b/;
+const FIELD_SENTENCE = /^(?:\S+\s+){0,5}?(INFO|INFORMATION|ATIS)\b|^\d{4}Z?$|^(AT\s+)?TIME\b|\b(RWYS?|RUNWAYS?)\b|^(SURFACE )?WIND\b|^(VIS|VISIBILITY|CAVOK)\b|^(FEW|SCT|BKN|OVC|SCATTERED|BROKEN|OVERCAST|NO SIGNIFICANT CLOUD|SKY CLEAR)\b|^(TEMP|TEMPERATURE|DEW ?POINT|DP)\b|^(QNH|ALTIMETER)\b|^(TRL|TL|TRANSITION LEVEL)\b|^(EXP|EXPECT)\s+(ILS|RNP|RNAV|VOR|NDB|LOC|VISUAL)\b|^(LIGHT|HEAVY|MODERATE)?\s*(RAIN|DRIZZLE|SNOW|FOG|MIST|HAZE|SHOWERS?|THUNDERSTORMS?)\b/;
 const WX_WORD: [RegExp, string][] = [
   [/\bTHUNDERSTORMS?\b/, "TS"],
   [/\bHEAVY RAIN\b/, "+RA"],
@@ -310,11 +324,15 @@ function parseAtis(raw: string): Report {
   s = s.replace(/\b(\d)(?: (\d)\b)+/g, (m) => m.replace(/ /g, ""));
   const tokens = s.split(/[\s,]+/).filter(Boolean);
 
-  const letterM = s.match(/\b(?:INFORMATION|INFO|ATIS(?:\s+(?:ARR|DEP|ARRIVAL|DEPARTURE))?)\s+([A-Z][A-Z-]*)\b/);
-  const word = letterM?.[1];
-  const letter = word ? (PHONETIC[word] ?? (word.length === 1 ? word : null)) : null;
-  // An ICAO code leads a coded ATIS ("EGLL ARR ATIS F"); four-letter words like ARPT or INFO are not codes.
-  const icao = /^[A-Z]{4}$/.test(tokens[0] ?? "") && !/^(THIS|INFO|ATIS|TIME|WIND|ARPT|BASE|CITY|PORT)$/.test(tokens[0]) ? tokens[0] : null;
+  const letter = atisLetter(s);
+  // An ICAO code leads a coded ATIS ("EGLL ARR ATIS F") or names it ("THIS WAS LEMD ATIS …");
+  // four-letter words like ARPT or INFO are not codes.
+  // Only "XXXX ATIS" names an airport; "YOU HAVE INFO …" must not make HAVE an ICAO code.
+  const NOT_ICAO = /^(THIS|INFO|ATIS|TIME|WIND|ARPT|BASE|CITY|PORT|WITH|THAT|FROM|HAVE|WILL|WERE|WHEN|YOUR|THEN|ALSO|NEAR|AREA|OPEN|USED|EACH)$/;
+  const icao =
+    (/^[A-Z]{4}$/.test(tokens[0] ?? "") && !NOT_ICAO.test(tokens[0]) ? tokens[0] : null) ??
+    [...s.matchAll(/\b([A-Z]{4})\s+(?:ARR\s+|DEP\s+)?ATIS\b/g)].map((m) => m[1]).find((c) => !NOT_ICAO.test(c)) ??
+    null;
   const nameM = s.match(/^(?:THIS IS\s+)?([A-Z][A-Z .]+?)[\s,]+(?:ARR\w*\s+|DEP\w*\s+)?(?:INFORMATION|INFO|ATIS)\b/);
   const kind = /\bARR(?:IVAL)?\b/.test(s) ? "ARR" : /\bDEP(?:ARTURE)?\b/.test(s) ? "DEP" : null;
 
@@ -332,6 +350,8 @@ function parseAtis(raw: string): Report {
       if (!runways.some((r) => r.rwy === rwy && r.use === use)) runways.push({ rwy, use });
     }
   }
+  for (let k = runways.length - 1; k >= 0; k--)
+    if (runways[k].use == null && runways.some((r) => r.rwy === runways[k].rwy && r.use != null)) runways.splice(k, 1);
   const approach = s.match(/\b(ILS|RNP|RNAV|VOR|NDB|LOC|LOCALIZER|VISUAL)(?:\s+[XYZ])?\s+(?:APPROACH(?:ES)?|APCH|APP)\b/)?.[1] ?? null;
   const tl = s.match(/\b(?:TRANSITION LEVEL|TRL|TL)\s*(?:FL\s*)?(\d{2,3})\b/)?.[1] ?? null;
 
@@ -339,9 +359,14 @@ function parseAtis(raw: string): Report {
   const time = timeM ? { day: new Date().getUTCDate(), hour: Number(timeM[1].slice(0, 2)), min: Number(timeM[1].slice(2)) } : null;
 
   // Coded D-ATIS: METAR-style groups are in the text.
-  let cond = conditionsFrom(tokens);
-  const coded = !!cond.wind || cond.clouds.length > 0 || cond.qnh != null;
-  if (!coded || !cond.wind) {
+  // Coded groups are read from the coded wind onwards (where the METAR-style part starts), so
+  // plain numbers earlier ("FEW AT 2500", "TIME 1030") aren't taken for a visibility.
+  const windAt = tokens.findIndex((t) => /^(VRB|\d{3})\d{2,3}(G\d{2,3})?(KT|MPS)$/.test(t));
+  const codedCond = conditionsFrom(windAt >= 0 ? tokens.slice(windAt) : tokens);
+  if (windAt < 0) codedCond.visM = null;
+  const coded = windAt >= 0 || codedCond.clouds.length > 0 || codedCond.qnh != null;
+  let cond: Conditions;
+  {
     const p = emptyConditions();
     let m: RegExpMatchArray | null;
     if (/\bWIND\s+CALM\b|\bCALM\b/.test(s)) p.wind = { dir: null, spd: 0, gust: null, sector: null, calm: true };
@@ -364,19 +389,32 @@ function parseAtis(raw: string): Report {
     if (/\bSKY CLEAR\b/.test(s)) p.noCloud = "SKC";
     if ((m = s.match(/\b(?:TEMPERATURE|TEMP)\s+(MINUS\s+|M)?(\d{1,2})\b/))) p.temp = (m[1] ? -1 : 1) * Number(m[2]);
     if ((m = s.match(/\b(?:DEW ?POINT|DEWPOINT|DP)\s+(MINUS\s+|M)?(\d{1,2})\b/))) p.dew = (m[1] ? -1 : 1) * Number(m[2]);
-    if ((m = s.match(/\bQNH\s+(\d{3,4})\b/))) p.qnh = Number(m[1]);
+    if ((m = s.match(/\bQNH\s*(\d{3,4})(?:\s*(?:HPA|HECTOPASCALS?))?\b/))) p.qnh = Number(m[1]);
     else if ((m = s.match(/\bALTIMETER\s+(\d{4})\b/))) p.qnh = Math.round(Number(m[1]) * 0.338639);
     for (const [re, code] of WX_WORD) if (re.test(s) && !p.wx.some((w) => w.includes(code.replace(/[+-]/, "")))) p.wx.push(code);
     p.category = category(p.visM, p.ceilingFt ?? (p.visM != null ? 99999 : null));
-    // Keep any coded groups that were found, fill the gaps from the phrases.
-    cond = coded ? mergeConditions(p, cond, "") : p;
-    if (!coded) cond.category = p.category;
+    // Coded groups win where both exist; phrases fill the gaps ("VIS 10KM", "QNH 1026HPA").
+    const c = codedCond;
+    cond = {
+      wind: c.wind ?? p.wind,
+      visM: c.visM ?? p.visM,
+      cavok: c.cavok || p.cavok,
+      wx: c.wx.length ? c.wx : p.wx,
+      clouds: c.clouds.length ? c.clouds : p.clouds,
+      noCloud: c.noCloud ?? p.noCloud,
+      ceilingFt: c.clouds.length ? c.ceilingFt : p.ceilingFt,
+      temp: c.temp ?? p.temp,
+      dew: c.dew ?? p.dew,
+      qnh: c.qnh ?? p.qnh,
+      category: null,
+    };
+    cond.category = category(cond.visM, cond.ceilingFt ?? (cond.visM != null ? 99999 : null));
   }
 
   const notes = raw
     .split(/\.\s+|\.$/)
     .map((x) => x.trim().replace(/\.$/, ""))
-    .filter((x) => x && !BOILERPLATE.test(x) && !FIELD_SENTENCE.test(x) && !CODED_GROUP.test(x));
+    .filter((x) => /[A-Z]{2}/.test(x) && !BOILERPLATE.test(x) && !FIELD_SENTENCE.test(x) && !CODED_GROUP.test(x));
 
   return {
     kind: "ATIS",
@@ -423,7 +461,7 @@ export function ageMinutes(t: DayTime, now = new Date()): number {
 
 const WX_TEXT: Record<string, string> = {
   TS: "thunderstorm", RA: "rain", DZ: "drizzle", SN: "snow", SH: "showers", FG: "fog", BR: "mist", HZ: "haze", GR: "hail", GS: "small hail",
-  PL: "ice pellets", SG: "snow grains", FZ: "freezing", VC: "nearby", BL: "blowing", DR: "drifting", MI: "shallow", BC: "patches", FU: "smoke", DU: "dust", SA: "sand", SQ: "squalls",
+  PL: "ice pellets", SG: "snow grains", FZ: "freezing", VC: "nearby", BL: "blowing", DR: "drifting", MI: "shallow", BC: "patchy", FU: "smoke", DU: "dust", SA: "sand", SQ: "squalls",
 };
 
 /** "-SHRA" → "light rain showers". */
@@ -442,7 +480,7 @@ export function wxWords(code: string): string {
 export function headline(c: Conditions): string {
   const bits: string[] = [];
   if (c.wx.length) bits.push(c.wx.map(wxWords).join(", "));
-  if (c.cavok) bits.push("CAVOK: clear, good visibility");
+  if (c.cavok) bits.push("CAVOK (clear, good visibility)");
   else {
     const top = [...c.clouds].sort((a, b) => ({ VV: 5, OVC: 4, BKN: 3, SCT: 2, FEW: 1 })[b.cover] - ({ VV: 5, OVC: 4, BKN: 3, SCT: 2, FEW: 1 })[a.cover])[0];
     const word = { FEW: "a few clouds", SCT: "scattered cloud", BKN: "broken cloud", OVC: "overcast", VV: "sky obscured" } as const;
@@ -468,4 +506,38 @@ export function skyOf(c: Conditions): Sky {
   if (c.clouds.some((l) => l.cover === "BKN")) return "cloudy";
   if (c.clouds.length) return "partly";
   return c.visM != null ? "clear" : "unknown";
+}
+
+/* ---------- forecast at a moment ---------- */
+
+export interface ForecastAt {
+  /** Prevailing conditions at that time (BASE / FM / BECMG applied). */
+  prevailing: Conditions;
+  /** TEMPO / PROB groups active at that time, with their conditions. */
+  temporary: TafGroup[];
+  /** The worse of prevailing and temporary, by flight category. */
+  worst: Conditions;
+}
+
+const CAT_RANK: Record<Category, number> = { VFR: 0, MVFR: 1, IFR: 2, LIFR: 3 };
+
+/** What a TAF forecasts at `t` (e.g. the planned take-off or landing time). Null when outside its validity. */
+export function forecastAt(taf: Report, t: DayTime): ForecastAt | null {
+  const v = taf.taf?.valid;
+  if (!taf.taf || !v) return null;
+  const at = hoursFrom(v.from, t);
+  if (at < 0 || at > hoursFrom(v.from, v.to)) return null;
+  const h = (d: DayTime | null) => (d ? hoursFrom(v.from, d) : 0);
+  let prevailing = taf.cond;
+  const temporary: TafGroup[] = [];
+  for (const g of taf.taf.groups) {
+    if (g.type === "BASE") prevailing = g.cond;
+    else if (g.type === "FM" && h(g.from) <= at) prevailing = g.cond;
+    // A BECMG change may happen any time in its period; treat it as done once the period starts.
+    else if (g.type === "BECMG" && h(g.from) <= at) prevailing = g.cond;
+    else if ((g.type === "TEMPO" || g.type === "PROB") && h(g.from) <= at && at < h(g.to)) temporary.push(g);
+  }
+  const rank = (c: Conditions) => (c.category ? CAT_RANK[c.category] : -1);
+  const worst = temporary.reduce((w, g) => (rank(g.cond) > rank(w) ? g.cond : w), prevailing);
+  return { prevailing, temporary, worst };
 }

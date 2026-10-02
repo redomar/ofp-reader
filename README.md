@@ -38,7 +38,7 @@ and every value gets context: derived margins, decoded weather, a vertical profi
   - Flight log: vertical profile with MORA terrain, fuel on board and minimum-fuel line, a route map from the waypoint coordinates over coastlines and country borders, FIR crossings, and a navigation log where ETOs follow your actual take-off time.
   - PIC extra: switch it into the nav log to get a **TFOB** column (and profile line): EFOB plus the extra still on board, less the cost of carrying it, taken from the OFP's own weight-change impact.
   - Runway analysis: V-speed cards, FLEX, head- and crosswind components for the planned runway, and factored landing distance against runway length.
-  - Weather: METAR / TAF decoded token by token, flight category (VFR → LIFR) and hazard flags.
+  - Weather: each airport's METAR and TAF as weather cards (sky picture, wind, visibility, cloud layers, TAF timeline by flight category), decoded token by token with hazard flags, plus a forecast badge on the summary flags for take-off and landing time.
   - Wind: AVG WIND, PWIND and METAR arrows sway like a windsock (faster with more wind, wider and irregular with gusts) and are coloured by strength, calm → storm.
   - NOTAMs: search, category filters, "critical" (CLSD, U/S, NOT AVBL…) and "mentions my planned runway" filters.
 - **Hover (or focus) to learn.** Almost every label explains itself: OFP abbreviations, ICAO equipment and PBN codes, METAR groups, TLR columns.

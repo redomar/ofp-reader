@@ -3,8 +3,8 @@ export const G: Record<string, string> = {
   // Page 1 header
   RELEASE: "Time (UTC) and date the dispatcher released this flight plan",
   OFP: "Operational Flight Plan number — increments each time the plan is re-issued",
-  "WX PROG": "Forecast (prognostic) upper-wind/temperature model runs used, as DDHH",
-  OBS: "Observed weather reports (METAR) issue times used, as DDHH",
+  "WX PROG": "Valid times of the forecast upper winds and temperatures used to plan the route (prognostic charts, 3-hourly steps around the flight), as DDHH UTC",
+  OBS: "Base time of the forecast model run each WX PROG comes from (the observations it was computed from), as DDHH UTC. One per WX PROG; a later OBS means fresher forecast data",
   "ATC C/S": "ATC callsign filed in the ICAO flight plan (item 7)",
   "CRZ SYS": "Cruise speed schedule — the cost index the FMS will fly",
   CI: "Cost Index: ratio of time cost to fuel cost. 0 = max range / min fuel, higher = faster",

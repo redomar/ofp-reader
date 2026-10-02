@@ -2,10 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 
+interface TipRow {
+  chip: { label: string; color: string; ink: string };
+  text: string;
+}
+
+const parseRows = (v: string | null): TipRow[] => {
+  if (!v) return [];
+  try {
+    const r = JSON.parse(v);
+    return Array.isArray(r) ? r : [];
+  } catch {
+    return [];
+  }
+};
+
 interface TipState {
   title: string | null;
   /** Optional filled chip above the text (data-tip-chip, coloured by data-tip-chip-color / -ink). */
   chip: { label: string; color: string; ink: string } | null;
+  /** Optional rows after the text, each led by a chip (data-tip-rows, JSON). */
+  rows: TipRow[];
+  /** Optional small note at the end (data-tip-note). */
+  note: string | null;
   text: string;
   x: number;
   y: number;
@@ -32,6 +51,8 @@ export function TooltipLayer() {
       const chip = el.getAttribute("data-tip-chip");
       setTip({
         title: el.getAttribute("data-tip-title"),
+        rows: parseRows(el.getAttribute("data-tip-rows")),
+        note: el.getAttribute("data-tip-note"),
         chip: chip ? { label: chip, color: el.getAttribute("data-tip-chip-color") ?? "var(--blue)", ink: el.getAttribute("data-tip-chip-ink") ?? "var(--sheet)" } : null,
         text,
         x: r.left + r.width / 2,
@@ -93,6 +114,15 @@ export function TooltipLayer() {
       )}
       {tip?.title && <b>{tip.title}</b>}
       {tip?.text}
+      {tip?.rows.map((r, i) => (
+        <span className="tip-row" key={i}>
+          <span className="tip-chip" style={{ background: r.chip.color, color: r.chip.ink }}>
+            {r.chip.label}
+          </span>
+          <span>{r.text}</span>
+        </span>
+      ))}
+      {tip?.note && <span className="tip-note">{tip.note}</span>}
     </div>
   );
 }

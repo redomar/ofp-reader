@@ -2,17 +2,26 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0] - 2026-10-02
+
+### Added
+
+- **Forecast weather on the flight summary.** A small badge on each flag shows the TAF forecast at the planned take-off (departure) and landing (arrival) time, ringed in its flight category: the worse of the prevailing weather and any TEMPO / PROB group active then. A magenta **T** marks that a temporary group is in play. Hover or focus for the time, the prevailing weather, one magenta chip per TEMPO / PROB group with its weather and category, and a note on what T means.
+- Tooltips can show several rows, each led by a coloured chip, and a closing note.
 
 ### Changed
 
 - **Weather cards in the reader.** Airport weather now shows each airport's METAR and TAF as the same cards as the weather page (sky picture, headline, swaying wind arrow, visibility and cloud diagrams, TAF timeline and change groups, raw text with tooltips), under the existing airport header with its role, name, category and "Watch" hazards. The blank template is unchanged.
 - **Weather cards animate as they come into view** and replay when you scroll back, like the other graphics: the card rises in, the sun spins up, clouds drift in, rain and snow fall, lightning flashes, fog lines spread, cloud layers grow, the visibility marker slides to its value, the wind arrow spins into direction, the facts rise in turn, the ATIS letter flips, and the TAF timeline, TEMPO/PROB bars and change groups wipe and rise in. Reduced motion shows the final state at once.
 - Weather cards: observation cards share a row and each TAF takes the full width below, so a lone METAR no longer leaves half the row empty.
+- **WX PROG / OBS** explained correctly: WX PROG is when the forecast upper winds and temperatures are valid, OBS is the model run (observation time) each comes from. Hover a chip to decode it, e.g. "Forecast valid day 02 at 12:00 UTC, from the model run based on day 01 at 18:00 UTC".
+- Weather wording: CAVOK reads "CAVOK (clear, good visibility)" and BCFG "patchy fog".
 
 ### Fixed
 
 - TAF change groups after a CAVOK base kept saying "CAVOK" even when they brought cloud, showers or lower visibility, and their cloud layers were dropped.
+- ATIS: the information letter was missed in "ATIS INFORMATION B"; a closing "THIS WAS LEMD ATIS INFORMATION B" line started a second, empty ATIS; `VIS 10KM` and `QNH 1026HPA` were skipped when the ATIS also had coded groups; the airport code is found at the end ("THIS WAS LEMD ATIS") but no longer taken from "YOU HAVE INFO …"; time and greeting lines no longer show as notices; runways aren't listed twice.
+- Weather cards side by side (e.g. two ATIS, or ATIS and METAR) didn't line up: the second sat 14 px lower.
 
 ## [1.4.0] - 2026-10-02
 
@@ -101,6 +110,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.5.0]: https://github.com/redomar/ofp-reader/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/redomar/ofp-reader/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/redomar/ofp-reader/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/redomar/ofp-reader/compare/v1.2.0...v1.3.0

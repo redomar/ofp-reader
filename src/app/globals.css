@@ -2590,7 +2590,9 @@ dialog.lightbox img {
 .wxc-replay + .wxc-replay {
   margin-top: 14px;
 }
-.wx-airports .wxc-replay + .wxc-replay {
+.wx-airports .wxc-replay + .wxc-replay,
+.wxc-grid > .wxc-replay + .wxc-replay {
+  /* side by side in a grid row, or spaced by the parent's gap: no extra margin */
   margin-top: 0;
 }
 .wxc-head {
@@ -2916,4 +2918,58 @@ dialog.lightbox img {
 }
 .wx-airports .wx-card .body {
   gap: 12px;
+}
+
+/* Forecast pictogram at take-off / landing: a badge on the flag's top corner */
+.wx-picto {
+  position: absolute;
+  z-index: 2;
+  left: calc(50% + 4px);
+  bottom: calc(50% + 2px);
+  display: inline-flex;
+  line-height: 0;
+  background: var(--sheet);
+  border: 1.5px solid var(--catc, var(--ink));
+  border-radius: 50%;
+  padding: 2px;
+  cursor: help;
+}
+.arr .wx-picto {
+  left: auto;
+  right: calc(50% + 4px);
+}
+.wx-picto .sky {
+  display: block;
+}
+/* "T": a TEMPO / PROB group is active then */
+.wx-picto-t {
+  position: absolute;
+  right: -6px;
+  top: -5px;
+  font: 700 9px/1 var(--font-cond);
+  color: var(--sheet);
+  background: var(--magenta);
+  border-radius: 2px;
+  padding: 1px 2px;
+}
+.arr .wx-picto-t {
+  right: auto;
+  left: -6px;
+}
+/* tooltip rows led by a chip */
+/* each row: its chip, then the text on the line below */
+#ofp-tip .tip-row {
+  display: block;
+  margin-top: 8px;
+}
+#ofp-tip .tip-row .tip-chip {
+  margin: 0 0 3px;
+}
+#ofp-tip .tip-note {
+  display: block;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--sheet) 25%, transparent);
+  font-size: 12px;
+  opacity: 0.85;
 }

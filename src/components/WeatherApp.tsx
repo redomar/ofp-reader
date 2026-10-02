@@ -1,24 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
 import { Section } from "./ui";
 import { ObsCard, TafCard } from "./WxCards";
-import {
-  getServerVersion,
-  getVersion,
-  listFlights,
-  subscribe,
-} from "@/lib/storage";
+import { getServerVersion, getVersion, listFlights, subscribe } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
 import { parseAll, type Report } from "@/lib/wx/reports";
 
@@ -50,31 +39,21 @@ function buildExample(now = new Date()) {
     const d = new Date(from.d.getTime() + add * 3600e3);
     return `${p(d.getUTCDate())}${p(d.getUTCHours())}`;
   };
-  return `METAR EGLL ${obs.dd}${obs.hh}${
-    obs.mm
-  }Z 24012G24KT 210V280 9999 -SHRA FEW014 BKN032CB 15/09 Q1013 TEMPO 4000 SHRA
+  return `METAR EGLL ${obs.dd}${obs.hh}${obs.mm}Z 24012G24KT 210V280 9999 -SHRA FEW014 BKN032CB 15/09 Q1013 TEMPO 4000 SHRA
 TAF EGLL ${iss.dd}${iss.hh}${iss.mm}Z ${vFrom}/${vTo} 24012KT 9999 SCT030
   TEMPO ${h(0)}/${h(6)} 24018G30KT 4000 SHRA BKN014CB
   BECMG ${h(8)}/${h(11)} 27008KT
   PROB30 TEMPO ${h(12)}/${h(18)} 2500 BR BKN006
-EGLL ARR ATIS F ${obs.hh}${
-    obs.mm
-  }Z EXP ILS APCH RWY 27L 24012G24KT 9999 -SHRA FEW014 BKN032CB 15/09 Q1013 TL 70
+EGLL ARR ATIS F ${obs.hh}${obs.mm}Z EXP ILS APCH RWY 27L 24012G24KT 9999 -SHRA FEW014 BKN032CB 15/09 Q1013 TL 70
 
 METAR LFPG ${obs.dd}${obs.hh}${obs.mm}Z VRB02KT 0300 FG VV001 08/08 Q1021 NOSIG
-TAF LFPG ${iss.dd}${iss.hh}${
-    iss.mm
-  }Z ${vFrom}/${vTo} VRB03KT 0400 FG VV002 BECMG ${h(1)}/${h(
-    3,
-  )} 4000 BR BKN005 FM${h(6)}00 21010KT 9999 SCT025
+TAF LFPG ${iss.dd}${iss.hh}${iss.mm}Z ${vFrom}/${vTo} VRB03KT 0400 FG VV002 BECMG ${h(1)}/${h(3)} 4000 BR BKN005 FM${h(6)}00 21010KT 9999 SCT025
 
 THIS IS SCHIPHOL INFORMATION ROMEO, TIME ${obs.hh}${
     obs.mm
   }. LANDING RUNWAY 18 RIGHT, TAKE-OFF RUNWAY 24. TRANSITION LEVEL 60. SURFACE WIND 220 DEGREES 15 KNOTS, GUSTING 27 KNOTS. VISIBILITY 10 KILOMETRES. LIGHT RAIN. SCATTERED 1800 FEET, BROKEN 3500 FEET. TEMPERATURE 13, DEW POINT 10. QNH 1009. ACKNOWLEDGE INFORMATION ROMEO.
 
-METAR KJFK ${obs.dd}${obs.hh}${
-    obs.mm
-  }Z 31022G35KT 10SM FEW050 SCT250 18/02 A2995`;
+METAR KJFK ${obs.dd}${obs.hh}${obs.mm}Z 31022G35KT 10SM FEW050 SCT250 18/02 A2995`;
 }
 
 /* ---------- page ---------- */
@@ -109,18 +88,12 @@ export function WeatherApp() {
   }, [text]);
 
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
-  const saved = useMemo(
-    () => (version >= 0 ? listFlights().filter((f) => f.meta.pdfSize) : []),
-    [version],
-  );
+  const saved = useMemo(() => (version >= 0 ? listFlights().filter((f) => f.meta.pdfSize) : []), [version]);
 
   // A report needs an airport or a time (ATIS: a letter or runway) to count; the rest is listed as not recognised.
   const [reports, unknown] = useMemo(() => {
     const all = parseAll(text);
-    const ok = (r: Report) =>
-      r.kind === "ATIS"
-        ? !!(r.atis?.letter || r.icao || r.atis?.runways.length)
-        : !!(r.icao || r.time);
+    const ok = (r: Report) => (r.kind === "ATIS" ? !!(r.atis?.letter || r.icao || r.atis?.runways.length) : !!(r.icao || r.time));
     return [all.filter(ok), all.filter((r) => !ok(r))];
   }, [text]);
   const airports = useMemo(() => {
@@ -147,27 +120,16 @@ export function WeatherApp() {
       const { readOfp } = await import("@/lib/ofp/pdf");
       const { ofp } = await readOfp(data, f.meta.source);
       // The OFP lists reports under an airport heading, without the ICAO code in the report itself.
-      const lines = ofp.wx.airports
-        .flatMap((a) => [
-          a.metar ? `METAR ${a.icao} ${a.metar}` : "",
-          a.taf.length ? `TAF ${a.icao} ${a.taf.join("\n  ")}` : "",
-          "",
-        ])
-        .filter((l, i, arr) => l || arr[i - 1]);
+      const lines = ofp.wx.airports.flatMap((a) => [a.metar ? `METAR ${a.icao} ${a.metar}` : "", a.taf.length ? `TAF ${a.icao} ${a.taf.join("\n  ")}` : "", ""]).filter((l, i, arr) => l || arr[i - 1]);
       setText(lines.join("\n").trim());
-      setLoadedFrom(
-        `${f.meta.flightNo ?? id} ${f.meta.dep ?? ""}→${f.meta.arr ?? ""}`,
-      );
+      setLoadedFrom(`${f.meta.flightNo ?? id} ${f.meta.dep ?? ""}→${f.meta.arr ?? ""}`);
       setBusy(null);
     } catch (e) {
       setBusy(e instanceof Error ? e.message : "Couldn't read that plan.");
     }
   };
 
-  const sections = [
-    ["reports", "Paste reports"],
-    ...airports.map((a) => [a.id, a.key] as const),
-  ] as const;
+  const sections = [["reports", "Paste reports"], ...airports.map((a) => [a.id, a.key] as const)] as const;
 
   return (
     <CollapseProvider>
@@ -178,10 +140,7 @@ export function WeatherApp() {
         <div className="topbar-inner">
           <Brand sub="· Weather" />
           <span style={{ flex: 1 }} />
-          <CollapseAllButton
-            ids={sections.map(([id]) => id)}
-            className="btn status-all"
-          />
+          <CollapseAllButton ids={sections.map(([id]) => id)} className="btn status-all" />
           <Link href="/" className="btn">
             ← Back to reader
           </Link>
@@ -190,11 +149,7 @@ export function WeatherApp() {
         <div className="status" role="status">
           <span>
             {reports.length
-              ? `${reports.length} ${
-                  reports.length === 1 ? "report" : "reports"
-                } · ${airports.length} ${
-                  airports.length === 1 ? "airport" : "airports"
-                }${loadedFrom ? ` · from ${loadedFrom}` : ""}`
+              ? `${reports.length} ${reports.length === 1 ? "report" : "reports"} · ${airports.length} ${airports.length === 1 ? "airport" : "airports"}${loadedFrom ? ` · from ${loadedFrom}` : ""}`
               : "Paste METARs, TAFs or ATIS to see them as weather cards"}
           </span>
         </div>
@@ -210,16 +165,9 @@ export function WeatherApp() {
           }
         />
         <main id="main" className="is-filled">
-          <Section
-            id="reports"
-            no={1}
-            title="Paste reports"
-            meta={<span>METAR · SPECI · TAF · ATIS</span>}
-          >
+          <Section id="reports" no={1} title="Paste reports" meta={<span>METAR · SPECI · TAF · ATIS</span>}>
             <p className="small muted" style={{ marginTop: 0 }}>
-              Paste any mix of reports, one after another. Coded and
-              plain-language ATIS both work. Nothing leaves your browser; the
-              text is kept here for next time.
+              Paste any mix of reports, one after another. Coded and plain-language ATIS both work. Nothing leaves your browser; the text is kept here for next time.
             </p>
             <textarea
               className="wx-input"
@@ -231,44 +179,26 @@ export function WeatherApp() {
               spellCheck={false}
               rows={8}
               aria-label="METAR, TAF and ATIS text"
-              placeholder={
-                "METAR EGLL 021250Z 24012KT 9999 FEW040 15/09 Q1013\nTAF EGLL 021100Z 0212/0318 24012KT 9999 SCT030 TEMPO 0212/0218 4000 SHRA\nEGLL ARR ATIS F 1250Z EXP ILS APCH RWY 27L …"
-              }
+              placeholder={"METAR EGLL 021250Z 24012KT 9999 FEW040 15/09 Q1013\nTAF EGLL 021100Z 0212/0318 24012KT 9999 SCT030 TEMPO 0212/0218 4000 SHRA\nEGLL ARR ATIS F 1250Z EXP ILS APCH RWY 27L …"}
             />
             <div className="row" style={{ marginTop: 8 }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setText(buildExample())}
-              >
+              <button type="button" className="btn" onClick={() => setText(buildExample())}>
                 Load examples
               </button>
               {saved.length > 0 && (
                 <label className="row small" style={{ gap: 6 }}>
                   From a saved plan
-                  <select
-                    className="wx-select"
-                    value=""
-                    onChange={(e) =>
-                      e.target.value && void loadPlan(e.target.value)
-                    }
-                  >
+                  <select className="wx-select" value="" onChange={(e) => e.target.value && void loadPlan(e.target.value)}>
                     <option value="">Choose…</option>
                     {saved.map((f) => (
                       <option key={f.meta.id} value={f.meta.id}>
-                        {f.meta.flightNo ?? f.meta.id} · {f.meta.dep}→
-                        {f.meta.arr} · {f.meta.date}
+                        {f.meta.flightNo ?? f.meta.id} · {f.meta.dep}→{f.meta.arr} · {f.meta.date}
                       </option>
                     ))}
                   </select>
                 </label>
               )}
-              <button
-                type="button"
-                className="btn"
-                disabled={!text}
-                onClick={() => setText("")}
-              >
+              <button type="button" className="btn" disabled={!text} onClick={() => setText("")}>
                 Clear
               </button>
               {busy && <span className="small muted">{busy}</span>}
@@ -278,9 +208,7 @@ export function WeatherApp() {
                 <b>Not recognised</b> (no airport code or report time):
                 <ul className="small mono">
                   {unknown.map((r, i) => (
-                    <li key={i}>
-                      {r.raw.length > 90 ? `${r.raw.slice(0, 90)}…` : r.raw}
-                    </li>
+                    <li key={i}>{r.raw.length > 90 ? `${r.raw.slice(0, 90)}…` : r.raw}</li>
                   ))}
                 </ul>
               </div>
@@ -288,22 +216,7 @@ export function WeatherApp() {
           </Section>
 
           {airports.map((a, i) => (
-            <Section
-              key={a.id}
-              id={a.id}
-              no={i + 2}
-              title={a.key}
-              meta={
-                <span>
-                  {a.list
-                    .map(
-                      (r) =>
-                        r.kind + (r.atis?.letter ? ` ${r.atis.letter}` : ""),
-                    )
-                    .join(" · ")}
-                </span>
-              }
-            >
+            <Section key={a.id} id={a.id} no={i + 2} title={a.key} meta={<span>{a.list.map((r) => r.kind + (r.atis?.letter ? ` ${r.atis.letter}` : "")).join(" · ")}</span>}>
               {/* Observations (METAR / SPECI / ATIS) share a row; each TAF takes the full width below. */}
               <div className="wxc-grid">
                 {a.list

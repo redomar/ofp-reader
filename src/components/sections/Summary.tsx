@@ -8,9 +8,14 @@ import { useStripMode } from "@/lib/stripPref";
 import { countryLabel, icaoCountry } from "@/lib/ofp/icaoCountry";
 import { useState } from "react";
 import { WindArrow } from "../WindArrow";
+import { SkyIcon } from "../WxCards";
+import { forecastAt, headline, parseReport, skyOf, type ForecastAt } from "@/lib/wx/reports";
 import { Badge, Field, Gauge, Section, Sub, Tip, V } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtDate, fmtDur, fmtHhmm, fmtNum, fmtReg, fmtSigned, parseWind, pct, signed } from "@/lib/ofp/format";
+
+/** "0212" (DDHH) → "day 02 at 12:00 UTC". */
+const ddhh = (t: string) => (/^\d{4}$/.test(t) ? `day ${t.slice(0, 2)} at ${t.slice(2)}:00 UTC` : t);
 
 export function SummarySection({ no }: { no: number }) {
   const { ofp } = useOfp();
@@ -22,6 +27,27 @@ export function SummarySection({ no }: { no: number }) {
     return [h?.routeName ?? null, null];
   })();
   const [stripMode] = useStripMode();
+  // Forecast weather at take-off (departure TAF) and landing (arrival TAF).
+  const day = Number(h?.flightDate?.slice(0, 2)) || null;
+  const at = (hhmm: string | null | undefined, plusDay = false) =>
+    day && hhmm && /^\d{4}$/.test(hhmm)
+      ? {
+          day: day + (plusDay ? 1 : 0),
+          hour: Number(hhmm.slice(0, 2)),
+          min: Number(hhmm.slice(2)),
+        }
+      : null;
+  const tafFor = (icao: string | null | undefined) => {
+    const a = ofp?.wx.airports.find((x) => x.icao === icao && x.taf.length);
+    return a ? parseReport(`TAF ${a.icao} ${a.taf.join(" ")}`) : null;
+  };
+  const depTaf = tafFor(h?.dep);
+  const arrTaf = tafFor(h?.arr);
+  const offAt = at(h?.offTime);
+  // Landing after midnight UTC is on the next day.
+  const onAt = at(h?.onTime, !!(h?.offTime && h?.onTime && h.onTime < h.offTime));
+  const depWx = depTaf && offAt ? forecastAt(depTaf, offAt) : null;
+  const arrWx = arrTaf && onAt ? forecastAt(arrTaf, onAt) : null;
   const block = clockDiff(h?.outTime, h?.inTime);
   const air = clockDiff(h?.offTime, h?.onTime);
   const wind = parseWind(h?.avgWind);
@@ -85,7 +111,7 @@ export function SummarySection({ no }: { no: number }) {
         <div className="strip-apt">
           <div className="strip-icao">
             {h?.dep ? <ReplayFlapCode code={h.dep} label={`Departure ${h.dep}`} /> : <FlapBlank />}
-            {h?.dep && <IataTag icao={h.dep} iata={h.depIata} side="dep" />}
+            {h?.dep && <IataTag icao={h.dep} iata={h.depIata} side="dep" wx={depWx} when={h.offTime ? `take-off ${fmtHhmm(h.offTime)}Z` : null} />}
           </div>
           <div className="strip-name">
             <V v={depName} w={14} />
@@ -114,7 +140,7 @@ export function SummarySection({ no }: { no: number }) {
         </div>
         <div className="strip-apt arr">
           <div className="strip-icao">
-            {h?.arr && <IataTag icao={h.arr} iata={h.arrIata} side="arr" />}
+            {h?.arr && <IataTag icao={h.arr} iata={h.arrIata} side="arr" wx={arrWx} when={h.onTime ? `landing ${fmtHhmm(h.onTime)}Z` : null} />}
             {h?.arr ? <ReplayFlapCode code={h.arr} label={`Arrival ${h.arr}`} /> : <FlapBlank />}
           </div>
           <div className="strip-name">
@@ -273,9 +299,25 @@ export function SummarySection({ no }: { no: number }) {
             </Field>
             <Field label="WX PROG / OBS" tip={`${G["WX PROG"]}. ${G.OBS}`}>
               <span className="row" style={{ gap: 4 }}>
-                {h?.wxProg.length ? h.wxProg.map((t) => <span key={"p" + t} className="code">{t}</span>) : <V v={null} w={14} />}
+                {h?.wxProg.length ? (
+                  h.wxProg.map((t, i) => (
+                    <Tip key={"p" + t} plain tip={`Forecast valid ${ddhh(t)}${h.wxObs[i] ? `, from the model run based on ${ddhh(h.wxObs[i])}` : ""}`}>
+                      <span className="code">{t}</span>
+                    </Tip>
+                  ))
+                ) : (
+                  <V v={null} w={14} />
+                )}
                 <span className="muted small">obs</span>
-                {h?.wxObs.length ? h.wxObs.map((t, i) => <span key={"o" + i} className="code">{t}</span>) : <V v={null} w={14} />}
+                {h?.wxObs.length ? (
+                  h.wxObs.map((t, i) => (
+                    <Tip key={"o" + i} plain tip={`Model run based on observations at ${ddhh(t)}${h.wxProg[i] ? `, used for the forecast valid ${ddhh(h.wxProg[i])}` : ""}`}>
+                      <span className="code">{t}</span>
+                    </Tip>
+                  ))
+                ) : (
+                  <V v={null} w={14} />
+                )}
               </span>
             </Field>
             <Field label="Route name">
@@ -289,12 +331,66 @@ export function SummarySection({ no }: { no: number }) {
 }
 
 /** Country flag stacked above the IATA code, beside the split-flap ICAO tiles. */
-function IataTag({ icao, iata, side }: { icao: string; iata: string | null; side: "dep" | "arr" }) {
+const CAT_COLOR = {
+  VFR: "var(--green)",
+  MVFR: "var(--blue)",
+  IFR: "var(--red)",
+  LIFR: "var(--magenta)",
+} as const;
+const groupName = (g: ForecastAt["temporary"][number]) => (g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO");
+
+/**
+ * Forecast weather at take-off / landing as a small badge on the flag: the worse of the
+ * prevailing weather and any TEMPO / PROB group active then, ringed in its flight
+ * category. "T" marks that a temporary group is in play; the hover lists each one.
+ */
+function WxPicto({ wx, when }: { wx: ForecastAt; when: string | null }) {
+  const c = wx.worst;
+  const cat = c.category;
+  const p = wx.prevailing;
+  const withCat = (x: ForecastAt["prevailing"]) => `${headline(x)}${x.category ? ` · ${x.category}` : ""}`;
+  const title = when ? `${when[0].toUpperCase()}${when.slice(1)} forecast` : "Forecast";
+  const text = `Prevailing: ${withCat(p)}`;
+  const rows = wx.temporary.map((g) => ({
+    chip: {
+      label: `T · ${groupName(g)}`,
+      color: "var(--magenta)",
+      ink: "var(--sheet)",
+    },
+    text: withCat(g.cond),
+  }));
+  const note = rows.length ? "T = temporary (TEMPO / PROB): may occur at that time. The badge shows the worst." : null;
+  return (
+    <span
+      className="wx-picto"
+      style={cat ? { ["--catc" as string]: CAT_COLOR[cat] } : undefined}
+      tabIndex={0}
+      aria-label={`${title}. ${text}. ${rows.map((r) => `${r.chip.label}: ${r.text}.`).join(" ")} ${note ?? ""}`}
+      data-tip={text}
+      data-tip-title={title}
+      data-tip-note={note ?? undefined}
+      data-tip-chip={cat ?? undefined}
+      data-tip-chip-color={cat ? CAT_COLOR[cat] : undefined}
+      data-tip-chip-ink="var(--sheet)"
+      data-tip-rows={rows.length ? JSON.stringify(rows) : undefined}
+    >
+      <SkyIcon sky={skyOf(c)} size={18} />
+      {rows.length > 0 && (
+        <span className="wx-picto-t" aria-hidden="true">
+          T
+        </span>
+      )}
+    </span>
+  );
+}
+
+function IataTag({ icao, iata, side, wx = null, when = null }: { icao: string; iata: string | null; side: "dep" | "arr"; wx?: ForecastAt | null; when?: string | null }) {
   const iso = icaoCountry(icao);
   const [broken, setBroken] = useState(false);
   const label = iso ? countryLabel(icao, iso) : null;
   return (
     <span className={`iata-stack ${side}`}>
+      {wx && <WxPicto wx={wx} when={when} />}
       {iso && !broken && (
         <Tip tip={label} title={iso} plain>
           {/* eslint-disable-next-line @next/next/no-img-element -- tiny static SVG from /public/flags */}
