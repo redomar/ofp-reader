@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
@@ -501,10 +501,16 @@ export function WeatherApp() {
   const [text, setText] = useState("");
   const [loadedFrom, setLoadedFrom] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // Restore the last text once, then save on change (not before the restore, or it would be wiped).
+  const restored = useRef(false);
   useEffect(() => {
-    queueMicrotask(() => setText(readInput()));
+    queueMicrotask(() => {
+      setText(readInput());
+      restored.current = true;
+    });
   }, []);
   useEffect(() => {
+    if (!restored.current) return;
     try {
       window.localStorage.setItem(INPUT_KEY, text);
     } catch {

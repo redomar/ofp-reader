@@ -35,14 +35,16 @@ and every value gets context: derived margins, decoded weather, a vertical profi
   - Fuel: block composition bar, landing fuel, margin above ALTN + FINRES, endurance, burn per NM, PIC extra → total fuel.
   - Weights: max vs estimated gauges, and whether the take-off weight is actually landing-weight limited.
   - Times: taxi / airborne / block durations, local UTC offsets, and a **planned vs actual timeline** on a shared clock.
-  - Flight log: vertical profile with MORA terrain, fuel on board and minimum-fuel line, a route map from the waypoint coordinates, FIR crossings, and a navigation log where ETOs follow your actual take-off time.
+  - Flight log: vertical profile with MORA terrain, fuel on board and minimum-fuel line, a route map from the waypoint coordinates over coastlines and country borders, FIR crossings, and a navigation log where ETOs follow your actual take-off time.
   - PIC extra: switch it into the nav log to get a **TFOB** column (and profile line): EFOB plus the extra still on board, less the cost of carrying it, taken from the OFP's own weight-change impact.
   - Runway analysis: V-speed cards, FLEX, head- and crosswind components for the planned runway, and factored landing distance against runway length.
   - Weather: METAR / TAF decoded token by token, flight category (VFR → LIFR) and hazard flags.
+  - Wind: AVG WIND, PWIND and METAR arrows sway like a windsock (faster with more wind, wider and irregular with gusts) and are coloured by strength, calm → storm.
   - NOTAMs: search, category filters, "critical" (CLSD, U/S, NOT AVBL…) and "mentions my planned runway" filters.
 - **Hover (or focus) to learn.** Almost every label explains itself: OFP abbreviations, ICAO equipment and PBN codes, METAR groups, TLR columns.
 - **Fill it in as you fly.** Actual times, weights, ATIS, clearance, RVSM check, ATO / AFOB per waypoint, TLR actuals: all saved per flight in your browser.
 - **Reopens instantly, even after SimBrief expires it.** Each PDF is kept locally, so returning to a plan (same link, reload, recent chip or Settings) doesn't download it again. SimBrief only keeps OFP PDFs for a limited time, so the saved copy is often the only one left.
+- **Weather cards.** A separate page (`/weather`) turns pasted METARs, TAFs and ATIS (coded or plain language), or a saved plan's weather, into cards: sky picture, wind, visibility, cloud layers, TAF timeline by flight category, ATIS letter, runways and notices.
 - **Your layout.** Collapse any section (or all of them) from its header or the Contents rail; it stays the way you left it. Pick the flight summary graphic: vertical profile, profile + times, route silhouette, progress timeline or classic arc.
 - **Day and night themes**, both meeting WCAG AA contrast.
 
@@ -55,6 +57,10 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 | Airport weather | Settings & saved flights |
 | --- | --- |
 | ![Decoded METAR and TAF cards](docs/screenshots/weather.png) | ![Saved flights and stored entries](docs/screenshots/settings.png) |
+
+**Weather cards page**
+
+![ATIS, METAR and TAF for Heathrow as weather cards, with a TAF timeline](docs/screenshots/weather-cards.png)
 
 **Planned vs actual timeline**
 
@@ -108,7 +114,8 @@ Live at **[charts.massorbit.co.uk](https://charts.massorbit.co.uk)**, deployed w
 | Inspect a waypoint | Hover the profile, map or a nav-log row, or focus a chart and use the arrow keys |
 | Hide sections | Click a section's header, or the ⊟ boxes / **Collapse all** in Contents |
 | Change the summary graphic | ⚙ **Settings → Appearance** |
-| Manage saved data | ⚙ **Settings**: saved flights, stored entries, export JSON, delete, theme |
+| Manage saved data | ⚙ **Settings**: saved flights, stored entries, export / import JSON, delete, theme |
+| Read METARs, TAFs or ATIS as cards | **Weather cards →** in Contents (`/weather`): paste reports, or pick a saved plan |
 
 ## How it works
 
@@ -138,10 +145,11 @@ Everything stays in the browser. Nothing is sent anywhere.
 | Theme preference | `localStorage` | `ofp-theme` |
 | Collapsed sections | `localStorage` | `ofp-reader:collapsed` |
 | Summary graphic style | `localStorage` | `ofp-reader:strip` |
+| Text pasted on the weather page | `localStorage` | `ofp-reader:wx-input` |
 
 **One record per flight plan.** The id is `FLIGHT_DATE_ROUTE_OFPn`, e.g. `EZY0714_27SEP2026_LFSBLEBL_OFP1`. Flight numbers repeat daily, so the date and route are part of the key, and each re-release (new OFP number) gets its own storage. Plans without a flight or OFP number fall back to a fingerprint of the OFP's first page, which includes the release time.
 
-Clearing site data or using a private window removes everything; **Export JSON** in Settings keeps a copy.
+Clearing site data or using a private window removes everything; **Export JSON** in Settings keeps a copy, and **Import JSON** brings it back (in this or another browser).
 
 ## Project structure
 
@@ -151,10 +159,14 @@ src/
 │   ├── layout.tsx            fonts, theme + collapsed-section boot scripts, footer
 │   ├── page.tsx              reader
 │   ├── settings/page.tsx     settings
+│   ├── weather/page.tsx      weather cards
+│   ├── wind-lab/             tuning page for the wind-arrow sway (not linked)
 │   └── globals.css           design tokens (day / night) and all styles
 ├── components/
 │   ├── OfpApp.tsx            loading, status row, form state
 │   ├── SettingsApp.tsx       saved flights, stored data, appearance, storage
+│   ├── WeatherApp.tsx        weather cards page
+│   ├── WindArrow.tsx         swaying, category-coloured wind arrow
 │   ├── chrome.tsx            brand, theme toggle, contents rail
 │   ├── collapse.tsx          collapsible-section state, Collapse all
 │   ├── FlightStrip.tsx       summary graphic (profile, times, route, timeline, arc)
@@ -176,6 +188,9 @@ src/
     │   ├── icaoCountry.ts    ICAO prefix → country (for flags)
     │   ├── picExtra.ts       PIC extra / TFOB model
     │   └── format.ts         time, number and unit helpers
+    ├── wind/                 wind-arrow sway engine and model (shared with the wind lab)
+    ├── wx/reports.ts         METAR / TAF / ATIS → structured reports for the cards
+    ├── outlines.ts           coastline / border outlines for the route map
     ├── storage.ts            per-flight localStorage records
     ├── stripPref.ts          summary graphic preference
     ├── build-info.ts         version / commit / dirty flag for the footer

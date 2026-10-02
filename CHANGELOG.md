@@ -2,7 +2,7 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.4.0] - 2026-10-02
 
 ### Added
 
@@ -11,6 +11,10 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - **Weather cards page** at `/weather` (linked from the Contents rail): paste any mix of METARs, SPECIs, TAFs and ATIS, or pull the weather from a saved plan, and each report becomes a card grouped by airport. Observation cards show a sky picture, a plain-English headline, the swaying wind arrow, visibility on a flight-category scale, a cloud-layer column, temperature with fog risk, QNH in hPa and inHg, the METAR trend, and how long ago it was issued. TAF cards add a timeline coloured by flight category (BECMG hatched while it changes, TEMPO/PROB as dashed bars below, hover for details) and a row per change group. ATIS works coded (D-ATIS) or in plain language, with the information letter, runways for landing and take-off, approach and transition level. Abbreviated ATIS (`VIS 10 KM`, `TEMP 17, DP 15`, `WIND 020 AT 5`, `BKN AT 3000`, `ARVG RWYS 32L, 32R`) reads too, and notices such as bird activity are listed on the card. US formats (`10SM`, `A2995`) and m/s winds are converted. Text that isn't a report is listed as not recognised; everything stays in the browser.
 - **Wind lab** at `/wind-lab` (not linked from the reader): the tuning page for the arrows, with dozens of samples, live angle traces, and every rhythm, sway, chaos and easing setting. The arrows and the lab share one model (`src/lib/wind`).
 - **Coastlines and country borders on the route map**: thin solid coastlines and dashed borders under the route, from Natural Earth 1:50m (public domain, via world-atlas). The outlines are built into a compact file at build time (`copy-assets`) and fetched only when a map is shown (about 140 KB compressed).
+
+### Changed
+
+- README screenshots refreshed (coloured wind arrows, map outlines, Import JSON) and a new one for the weather cards page.
 - The route map fills its frame at every width instead of sitting in a fixed box with blank bands at the sides; gridlines and outlines run edge to edge.
 
 ### Fixed
@@ -85,6 +89,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.4.0]: https://github.com/redomar/ofp-reader/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/redomar/ofp-reader/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/redomar/ofp-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/redomar/ofp-reader/compare/v1.1.0...v1.2.0

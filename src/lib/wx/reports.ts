@@ -159,7 +159,7 @@ export function mergeConditions(base: Conditions, change: Conditions, text: stri
 const ATIS_RE = /\bATIS\b|\bINFORMATION\s+[A-Z]+\b|\bINFO\s+[A-Z]\b/;
 /** An ATIS announces itself near the start: "EGLL ARR ATIS F", "THIS IS SCHIPHOL INFORMATION ROMEO". */
 const ATIS_START = /^(?:\S+\s+){0,4}?(?:ARR\s+|DEP\s+|ARRIVAL\s+|DEPARTURE\s+)?(?:ATIS|INFORMATION|INFO)\s+[A-Z]/;
-const START_RE = /^(METAR|SPECI|TAF)\b|^[A-Z]{4}\s+\d{6}Z\b/;
+const START_RE = /^(METAR|SPECI|TAF)\b|^[A-Z]{4}\s+\d{6}Z?\b/;
 const CHANGE_LINE = /^(TEMPO|BECMG|PROB\d\d|FM\d{6}|RMK)\b/;
 
 export function splitReports(text: string): string[] {
@@ -283,6 +283,8 @@ const NUMWORD: Record<string, string> = { ZERO: "0", ONE: "1", TWO: "2", THREE: 
 const COVER_WORD: Record<string, CloudLayer["cover"]> = { FEW: "FEW", SCATTERED: "SCT", SCT: "SCT", BROKEN: "BKN", BKN: "BKN", OVERCAST: "OVC", OVC: "OVC" };
 /** Sentences that are ATIS furniture rather than information. */
 const BOILERPLATE = /\b(ADVISE|ADVS|ACKNOWLEDGE|ACK|ON (INITIAL )?(CONTACT|CTC)|YOU HAVE (INFO|INFORMATION))\b/;
+/** Coded METAR-style groups (D-ATIS weather after a full stop isn't a notice). */
+const CODED_GROUP = /\b(?:(?:VRB|\d{3})\d{2,3}(?:G\d{2,3})?(?:KT|MPS)|Q\d{4}|A\d{4}|(?:FEW|SCT|BKN|OVC)\d{3}|M?\d{2}\/M?\d{2}|CAVOK)\b/;
 /** Sentences already shown as fields. */
 const FIELD_SENTENCE = /^(?:\S+\s+){0,3}?(INFO|INFORMATION|ATIS)\b|^\d{4}Z?$|^TIME\b|\b(RWYS?|RUNWAYS?)\b|^(SURFACE )?WIND\b|^(VIS|VISIBILITY|CAVOK)\b|^(FEW|SCT|BKN|OVC|SCATTERED|BROKEN|OVERCAST|NO SIGNIFICANT CLOUD|SKY CLEAR)\b|^(TEMP|TEMPERATURE|DEW ?POINT|DP)\b|^(QNH|ALTIMETER)\b|^(TRL|TL|TRANSITION LEVEL)\b|^(EXP|EXPECT)\s+(ILS|RNP|RNAV|VOR|NDB|LOC|VISUAL)\b|^(LIGHT|HEAVY|MODERATE)?\s*(RAIN|DRIZZLE|SNOW|FOG|MIST|HAZE|SHOWERS?|THUNDERSTORMS?)\b/;
 const WX_WORD: [RegExp, string][] = [
@@ -302,7 +304,8 @@ const WX_WORD: [RegExp, string][] = [
 function parseAtis(raw: string): Report {
   // Spoken digits ("TWO FOUR ZERO") become numbers so the same patterns match both styles.
   let s = raw.replace(/\b(ZERO|ONE|TWO|THREE|TREE|FOUR|FIVE|FIFE|SIX|SEVEN|EIGHT|NINE|NINER)\b/g, (w) => NUMWORD[w]);
-  s = s.replace(/(\d) (?=\d)/g, "$1");
+  // Join spoken single digits only ("2 4 0" → "240"), never two real numbers ("240 12").
+  s = s.replace(/\b(\d)(?: (\d)\b)+/g, (m) => m.replace(/ /g, ""));
   const tokens = s.split(/[\s,]+/).filter(Boolean);
 
   const letterM = s.match(/\b(?:INFORMATION|INFO|ATIS(?:\s+(?:ARR|DEP|ARRIVAL|DEPARTURE))?)\s+([A-Z][A-Z-]*)\b/);
@@ -371,7 +374,7 @@ function parseAtis(raw: string): Report {
   const notes = raw
     .split(/\.\s+|\.$/)
     .map((x) => x.trim().replace(/\.$/, ""))
-    .filter((x) => x && !BOILERPLATE.test(x) && !FIELD_SENTENCE.test(x));
+    .filter((x) => x && !BOILERPLATE.test(x) && !FIELD_SENTENCE.test(x) && !CODED_GROUP.test(x));
 
   return {
     kind: "ATIS",
@@ -444,7 +447,7 @@ export function headline(c: Conditions): string {
     if (top) bits.push(`${word[top.cover]}${top.baseFt != null ? ` at ${top.baseFt.toLocaleString("en-GB")} ft` : ""}${top.type === "CB" ? " (CB)" : top.type === "TCU" ? " (TCU)" : ""}`);
     else if (c.noCloud) bits.push(c.noCloud === "NCD" ? "no cloud detected" : c.noCloud === "NSC" ? "no significant cloud" : "clear sky");
   }
-  if (!bits.length) return "No weather groups found";
+  if (!bits.length) return c.visM != null || c.wind ? "No cloud or weather reported" : "No weather groups found";
   const s = bits.join(", ");
   return s[0].toUpperCase() + s.slice(1);
 }

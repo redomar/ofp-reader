@@ -267,6 +267,7 @@ export function importFlight(data: unknown): ImportResult {
 
   const incoming: Record<string, FieldEntry> = {};
   for (const [key, f] of Object.entries(fields)) {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
     const e = f as Partial<FieldEntry> | null;
     if (!e || !str(e.value) || e.value === "" || !str(e.label) || !str(e.section)) continue;
     incoming[key] = { section: e.section, label: e.label, value: e.value, order: typeof e.order === "number" ? e.order : Date.now() };
