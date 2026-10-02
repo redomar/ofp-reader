@@ -11,7 +11,7 @@ const clock = (m: number) => {
   return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}Z`;
 };
 const plus = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
-const ident = (p: LogPoint) => p.ident ?? p.position?.replace(/\s/g, "") ?? "";
+export const ident = (p: LogPoint) => p.ident ?? p.position?.replace(/\s/g, "") ?? "";
 
 /** Fixed-width text columns for the printout. */
 const col = (v: string | number | null | undefined, w: number, right = false) => {
@@ -22,7 +22,7 @@ const col = (v: string | number | null | undefined, w: number, right = false) =>
 type Rows = ReturnType<typeof legMetrics>;
 
 /** The route as a 1980s line-printer listing: header, one line per fix, FIR crossings, totals. */
-function listing(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, dep: string, dest: string, rows: Rows, off: number | null, navOf: (n: string) => LogPoint | undefined): string[] {
+export function listing(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, dep: string, dest: string, rows: Rows, off: number | null, navOf: (n: string) => LogPoint | undefined): string[] {
   const h = ofp.header;
   const hhmm = (m: number | null | undefined) => (m == null || off == null ? "...." : clock(off + m).replace(/[:Z]/g, ""));
   const fl = (m: Rows[number]["m"]) => (!m || m.flMin == null ? "" : m.flMin === m.flMax ? String(m.flMin).padStart(3, "0") : `${String(m.flMin).padStart(3, "0")}-${String(m.flMax).padStart(3, "0")}`);
@@ -49,7 +49,7 @@ function listing(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, dep: string
 }
 
 /** Continuous-form paper: tractor-feed edges and alternating white / pink line bands. */
-function printout(lines: string[]) {
+export function printout(lines: string[]) {
   return (
     <figure className="rx-print" aria-label="Route listing, printed">
       <span className="rx-feed left" aria-hidden="true" />
@@ -66,7 +66,7 @@ function printout(lines: string[]) {
 }
 
 /** Distance, time, levels, waypoints and FIR crossings for each leg, from the nav log. */
-function legMetrics(legs: RouteLeg[], log: LogPoint[], dep: string, dest: string) {
+export function legMetrics(legs: RouteLeg[], log: LogPoint[], dep: string, dest: string) {
   // Walk the log alongside the legs, so repeated names resolve in order.
   let at = 0;
   return legs.map((leg) => {
@@ -132,6 +132,8 @@ export function RouteExplain() {
 
   return (
     <div className="rx">
+      <figure className="rx-print rx-route-paper">
+      <span className="rx-feed left" aria-hidden="true" />
       <div className="rx-route" aria-label="Route diagram, departure to destination">
         {initial && (
           <p className="small" style={{ margin: "0 0 8px" }}>
@@ -208,6 +210,8 @@ export function RouteExplain() {
         ))}
       </div>
 
+      <span className="rx-feed right" aria-hidden="true" />
+      </figure>
       <span className="rx-vr" aria-hidden="true" />
       <div className="rx-side">
       <div className="rx-navaids">
@@ -259,7 +263,6 @@ export function RouteExplain() {
           <p className="small muted">No radio navaids with frequencies on this route (it&apos;s flown on RNAV waypoints).</p>
         )}
       </div>
-      {printout(listing(ofp, dep, dest, rows, off, navOf))}
       </div>
     </div>
   );

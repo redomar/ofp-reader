@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { McduSheet } from "../McduSheet";
 import { useField, useOfp } from "../context";
 import { Replay } from "../replay";
 import { Section, Sub, Tip, V } from "../ui";
@@ -58,6 +60,7 @@ export function RouteString({ route }: { route: string | null | undefined }) {
 export function RouteSection({ no }: { no: number }) {
   const { ofp } = useOfp();
   const [clr, setClr] = useField("route.atcClearance", "Alternate & routing", "Departure ATC clearance");
+  const [sheet, setSheet] = useState(false);
   const alts = ofp?.alternates.length ? ofp.alternates : [null];
   const impacts = ofp?.opImpacts ?? [];
   const maxTrip = Math.max(1, ...impacts.map((m) => m.trip ?? 0));
@@ -197,6 +200,17 @@ export function RouteSection({ no }: { no: number }) {
           </span>
         ))}
       </div>
+      <div className="row" style={{ marginTop: 10 }}>
+        <button type="button" className="btn" aria-expanded={sheet} aria-controls="mcdu-sheet" disabled={!ofp?.fpl} onClick={() => setSheet(!sheet)}>
+          {sheet ? "▾ Hide MCDU set-up sheet" : "▸ Print MCDU set-up sheet"}
+        </button>
+        <span className="small muted">INIT A, INIT B fuel, F-PLN, PERF TAKE OFF, RAD NAV and cruise winds in MCDU page order.</span>
+      </div>
+      {sheet && (
+        <div id="mcdu-sheet" className="mcdu-sheet">
+          <McduSheet />
+        </div>
+      )}
 
       <Sub>
         <Tip tip={G["OPERATIONAL IMPACTS"]} title="Operational impacts">

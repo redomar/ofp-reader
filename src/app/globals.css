@@ -3470,30 +3470,30 @@ hr.ldg-split {
 
 /* ---------- route listing on continuous-form printer paper ---------- */
 :root {
-  --paper: #fffdf7;
-  --paper-band: #fbe4ea;
-  --paper-ink: #2a2a33;
-  --paper-edge: #f3eee2;
+  --pp: #fffdf7;
+  --pp-band: #fbe4ea;
+  --pp-ink: #2a2a33;
+  --pp-edge: #f3eee2;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #1b2230;
-    --paper-band: #2b2232;
-    --paper-ink: #dfe3ea;
-    --paper-edge: #161c27;
+    --pp: #1b2230;
+    --pp-band: #2b2232;
+    --pp-ink: #dfe3ea;
+    --pp-edge: #161c27;
   }
 }
 :root[data-theme="dark"] {
-  --paper: #1b2230;
-  --paper-band: #2b2232;
-  --paper-ink: #dfe3ea;
-  --paper-edge: #161c27;
+  --pp: #1b2230;
+  --pp-band: #2b2232;
+  --pp-ink: #dfe3ea;
+  --pp-edge: #161c27;
 }
 .rx-print {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) 22px;
   margin: 0;
-  background: var(--paper);
+  background: var(--pp);
   box-shadow: 0 1px 0 var(--rule), 0 6px 14px -10px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
@@ -3501,7 +3501,7 @@ hr.ldg-split {
 .rx-feed {
   background:
     radial-gradient(circle at 50% 11px, var(--field) 0 4.5px, transparent 5px) 0 0 / 22px 22px repeat-y,
-    var(--paper-edge);
+    var(--pp-edge);
 }
 .rx-feed.left {
   border-right: 1px dashed var(--rule-strong);
@@ -3516,10 +3516,10 @@ hr.ldg-split {
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 22px;
-  color: var(--paper-ink);
+  color: var(--pp-ink);
   letter-spacing: 0.03em;
   /* a little ink bleed, like a ribbon on paper */
-  text-shadow: 0 0 0.7px color-mix(in srgb, var(--paper-ink) 60%, transparent);
+  text-shadow: 0 0 0.7px color-mix(in srgb, var(--pp-ink) 60%, transparent);
 }
 .rx-pline {
   display: block;
@@ -3528,5 +3528,22 @@ hr.ldg-split {
   white-space: pre;
 }
 .rx-pline:nth-child(even) {
-  background: var(--paper-band);
+  background: var(--pp-band);
+}
+/* MCDU set-up sheet: the listing at a readable width */
+.mcdu-sheet {
+  max-width: 640px;
+  margin-top: 10px;
+}
+/* the route diagram printed on the same paper */
+.rx-route-paper {
+  align-self: start;
+}
+.rx-route-paper .rx-route {
+  padding: 8px 12px 10px 4px;
+  color: var(--pp-ink);
+  background: repeating-linear-gradient(to bottom, var(--pp) 0 22px, var(--pp-band) 22px 44px);
+}
+.rx-route-paper .rx-dot {
+  background: var(--pp);
 }
