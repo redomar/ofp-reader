@@ -190,8 +190,8 @@ const SAMPLES: Sample[] = [
   metar("15018G28KT", "Gusts at warning level (28)"),
   metar("12020G30KT", "EKCH TAF TEMPO — spread 10"),
   metar("18010G25KT", "Big spread on light wind (15)"),
-  metar("25025G35KT", "Strong, gusty"),
-  metar("28030KT", "Strong, steady"),
+  metar("25025G35KT", "High, gusty"),
+  metar("28030KT", "High, steady"),
   metar("30028G43KT", "Gale-force gusts (43)"),
   metar("31034KT", "Gale (34 kt mean)"),
   metar("24035G40KT 210V280", "Gale, variable sector 70°"),
@@ -204,7 +204,7 @@ const SAMPLES: Sample[] = [
   pwind("115M10", "EDDB T/O PWIND"),
   pwind("116M15", "EKCH T/O PWIND"),
   pwind("136M16", "EKCH LDG PWIND"),
-  pwind("270M25", "Hypothetical — strong"),
+  pwind("270M25", "Hypothetical — high"),
   pwind("310M38", "Hypothetical — gale"),
   avg("267/016", "LFSB→LEBL route average"),
   avg("279/017", "EDDB→EKCH route average"),
@@ -236,7 +236,7 @@ function bpmFor(kt: number, c: Cfg) {
   return clamp(bpm, c.floorBpm, c.capBpm);
 }
 
-type Cat = "calm" | "light" | "moderate" | "strong" | "gale" | "storm";
+type Cat = "calm" | "light" | "moderate" | "high" | "gale" | "storm";
 
 /**
  * Wind categories on the weather-severity ramp: grey still air, green gentle, then the
@@ -249,17 +249,17 @@ const CATS: Record<Cat, { label: string; color: string; ink: string; rule: (calm
   calm: { label: "Calm", color: "var(--wc-calm)", ink: "var(--wc-calm-ink)", rule: (c) => `≤ ${c} kt` },
   light: { label: "Light", color: "var(--wc-light)", ink: "var(--wc-light-ink)", rule: (c) => `${c + 1}–10 kt` },
   moderate: { label: "Moderate", color: "var(--wc-moderate)", ink: "var(--wc-moderate-ink)", rule: () => "11–19 kt" },
-  strong: { label: "Strong", color: "var(--wc-strong)", ink: "var(--wc-strong-ink)", rule: () => "≥ 20 kt or gusts ≥ 28" },
+  high: { label: "High", color: "var(--wc-high)", ink: "var(--wc-high-ink)", rule: () => "≥ 20 kt or gusts ≥ 28" },
   gale: { label: "Gale", color: "var(--wc-gale)", ink: "var(--wc-gale-ink)", rule: () => "≥ 34 kt or gusts ≥ 43" },
   storm: { label: "Storm", color: "var(--wc-storm)", ink: "var(--wc-storm-ink)", rule: () => "≥ 48 kt" },
 };
 
-/** Met Office strong-wind warning (20 kt mean / 28 kt gusts), gale (34 / 43) and storm (48, force 10); calm from the config. */
+/** High = Met Office strong-wind warning (20 kt mean / 28 kt gusts); gale (34 / 43) and storm (48, force 10); calm from the config. */
 function category(kt: number, gust: number | null, calmKt: number): Cat {
   const g = gust ?? 0;
   if (kt >= 48) return "storm";
   if (kt >= 34 || g >= 43) return "gale";
-  if (kt >= 20 || g >= 28) return "strong";
+  if (kt >= 20 || g >= 28) return "high";
   if (kt > 10) return "moderate";
   if (kt > calmKt) return "light";
   return "calm";
@@ -738,7 +738,7 @@ export default function WindLab() {
             <small>({catCount(k)})</small>
           </button>
         ))}
-        <span className="wl-mini">AVG WIND uses its ÷ scaled speed; thresholds follow the Met Office strong-wind (20 kt / 28 G), gale (34 / 43 G) and storm (48 kt) warnings.</span>
+        <span className="wl-mini">AVG WIND uses its ÷ scaled speed; High follows the Met Office strong-wind warning (20 kt / 28 G); gale (34 / 43 G) and storm (48 kt) follow theirs.</span>
       </div>
 
       <div className="wl-custom-bar">
@@ -803,11 +803,11 @@ const CSS = `
 .wl-kind[data-k=CUSTOM] { color: var(--magenta); }
 .wl-cat { font-family: var(--font-cond); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; border: 1px solid var(--ink); background: var(--cat); color: var(--cat-ink); padding: 0 6px; border-radius: 2px; cursor: help; }
 .wl-card { border-top: 3px solid var(--cat, var(--rule-strong)) !important; }
-:root { --wc-calm: #a3acb9; --wc-calm-ink: #111827; --wc-light: #5cc46c; --wc-light-ink: #111827; --wc-moderate: #f5cc2a; --wc-moderate-ink: #111827; --wc-strong: #e4610e; --wc-strong-ink: #111827; --wc-gale: #b81d1d; --wc-gale-ink: #ffffff; --wc-storm: #7a3cc0; --wc-storm-ink: #ffffff; }
+:root { --wc-calm: #a3acb9; --wc-calm-ink: #111827; --wc-light: #5cc46c; --wc-light-ink: #111827; --wc-moderate: #f5cc2a; --wc-moderate-ink: #111827; --wc-high: #e4610e; --wc-high-ink: #111827; --wc-gale: #b81d1d; --wc-gale-ink: #ffffff; --wc-storm: #7a3cc0; --wc-storm-ink: #ffffff; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --wc-calm: #8f9bab; --wc-calm-ink: #111827; --wc-light: #62d977; --wc-light-ink: #111827; --wc-moderate: #f7d64a; --wc-moderate-ink: #111827; --wc-strong: #f07a22; --wc-strong-ink: #111827; --wc-gale: #d9302c; --wc-gale-ink: #ffffff; --wc-storm: #a875ee; --wc-storm-ink: #111827; }
+  :root:not([data-theme="light"]) { --wc-calm: #8f9bab; --wc-calm-ink: #111827; --wc-light: #62d977; --wc-light-ink: #111827; --wc-moderate: #f7d64a; --wc-moderate-ink: #111827; --wc-high: #f07a22; --wc-high-ink: #111827; --wc-gale: #d9302c; --wc-gale-ink: #ffffff; --wc-storm: #a875ee; --wc-storm-ink: #111827; }
 }
-:root[data-theme="dark"] { --wc-calm: #8f9bab; --wc-calm-ink: #111827; --wc-light: #62d977; --wc-light-ink: #111827; --wc-moderate: #f7d64a; --wc-moderate-ink: #111827; --wc-strong: #f07a22; --wc-strong-ink: #111827; --wc-gale: #d9302c; --wc-gale-ink: #ffffff; --wc-storm: #a875ee; --wc-storm-ink: #111827; }
+:root[data-theme="dark"] { --wc-calm: #8f9bab; --wc-calm-ink: #111827; --wc-light: #62d977; --wc-light-ink: #111827; --wc-moderate: #f7d64a; --wc-moderate-ink: #111827; --wc-high: #f07a22; --wc-high-ink: #111827; --wc-gale: #d9302c; --wc-gale-ink: #ffffff; --wc-storm: #a875ee; --wc-storm-ink: #111827; }
 .wl-cats { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 14px; }
 .wl-catbtn { display: inline-flex; align-items: center; gap: 6px; }
 .wl-catbtn i { width: 11px; height: 11px; border-radius: 50%; background: var(--cat); border: 1px solid var(--ink); display: inline-block; }
