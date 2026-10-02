@@ -324,46 +324,73 @@ function Timeline({ phases, est, act }: { phases: Phase[]; est: Clock; act: Cloc
     return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
   };
 
-  const row = (label: string, segs: typeof planned, other: typeof planned, i: number) => (
-    <div className="tl-row">
-      <span className="tl-label">{label}</span>
-      <div
-        className="fuelbar tl-track a-wipe"
-        style={{ ["--i" as string]: i }}
-        role="img"
-        aria-label={`${label}: ${segs.map((s) => `${s.k} ${s.to - s.from} minutes`).join(", ")}`}
-      >
-        {segs.map((s) => {
-          const m = s.to - s.from;
-          const ref = other.find((o) => o.k === s.k);
-          const diff = ref ? m - (ref.to - ref.from) : null;
-          return (
-            <span
-              key={s.k}
-              style={{ position: "absolute", top: 0, bottom: 0, left: `${((s.from - t0) / span) * 100}%`, width: `${(m / span) * 100}%`, background: s.color, color: "var(--sheet)" }}
-              data-tip={`${clockAt(s.from)}Z → ${clockAt(s.to)}Z · ${fmtDur(m)}${diff != null && label === "Actual" ? ` · ${diff === 0 ? "as planned" : `${diff > 0 ? "+" : "−"}${Math.abs(diff)} min vs plan`}` : ""}`}
-              data-tip-title={`${label} · ${s.k}`}
-            >
-              {m / span > 0.15 ? `${s.k} ${fmtDur(m)}` : ""}
-            </span>
-          );
-        })}
-      </div>
+  const pos = (m: number) => `${((m - t0) / span) * 100}%`;
+  const segText = (s: (typeof planned)[number]) => {
+    const share = (s.to - s.from) / span;
+    return share > 0.09 ? `${s.k} ${fmtDur(s.to - s.from)}` : share > 0.025 ? fmtDur(s.to - s.from) : "";
+  };
+  const bar = (label: string, segs: typeof planned, other: typeof planned, i: number) => (
+    <div className={`fuelbar tl-track a-wipe ${i === 0 ? "first" : "second"}`} style={{ ["--i" as string]: i, gridRow: i === 0 ? 2 : 4 }} role="img" aria-label={`${label}: ${segs.map((s) => `${s.k} ${s.to - s.from} minutes`).join(", ")}`}>
+      {segs.map((s) => {
+        const m = s.to - s.from;
+        const ref = other.find((o) => o.k === s.k);
+        const diff = ref ? m - (ref.to - ref.from) : null;
+        return (
+          <span
+            key={s.k}
+            style={{ position: "absolute", top: 0, bottom: 0, left: pos(s.from), width: `${(m / span) * 100}%`, background: s.color }}
+            data-tip={`${clockAt(s.from)}Z → ${clockAt(s.to)}Z · ${fmtDur(m)}${diff != null && label === "Actual" ? ` · ${diff === 0 ? "as planned" : `${diff > 0 ? "+" : "−"}${Math.abs(diff)} min vs plan`}` : ""}`}
+            data-tip-title={`${label} · ${s.k}`}
+          />
+        );
+      })}
     </div>
   );
+  // Near either end, a label hugs that edge instead of centring past it.
+  const edge = (m: number) => ((m - t0) / span < 0.08 ? "at-start" : (t1 - m) / span < 0.08 ? "at-end" : undefined);
+  // Segment names sit outside the bars: planned above, actual below, centred on each segment.
+  const texts = (segs: typeof planned, where: "top" | "bottom") => (
+    <div className={`tl-texts ${where}`} aria-hidden="true">
+      {segs.map((s) => (
+        <span key={s.k} className={edge((s.from + s.to) / 2)} style={{ left: pos((s.from + s.to) / 2) }}>
+          <span className="t-full">{segText(s)}</span>
+          {/* narrow screens: durations only */}
+          <span className="t-short">{(s.to - s.from) / span > 0.025 ? fmtDur(s.to - s.from) : ""}</span>
+        </span>
+      ))}
+    </div>
+  );
+  // The shared Z time scale runs between the bars: both ends, and whole hours away from them.
+  const ticks = [t0, t1];
+  for (let m = Math.ceil((hhmmToMin(origin)! + t0) / 60) * 60 - hhmmToMin(origin)!; m < t1; m += 60) if ((m - t0) / span > 0.12 && (t1 - m) / span > 0.12) ticks.push(m);
 
   return (
-    <Replay className="stack" style={{ marginTop: 10 }}>
-      {row("Planned", planned, actual, 0)}
-      {actual.length > 0 && row("Actual", actual, planned, 1)}
-      <div className="tl-row small mono muted">
-        <span className="tl-label" />
-        <span className="row" style={{ justifyContent: "space-between", flex: 1 }}>
-          <span>{clockAt(t0)}Z</span>
-          {actual.length === 0 && <span className="muted" style={{ fontFamily: "var(--font-sans)" }}>Fill in actual times above to compare</span>}
-          <span>{clockAt(t1)}Z</span>
-        </span>
+    <Replay className="tl-pair" style={{ marginTop: 10 }}>
+      <span className="tl-label" style={{ gridRow: 2 }}>
+        Planned
+      </span>
+      {texts(planned, "top")}
+      {bar("Planned", planned, actual, 0)}
+      <div className="tl-axis small mono" style={{ gridRow: 3 }}>
+        {ticks.map((m) => (
+          <span key={m} className={m === t0 ? "start" : m === t1 ? "end" : undefined} style={{ left: pos(m) }}>
+            {clockAt(m)}Z
+          </span>
+        ))}
       </div>
+      {actual.length > 0 ? (
+        <>
+          <span className="tl-label" style={{ gridRow: 4 }}>
+            Actual
+          </span>
+          {bar("Actual", actual, planned, 1)}
+          {texts(actual, "bottom")}
+        </>
+      ) : (
+        <span className="small muted" style={{ gridColumn: 2, gridRow: 4 }}>
+          Fill in actual times above to compare
+        </span>
+      )}
     </Replay>
   );
 }

@@ -237,8 +237,32 @@ function ActualRunway({
       )}
       {length && <span className="small">{fmtNum(length)} ft</span>}
       {notes && <span className="small mono">{notes}</span>}
-      {kind === "ld" && !same && distRow && <span className="small muted">Factored landing distance is only given for the planned runway.</span>}
+      {kind === "ld" && !same && distRow && <span className="small muted">Estimated landing distance below the planned one.</span>}
     </div>
+  );
+}
+
+/**
+ * Factored landing distance against runway length as a touching pair of bars: the dry
+ * figure's text above the top bar, the wet figure's below the bottom one.
+ */
+function LdgDistance({ title, dry, wet, length, estimate = false, tip }: { title: string; dry: number; wet: number; length: number; estimate?: boolean; tip?: string }) {
+  const pct = (d: number) => (d / length) * 100;
+  const colour = (p: number) => (p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)");
+  const label = (k: string, d: number) => `${k} ${fmtNum(d)} ft · ${pct(d).toFixed(0)}%`;
+  const bar = (k: string, d: number) => (
+    <div className="rwybar" role="meter" aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`} aria-valuemin={0} aria-valuemax={length} aria-valuenow={d}>
+      <span className="a-grow-x" style={{ width: `${Math.min(100, pct(d))}%`, background: colour(pct(d)) }} />
+    </div>
+  );
+  return (
+    <Replay className={cx("pair", estimate && "pair-est")}>
+      <span className="field-label">{tip ? <Tip tip={tip}>{title}</Tip> : title}</span>
+      <span className="pair-top">{label("Dry", dry)}</span>
+      {bar("Dry", dry)}
+      {bar("Wet", wet)}
+      <span className="pair-bottom">{label("Wet", wet)}</span>
+    </Replay>
   );
 }
 
@@ -335,6 +359,21 @@ export function TlrSection({ no }: { no: number }) {
   const ldAct = useFieldGroup("tlr.landing", "Runway analysis");
   const toRwy = toAct.get("RWY") ? normRwy(toAct.get("RWY")) : null;
   const ldRwy = ldAct.get("RWY") ? normRwy(ldAct.get("RWY")) : null;
+  // Estimated factored landing distance on a selected (non-planned) runway: the planned row
+  // corrected by the per-knot head/tailwind rows for that runway's wind component.
+  const ldEst = (() => {
+    if (!ldRwy || ldRwy === ld?.PRWY || !plannedDistRow || !dist) return null;
+    const length = Number(acarsLd?.rows.find((r) => r[0] === ldRwy)?.[1]);
+    const h = rwyHdg(ldRwy);
+    if (!length || h == null) return null;
+    const actualWind = windOf(ldAct.get("WIND"));
+    const w = actualWind ?? pwind(ld?.PWIND);
+    const head = w ? components(w.dir, w.spd, h).head : 0;
+    const per = dist.rows.find((r) => r[0]?.startsWith(head >= 0 ? "HW" : "TW"));
+    const adj = (i: number) => Math.round(Number(plannedDistRow[i]) + (per ? Number(per[i]) * Math.abs(head) : 0));
+    const windNote = !w || head === 0 ? "calm wind" : `${Math.abs(head)} kt ${head > 0 ? "headwind" : "tailwind"} from the ${actualWind ? "actual" : "planned"} wind`;
+    return { dry: adj(5), wet: adj(6), length, windNote };
+  })();
   const setToRwy = (r: string | null) => toAct.put("RWY", "Takeoff actual RWY", r ?? "");
   const setLdRwy = (r: string | null) => ldAct.put("RWY", "Landing actual RWY", r ?? "");
 
@@ -458,25 +497,26 @@ export function TlrSection({ no }: { no: number }) {
         <div>
           {plannedDistRow && ldRwyLen ? (
             <div>
-              <span className="field-label">Planned runway {ld?.PRWY} — factored landing distance vs length</span>
-              {[
-                ["Dry", Number(plannedDistRow[5])],
-                ["Wet", Number(plannedDistRow[6])],
-              ].map(([k, d]) => {
-                const p = ((d as number) / ldRwyLen) * 100;
-                return (
-                  <Replay key={k as string}>
-                    <div className="rwybar" role="meter" aria-label={`${k} factored distance ${d} of ${ldRwyLen} ft`} aria-valuemin={0} aria-valuemax={ldRwyLen} aria-valuenow={d as number}>
-                      <span className="a-grow-x" style={{ width: `${Math.min(100, p)}%`, background: p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)" }}>
-                        {k} {fmtNum(d as number)} ft · {p.toFixed(0)}%
-                      </span>
-                    </div>
-                  </Replay>
-                );
-              })}
+              <LdgDistance title={`Planned runway ${ld?.PRWY} — factored landing distance vs length`} dry={Number(plannedDistRow[5])} wet={Number(plannedDistRow[6])} length={ldRwyLen} />
               <p className="small muted" style={{ margin: "4px 0 0" }}>
                 Runway {fmtNum(ldRwyLen)} ft. Margin wet {fmtNum(ldRwyLen - Number(plannedDistRow[6]))} ft (distances assumed ft, as runway lengths).
               </p>
+              {ldEst && (
+                <>
+                  <hr className="ldg-split" />
+                  <LdgDistance
+                    estimate
+                    title={`Selected runway ${ldRwy} — estimated factored landing distance`}
+                    dry={ldEst.dry}
+                    wet={ldEst.wet}
+                    length={ldEst.length}
+                    tip={`From the planned-runway table (planned landing weight, calm wind), corrected for ${ldEst.windNote} on ${ldRwy}. Not certified for ${ldRwy}: slope, elevation and declared distances may differ. Check with your performance tool.`}
+                  />
+                  <p className="small muted" style={{ margin: "4px 0 0" }}>
+                    Estimate · runway {fmtNum(ldEst.length)} ft · {ldEst.windNote}. Margin wet {fmtNum(ldEst.length - ldEst.wet)} ft.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <V v={null} w={30} />

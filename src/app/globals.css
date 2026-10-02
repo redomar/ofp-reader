@@ -3010,3 +3010,142 @@ dialog.lightbox img {
   font-family: var(--font-mono);
   font-size: 15px;
 }
+
+/* Paired bars: two touching bars, the first bar's text above, the second's below */
+.pair {
+  display: flex;
+  flex-direction: column;
+}
+.pair .rwybar {
+  margin: 0;
+}
+.pair .rwybar + .rwybar {
+  border-top: none;
+  border-radius: 0 0 2px 2px;
+}
+.pair .rwybar:has(+ .rwybar) {
+  border-radius: 2px 2px 0 0;
+}
+.pair-top,
+.pair-bottom {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.pair-top {
+  margin: 4px 0 3px;
+}
+.pair-bottom {
+  margin: 3px 0 0;
+}
+/* estimate: dashed outline and hatched fill */
+.pair-est .rwybar {
+  border-style: dashed;
+}
+.pair-est .rwybar span {
+  opacity: 0.8;
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, rgba(255, 255, 255, 0.3) 5px 8px) !important;
+}
+hr.ldg-split {
+  border: none;
+  border-top: 1px solid var(--rule-strong);
+  margin: 14px 0 10px;
+}
+
+/* Times & weights timeline: planned bar, Z time scale, actual bar, touching in one block */
+.tl-pair {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  column-gap: 10px;
+  align-items: center;
+}
+.tl-pair .tl-track {
+  grid-column: 2;
+  height: 26px;
+}
+.tl-pair > .tl-track.first {
+  border-radius: 2px 2px 0 0;
+  border-bottom: none;
+}
+.tl-pair > .tl-track.second {
+  border-radius: 0 0 2px 2px;
+  border-top: none;
+}
+.tl-texts {
+  grid-column: 2;
+  position: relative;
+  height: 18px;
+}
+.tl-texts.top {
+  grid-row: 1;
+}
+.tl-texts.bottom {
+  grid-row: 5;
+}
+.tl-texts > span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.tl-texts > span.at-start {
+  transform: translateX(-30%);
+}
+.tl-texts > span.at-end {
+  transform: translateX(-100%);
+}
+.tl-texts.top > span {
+  bottom: 2px;
+}
+.tl-texts.bottom > span {
+  top: 2px;
+}
+/* the time scale between the bars */
+.tl-axis {
+  grid-column: 2;
+  position: relative;
+  height: 18px;
+  border-left: 1px solid var(--rule-strong);
+  border-right: 1px solid var(--rule-strong);
+  background: var(--field);
+  color: var(--ink-3);
+}
+.tl-axis span {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-size: 11px;
+}
+.tl-axis span.start {
+  transform: translate(4px, -50%);
+}
+.tl-axis span.end {
+  transform: translate(calc(-100% - 4px), -50%);
+}
+.tl-axis span:not(.start):not(.end)::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  height: 4px;
+  border-left: 1px solid var(--ink-3);
+}
+.tl-texts .t-short {
+  display: none;
+}
+@media (max-width: 640px) {
+  .tl-texts .t-full {
+    display: none;
+  }
+  .tl-texts .t-short {
+    display: inline;
+  }
+  .tl-axis span:not(.start):not(.end) {
+    display: none;
+  }
+}
