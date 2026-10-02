@@ -56,7 +56,8 @@ export function printout(lines: string[], from = 0) {
       <pre className="rx-paper">
         {lines.map((l, i) => (
           <span key={i} className="rx-pline" style={{ ["--i" as string]: from + i }}>
-            {l || " "}
+            {/* only the text prints; the band behind it is already on the paper */}
+            <span className="rx-ptext">{l || " "}</span>
           </span>
         ))}
       </pre>

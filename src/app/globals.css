@@ -3740,14 +3740,20 @@ hr.mcdu-rule {
   }
 }
 /* sheets (MCDU / alternate): really fast, one line every 12 ms */
-.mcdu-dialog .rx-pline {
+.mcdu-dialog .rx-ptext {
+  display: inline-block;
   animation: pp-print 90ms steps(10, end) both;
   animation-delay: calc(250ms + var(--i, 0) * 12ms);
 }
 /* explain route: fast, one band every 45 ms */
+/* the contents print; each band's background stays put */
+.rx-route-paper .rx-filed > *,
 .rx-route-paper .rx-filed,
-.rx-route-paper .rx-node,
-.rx-route-paper .rx-leg {
+.rx-route-paper .rx-node > *,
+.rx-route-paper .rx-leg > * {
   animation: pp-band 260ms steps(8, end) both;
   animation-delay: calc(var(--i, 0) * 45ms);
+}
+.rx-route-paper .rx-filed {
+  animation: none;
 }
