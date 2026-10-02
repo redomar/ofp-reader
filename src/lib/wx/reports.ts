@@ -61,6 +61,8 @@ export interface AtisInfo {
   transitionLevel: string | null;
   /** True when the weather came from plain-language phrases rather than coded groups. */
   plain: boolean;
+  /** Sentences that aren't weather or runway info: NOTAM-style notices, cautions. */
+  notes: string[];
 }
 
 export interface Report {
@@ -278,7 +280,11 @@ const PHONETIC: Record<string, string> = {
   SIERRA: "S", TANGO: "T", UNIFORM: "U", VICTOR: "V", WHISKEY: "W", WHISKY: "W", XRAY: "X", "X-RAY": "X", YANKEE: "Y", ZULU: "Z",
 };
 const NUMWORD: Record<string, string> = { ZERO: "0", ONE: "1", TWO: "2", THREE: "3", TREE: "3", FOUR: "4", FIVE: "5", FIFE: "5", SIX: "6", SEVEN: "7", EIGHT: "8", NINE: "9", NINER: "9" };
-const COVER_WORD: Record<string, CloudLayer["cover"]> = { FEW: "FEW", SCATTERED: "SCT", BROKEN: "BKN", OVERCAST: "OVC" };
+const COVER_WORD: Record<string, CloudLayer["cover"]> = { FEW: "FEW", SCATTERED: "SCT", SCT: "SCT", BROKEN: "BKN", BKN: "BKN", OVERCAST: "OVC", OVC: "OVC" };
+/** Sentences that are ATIS furniture rather than information. */
+const BOILERPLATE = /\b(ADVISE|ADVS|ACKNOWLEDGE|ACK|ON (INITIAL )?(CONTACT|CTC)|YOU HAVE (INFO|INFORMATION))\b/;
+/** Sentences already shown as fields. */
+const FIELD_SENTENCE = /^(?:\S+\s+){0,3}?(INFO|INFORMATION|ATIS)\b|^\d{4}Z?$|^TIME\b|\b(RWYS?|RUNWAYS?)\b|^(SURFACE )?WIND\b|^(VIS|VISIBILITY|CAVOK)\b|^(FEW|SCT|BKN|OVC|SCATTERED|BROKEN|OVERCAST|NO SIGNIFICANT CLOUD|SKY CLEAR)\b|^(TEMP|TEMPERATURE|DEW ?POINT|DP)\b|^(QNH|ALTIMETER)\b|^(TRL|TL|TRANSITION LEVEL)\b|^(EXP|EXPECT)\s+(ILS|RNP|RNAV|VOR|NDB|LOC|VISUAL)\b|^(LIGHT|HEAVY|MODERATE)?\s*(RAIN|DRIZZLE|SNOW|FOG|MIST|HAZE|SHOWERS?|THUNDERSTORMS?)\b/;
 const WX_WORD: [RegExp, string][] = [
   [/\bTHUNDERSTORMS?\b/, "TS"],
   [/\bHEAVY RAIN\b/, "+RA"],
@@ -302,16 +308,24 @@ function parseAtis(raw: string): Report {
   const letterM = s.match(/\b(?:INFORMATION|INFO|ATIS(?:\s+(?:ARR|DEP|ARRIVAL|DEPARTURE))?)\s+([A-Z][A-Z-]*)\b/);
   const word = letterM?.[1];
   const letter = word ? (PHONETIC[word] ?? (word.length === 1 ? word : null)) : null;
-  const icao = tokens.find((t, k) => /^[A-Z]{4}$/.test(t) && k < 3 && !/^(THIS|INFO|ATIS|TIME|WIND)$/.test(t)) ?? null;
-  const nameM = s.match(/^(?:THIS IS\s+)?([A-Z][A-Z ]+?)\s+(?:ARRIVAL\s+|DEPARTURE\s+)?(?:INFORMATION|ATIS)\b/);
+  // An ICAO code leads a coded ATIS ("EGLL ARR ATIS F"); four-letter words like ARPT or INFO are not codes.
+  const icao = /^[A-Z]{4}$/.test(tokens[0] ?? "") && !/^(THIS|INFO|ATIS|TIME|WIND|ARPT|BASE|CITY|PORT)$/.test(tokens[0]) ? tokens[0] : null;
+  const nameM = s.match(/^(?:THIS IS\s+)?([A-Z][A-Z .]+?)[\s,]+(?:ARR\w*\s+|DEP\w*\s+)?(?:INFORMATION|INFO|ATIS)\b/);
   const kind = /\bARR(?:IVAL)?\b/.test(s) ? "ARR" : /\bDEP(?:ARTURE)?\b/.test(s) ? "DEP" : null;
 
   const runways: AtisInfo["runways"] = [];
-  for (const m of s.matchAll(/\b(?:(LANDING|ARRIVAL|TAKE-?OFF|DEPARTURE)\s+)?(?:RWYS?|RUNWAYS?)(?:\s+IN\s+USE)?(?:\s+FOR\s+(LANDING|TAKE-?OFF))?\s+(\d{2})\s*(LEFT|RIGHT|CENTRE|CENTER|[LRC])?\b/g)) {
-    const rwy = m[3] + (m[4] ? m[4][0] : "");
+  const RWY_ID = String.raw`\d{2}\s*(?:LEFT|RIGHT|CENTRE|CENTER|[LRC])?\b`;
+  const listRe = new RegExp(
+    String.raw`\b(?:(LANDING|LDG|ARRIVALS?|ARRIVING|ARVG|ARR|TAKE-?OFF|T\/O|DEPARTURES?|DEPARTING|DPTG|DEP)\s+)?(?:RWYS?|RUNWAYS?)(?:\s+IN\s+USE)?(?:\s+FOR\s+(LANDING|TAKE-?OFF|ARRIVALS?|DEPARTURES?))?\s+(${RWY_ID}(?:\s*(?:,|AND|&)\s*${RWY_ID})*)`,
+    "g",
+  );
+  for (const m of s.matchAll(listRe)) {
     const role = m[1] ?? m[2];
-    const use = role ? (/LAND|ARR/.test(role) ? "landing" : "take-off") : null;
-    if (!runways.some((r) => r.rwy === rwy && r.use === use)) runways.push({ rwy, use });
+    const use = role ? (/LAND|LDG|ARR|ARV/.test(role) ? "landing" : "take-off") : null;
+    for (const id of m[3].matchAll(/(\d{2})\s*(LEFT|RIGHT|CENTRE|CENTER|[LRC])?/g)) {
+      const rwy = id[1] + (id[2] ? id[2][0] : "");
+      if (!runways.some((r) => r.rwy === rwy && r.use === use)) runways.push({ rwy, use });
+    }
   }
   const approach = s.match(/\b(ILS|RNP|RNAV|VOR|NDB|LOC|LOCALIZER|VISUAL)(?:\s+[XYZ])?\s+(?:APPROACH(?:ES)?|APCH|APP)\b/)?.[1] ?? null;
   const tl = s.match(/\b(?:TRANSITION LEVEL|TRL|TL)\s*(?:FL\s*)?(\d{2,3})\b/)?.[1] ?? null;
@@ -326,25 +340,25 @@ function parseAtis(raw: string): Report {
     const p = emptyConditions();
     let m: RegExpMatchArray | null;
     if (/\bWIND\s+CALM\b|\bCALM\b/.test(s)) p.wind = { dir: null, spd: 0, gust: null, sector: null, calm: true };
-    else if ((m = s.match(/\bWIND\s+(?:IS\s+)?(\d{3})\s*(?:DEGREES?|DEG)?\s*(?:AT\s+)?(\d{1,3})\s*(?:KNOTS?|KT)\b(?:[^.]*?\bGUST(?:ING|S)?\s*(?:TO\s+)?(\d{1,3}))?/)))
-      p.wind = { dir: Number(m[1]), spd: Number(m[2]), gust: m[3] ? Number(m[3]) : null, sector: null, calm: false };
+    else if ((m = s.match(/\bWIND\s+(?:IS\s+)?(\d{3})\s*(?:DEGREES?|DEG)?\s*(?:AT\s+(\d{1,3})(?:\s*(?:KNOTS?|KT))?|(\d{1,3})\s*(?:KNOTS?|KT))\b(?:[^.]*?\b(?:GUST(?:ING|S)?|G)\s*(?:TO\s+)?(\d{1,3}))?/)))
+      p.wind = { dir: Number(m[1]), spd: Number(m[2] ?? m[3]), gust: m[4] ? Number(m[4]) : null, sector: null, calm: false };
     else if ((m = s.match(/\bWIND\s+VARIABLE\s+(\d{1,2})\s*(?:KNOTS?|KT)/))) p.wind = { dir: null, spd: Number(m[1]), gust: null, sector: null, calm: false };
     if (p.wind && (m = s.match(/\bVARYING\s+(?:BETWEEN\s+)?(\d{3})\s*(?:DEGREES?)?\s*(?:AND|TO)\s+(\d{3})/))) p.wind.sector = [Number(m[1]), Number(m[2])];
     if (/\bCAVOK\b|\bCAV OK\b/.test(s)) {
       p.cavok = true;
       p.visM = 10000;
-    } else if ((m = s.match(/\bVISIBILITY\s+(\d+(?:\.\d+)?)\s*(KILOMET(?:RE|ER)S?|KM|MET(?:RE|ER)S?|M|MILES?|SM)\b/)))
+    } else if ((m = s.match(/\b(?:VISIBILITY|VIS)\s+(?:IS\s+)?(\d+(?:\.\d+)?)\s*(KILOMET(?:RE|ER)S?|KM|MET(?:RE|ER)S?|M|MILES?|SM)\b/)))
       p.visM = Math.min(10000, Math.round(Number(m[1]) * (/^K/.test(m[2]) ? 1000 : /^(MILE|SM)/.test(m[2]) ? 1609 : 1)));
-    for (const m2 of s.matchAll(/\b(FEW|SCATTERED|BROKEN|OVERCAST)\s+(?:AT\s+)?(\d{3,5})\s*(?:FEET|FT)\b(\s+CUMULONIMBUS|\s+TOWERING CUMULUS)?/g)) {
+    for (const m2 of s.matchAll(/\b(FEW|SCATTERED|SCT|BROKEN|BKN|OVERCAST|OVC)\s+(?:AT\s+)?(\d{3,5})(?:\s*(?:FEET|FT))?\b(\s+CUMULONIMBUS|\s+CB\b|\s+TOWERING CUMULUS|\s+TCU\b)?/g)) {
       const cover = COVER_WORD[m2[1]];
       const base = Number(m2[2]);
-      p.clouds.push({ cover, baseFt: base, type: m2[3]?.includes("CUMULONIMBUS") ? "CB" : m2[3] ? "TCU" : null });
+      p.clouds.push({ cover, baseFt: base, type: /CUMULONIMBUS|CB/.test(m2[3] ?? "") ? "CB" : m2[3] ? "TCU" : null });
       if ((cover === "BKN" || cover === "OVC") && (p.ceilingFt == null || base < p.ceilingFt)) p.ceilingFt = base;
     }
     if (/\bNO SIGNIFICANT CLOUD\b/.test(s)) p.noCloud = "NSC";
     if (/\bSKY CLEAR\b/.test(s)) p.noCloud = "SKC";
-    if ((m = s.match(/\bTEMPERATURE\s+(MINUS\s+)?(\d{1,2})\b/))) p.temp = (m[1] ? -1 : 1) * Number(m[2]);
-    if ((m = s.match(/\bDEW ?POINT\s+(MINUS\s+)?(\d{1,2})\b/))) p.dew = (m[1] ? -1 : 1) * Number(m[2]);
+    if ((m = s.match(/\b(?:TEMPERATURE|TEMP)\s+(MINUS\s+|M)?(\d{1,2})\b/))) p.temp = (m[1] ? -1 : 1) * Number(m[2]);
+    if ((m = s.match(/\b(?:DEW ?POINT|DEWPOINT|DP)\s+(MINUS\s+|M)?(\d{1,2})\b/))) p.dew = (m[1] ? -1 : 1) * Number(m[2]);
     if ((m = s.match(/\bQNH\s+(\d{3,4})\b/))) p.qnh = Number(m[1]);
     else if ((m = s.match(/\bALTIMETER\s+(\d{4})\b/))) p.qnh = Math.round(Number(m[1]) * 0.338639);
     for (const [re, code] of WX_WORD) if (re.test(s) && !p.wx.some((w) => w.includes(code.replace(/[+-]/, "")))) p.wx.push(code);
@@ -354,6 +368,11 @@ function parseAtis(raw: string): Report {
     if (!coded) cond.category = p.category;
   }
 
+  const notes = raw
+    .split(/\.\s+|\.$/)
+    .map((x) => x.trim().replace(/\.$/, ""))
+    .filter((x) => x && !BOILERPLATE.test(x) && !FIELD_SENTENCE.test(x));
+
   return {
     kind: "ATIS",
     icao,
@@ -362,7 +381,7 @@ function parseAtis(raw: string): Report {
     time,
     cond,
     taf: null,
-    atis: { letter, kind, name: nameM?.[1]?.trim() ?? null, runways, approach: approach === "LOCALIZER" ? "LOC" : approach, transitionLevel: tl, plain: !coded },
+    atis: { letter, kind, name: nameM?.[1]?.trim().replace(/\s+(ARPT|AIRPORT|AIRFIELD|AERODROME)$/, "") ?? null, runways, approach: approach === "LOCALIZER" ? "LOC" : approach, transitionLevel: tl, plain: !coded, notes },
   };
 }
 

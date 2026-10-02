@@ -60,6 +60,7 @@ export function decodeToken(t: string, isTaf = false): MetarToken {
   if (t === "CAVOK") return { raw: t, kind: "vis", tip: "Ceiling and visibility OK: vis ≥ 10 km, no cloud below 5000 ft or MSA, no CB/TCU, no significant weather" };
   if (t === "9999") return { raw: t, kind: "vis", tip: "Visibility 10 km or more" };
   if ((m = t.match(/^(\d{4})$/))) return { raw: t, kind: "vis", tip: `Visibility ${Number(m[1])} m` };
+  if ((m = t.match(/^(P)?(\d{1,2}|\d\/\d{1,2})SM$/))) return { raw: t, kind: "vis", tip: `Visibility ${m[1] ? "more than " : ""}${m[2]} statute mile${m[2] === "1" ? "" : "s"}` };
   if (t === "NCD") return { raw: t, kind: "cloud", tip: "No cloud detected (automatic station)" };
   if (t === "NSC") return { raw: t, kind: "cloud", tip: "No significant cloud" };
   if (t === "SKC" || t === "CLR") return { raw: t, kind: "cloud", tip: "Sky clear" };

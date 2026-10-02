@@ -2816,3 +2816,12 @@ dialog.lightbox img {
     grid-column: 1 / -1;
   }
 }
+.atis-notes {
+  margin: 0 12px 10px;
+  padding: 6px 10px 6px 26px;
+  border-left: 3px solid var(--amber);
+  background: var(--amber-bg);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}

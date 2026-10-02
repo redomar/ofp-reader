@@ -17,6 +17,7 @@ import {
   parseAll,
   skyOf,
   wxWords,
+  type CloudLayer,
   type Conditions,
   type DayTime,
   type Report,
@@ -133,7 +134,18 @@ const OKTAS = { FEW: 0.25, SCT: 0.5, BKN: 0.8, OVC: 1, VV: 1 } as const;
 function CloudColumn({ c }: { c: Conditions }) {
   const top = Math.max(5000, ...c.clouds.map((l) => (l.baseFt ?? 0) + 1000));
   const H = 96;
-  const y = (ft: number) => H - 10 - (ft / top) * (H - 18);
+  // Leave room above the highest layer for its label.
+  const y = (ft: number) => H - 10 - (ft / top) * (H - 30);
+  // Each layer sits at its height with its label just above; layers closer than a bar
+  // plus a label are spaced apart (the label still gives the exact height).
+  const GAP = 19;
+  const layers = [...c.clouds]
+    .sort((a, b) => (a.baseFt ?? 0) - (b.baseFt ?? 0))
+    .reduce<{ l: CloudLayer; yy: number; ly: number }[]>((acc, l) => {
+      const prev = acc.at(-1)?.yy ?? Infinity;
+      const yy = Math.max(17, Math.min(y(l.baseFt ?? 0), prev - GAP));
+      return [...acc, { l, yy, ly: yy - 9 }];
+    }, []);
   return (
     <svg viewBox={`0 0 120 ${H}`} className="cloud-col" role="img" aria-label={c.clouds.length ? `Cloud: ${c.clouds.map((l) => `${l.cover} ${l.baseFt ?? "?"} ft${l.type ? ` ${l.type}` : ""}`).join(", ")}` : c.cavok ? "No cloud below 5000 ft (CAVOK)" : "No cloud reported"}>
       <line x1="30" x2="118" y1={H - 10} y2={H - 10} className="cc-ground" />
@@ -142,13 +154,12 @@ function CloudColumn({ c }: { c: Conditions }) {
           {ft >= 1000 ? `${Math.round(ft / 100) / 10}k` : ft}
         </text>
       ))}
-      {c.clouds.map((l, i) => {
+      {layers.map(({ l, yy, ly }, i) => {
         const w = 84 * OKTAS[l.cover];
-        const yy = y(l.baseFt ?? 0);
         return (
           <g key={i}>
             <rect x={32} y={yy - 7} width={w} height={7} rx={3.5} className={cx("cc-layer", l.type === "CB" && "cb", l.type === "TCU" && "tcu", (l.cover === "BKN" || l.cover === "OVC" || l.cover === "VV") && "ceil")} />
-            <text x={34} y={yy - 9} className="cc-label">
+            <text x={34} y={ly} className="cc-label">
               {l.cover}
               {l.baseFt != null ? ` ${l.baseFt.toLocaleString("en-GB")}` : ""}
               {l.type ? ` ${l.type}` : ""}
@@ -328,6 +339,13 @@ function ObsCard({ r }: { r: Report }) {
           {a.transitionLevel && <Badge tone="ink" tip="Transition level">TL FL{a.transitionLevel.padStart(3, "0")}</Badge>}
           {a.plain && <span className="small muted">read from plain-language ATIS</span>}
         </div>
+      )}
+      {a && a.notes.length > 0 && (
+        <ul className="atis-notes">
+          {a.notes.map((n, i) => (
+            <li key={i}>{n}</li>
+          ))}
+        </ul>
       )}
       <Facts c={c} kind="METAR" />
       <details className="wxc-raw" open={r.kind !== "ATIS" || !a?.plain}>
