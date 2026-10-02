@@ -3029,15 +3029,18 @@ dialog.lightbox img {
 .rwybar.est .rwybar-fill {
   background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--sheet) 30%, transparent) 6px 9px);
 }
-/* both label layers get the same padding so they line up; over the hatch the label sits on a
-   solid patch of the bar colour, so no stripe is ever behind the letters */
-.rwybar-lbl > span {
-  padding: 2px 4px;
-  margin-left: -4px;
-  border-radius: 2px;
-}
-.rwybar.est .rwybar-lbl.on > span {
-  background: var(--barc);
+/* Over the hatch, the label gets a solid 1px outline in the ink colour (dark by day, light at
+   night: the opposite of the text), so stripes behind the letters don't lower the contrast. */
+.rwybar.est .rwybar-lbl.on {
+  text-shadow:
+    1px 0 0 var(--ink),
+    -1px 0 0 var(--ink),
+    0 1px 0 var(--ink),
+    0 -1px 0 var(--ink),
+    1px 1px 0 var(--ink),
+    -1px -1px 0 var(--ink),
+    1px -1px 0 var(--ink),
+    -1px 1px 0 var(--ink);
 }
 hr.ldg-split {
   border: none;

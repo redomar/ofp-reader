@@ -262,10 +262,10 @@ function LdgDistance({ title, dry, wet, length, estimate = false, tip }: { title
             <div className={cx("rwybar", estimate && "est")} style={{ ["--fill" as string]: `${fill}%`, ["--barc" as string]: colour }} role="meter" aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`} aria-valuemin={0} aria-valuemax={length} aria-valuenow={d as number}>
               <span className="rwybar-fill a-grow-x" />
               <span className="rwybar-lbl" aria-hidden="true">
-                <span>{text}</span>
+                {text}
               </span>
               <span className="rwybar-lbl on" aria-hidden="true">
-                <span>{text}</span>
+                {text}
               </span>
             </div>
           </Replay>
