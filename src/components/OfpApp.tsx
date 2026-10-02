@@ -495,9 +495,14 @@ export function OfpApp() {
         <Toc
           sections={SECTIONS}
           footer={
-            <Link href="/settings" className="toc-link">
-              Settings & saved flights →
-            </Link>
+            <>
+              <Link href="/weather" className="toc-link">
+                Weather cards →
+              </Link>
+              <Link href="/settings" className="toc-link">
+                Settings & saved flights →
+              </Link>
+            </>
           }
         />
         <main id="main" className={ofp ? "is-filled" : ""} key={ofp?.source ?? "empty"} aria-busy={busy}>

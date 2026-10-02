@@ -2468,3 +2468,351 @@ dialog.lightbox img {
     transform: none !important;
   }
 }
+
+/* ---------- weather cards page (/weather) ---------- */
+.wx-input {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--field);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  padding: 10px 12px;
+}
+.wx-select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--field);
+  border: 1px solid var(--rule-strong);
+  padding: 4px 6px;
+}
+.wxc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 14px;
+}
+.wxc {
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--catc, var(--rule-strong));
+  background: var(--field);
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.wxc-taf {
+  grid-column: 1 / -1;
+  border-top-color: var(--blue);
+}
+.wxc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.wxc-time {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.atis-letter {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--ink);
+  color: var(--sheet);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 17px;
+  border-radius: 2px;
+}
+.wxc-hero {
+  display: grid;
+  grid-template-columns: auto 1fr minmax(110px, 140px);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+}
+.wxc-headline {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.atis-ops {
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+.wxc-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  border-top: 1px dashed var(--rule);
+}
+.wxc-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 12px;
+  border-right: 1px dashed var(--rule);
+  min-width: 0;
+}
+.wxc-fact .field-label {
+  margin: 0;
+}
+.wxc-big {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+.wxc-raw {
+  border-top: 1px solid var(--rule);
+  padding: 6px 12px 8px;
+  font-size: 13px;
+}
+.wxc-raw summary {
+  cursor: pointer;
+  font-family: var(--font-cond);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+/* sky pictures */
+.sky {
+  flex: none;
+}
+.sky-sun circle {
+  fill: var(--wc-moderate);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.sky-sun line {
+  stroke: var(--wc-high);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.sky-cloud {
+  fill: var(--sheet);
+  stroke: var(--ink-2);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.sky-cloud.back {
+  fill: var(--rule);
+}
+.sky-cloud.dark {
+  fill: var(--ink-3);
+}
+.sky-rain {
+  stroke: var(--blue);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+.sky-snow {
+  fill: var(--sheet);
+  stroke: var(--blue);
+  stroke-width: 1.2;
+}
+.sky-bolt {
+  fill: var(--wc-moderate);
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.sky-fog {
+  stroke: var(--ink-3);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+.sky-q {
+  fill: var(--ink-3);
+  font-size: 22px;
+  font-family: var(--font-mono);
+}
+/* cloud column */
+.cloud-col {
+  width: 100%;
+  height: auto;
+  font-family: var(--font-mono);
+}
+.cc-ground {
+  stroke: var(--ink-3);
+  stroke-width: 1.5;
+}
+.cc-axis {
+  font-size: 8px;
+  fill: var(--ink-3);
+}
+.cc-layer {
+  fill: var(--rule-strong);
+  opacity: 0.7;
+}
+.cc-layer.ceil {
+  fill: var(--ink-3);
+  opacity: 0.9;
+}
+.cc-layer.cb {
+  fill: var(--red);
+  opacity: 1;
+}
+.cc-layer.tcu {
+  fill: var(--amber);
+  opacity: 1;
+}
+.cc-label {
+  font-size: 8.5px;
+  fill: var(--ink-2);
+}
+.cc-none {
+  font-size: 10px;
+  fill: var(--ink-3);
+}
+/* visibility scale: LIFR / IFR / MVFR / VFR bands */
+.vis-bar {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  overflow: visible;
+  margin-top: 2px;
+}
+.vb-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  opacity: 0.35;
+}
+.vb-band.lifr {
+  left: 0;
+  background: var(--magenta);
+  border-radius: 3px 0 0 3px;
+}
+.vb-band.ifr {
+  background: var(--red);
+}
+.vb-band.mvfr {
+  background: var(--blue);
+}
+.vb-band.vfr {
+  background: var(--green);
+  border-radius: 0 3px 3px 0;
+}
+.vb-mark {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 12px;
+  margin-left: -1.5px;
+  background: var(--ink);
+  border-radius: 1px;
+}
+/* TAF timeline */
+.taf-tl {
+  position: relative;
+  margin: 10px 12px 2px;
+  padding-bottom: 18px;
+}
+.taf-row {
+  position: relative;
+  height: 16px;
+  margin-bottom: 4px;
+}
+.taf-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  opacity: 0.85;
+  cursor: help;
+}
+.taf-band.becmg {
+  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255, 255, 255, 0.35) 4px 7px) !important;
+}
+.taf-band.over {
+  background: color-mix(in srgb, var(--bandc) 22%, transparent);
+  border: 1.5px dashed var(--bandc);
+  opacity: 1;
+  font-family: var(--font-cond);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  padding: 0 4px;
+  line-height: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.taf-band.over.prob {
+  border-style: dotted;
+}
+.taf-ticks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px;
+  border-top: 1px solid var(--rule-strong);
+}
+.taf-ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+.taf-groups {
+  list-style: none;
+  margin: 0;
+  padding: 4px 12px 8px;
+}
+.taf-groups li {
+  display: grid;
+  white-space: normal;
+  grid-template-columns: 8em 10.5em 30px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.taf-groups li.change {
+  padding-left: 12px;
+}
+.tg-when {
+  white-space: nowrap;
+}
+.tg-type {
+  font-family: var(--font-cond);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  color: var(--magenta);
+}
+.taf-groups li:not(.change) .tg-type {
+  color: var(--ink);
+}
+@media (max-width: 640px) {
+  .wxc-hero {
+    grid-template-columns: auto 1fr;
+  }
+  .wxc-hero .cloud-col {
+    grid-column: 1 / -1;
+    max-width: 170px;
+  }
+  .taf-groups li {
+    grid-template-columns: auto 1fr auto;
+  }
+  .taf-groups .tg-sky {
+    display: none;
+  }
+  .taf-groups .tg-what {
+    grid-column: 1 / -1;
+  }
+}
