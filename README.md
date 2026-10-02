@@ -44,27 +44,30 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 - **Hover (or focus) to learn.** Almost every label explains itself: OFP abbreviations, ICAO equipment and PBN codes, METAR groups, TLR columns.
 - **Fill it in as you fly.** Actual times, weights, ATIS, clearance, RVSM check, ATO / AFOB per waypoint, TLR actuals: all saved per flight in your browser.
 - **Reopens instantly, even after SimBrief expires it.** Each PDF is kept locally, so returning to a plan (same link, reload, recent chip or Settings) doesn't download it again. SimBrief only keeps OFP PDFs for a limited time, so the saved copy is often the only one left.
+- **Printouts for the flight deck.** An MCDU set-up sheet (INIT A, INIT B, F-PLN, PERF TAKE OFF, RAD NAV, winds) and an alternate sheet (return to departure, then one page per alternate, each starting with FINRES), printed line by line on continuous-form paper, with Copy text.
+- **ATC flight plan, explained.** Decoded into flight, aircraft, route & times and capability cards, and the route drawn leg by leg on printer paper with the VOR / NDB frequencies beside it.
+- **SIGMETs on your route.** Each SIGMET / AIRMET decoded and checked against your route, levels and times, drawn on the route map and profile.
 - **Weather cards.** A separate page (`/weather`) turns pasted METARs, TAFs and ATIS (coded or plain language), or a saved plan's weather, into cards: sky picture, wind, visibility, cloud layers, TAF timeline by flight category, ATIS letter, runways and notices.
 - **Your layout.** Collapse any section (or all of them) from its header or the Contents rail; it stays the way you left it. Pick the flight summary graphic: vertical profile, profile + times, route silhouette, progress timeline or classic arc.
 - **Day and night themes**, both meeting WCAG AA contrast.
 
 ## Screenshots
 
-| Runway analysis | Flight log (night theme) |
+| MCDU set-up sheet | Flight log (night theme) |
 | --- | --- |
-| ![Runway analysis with the actual landing runway picked, its readout and the estimated landing distance](docs/screenshots/runway-analysis.png) | ![Vertical profile with fuel and terrain](docs/screenshots/flight-log.png) |
+| ![The MCDU set-up sheet printed on continuous-form paper: INIT A, INIT B and the F-PLN](docs/screenshots/mcdu-sheet.png) | ![Vertical profile with fuel and terrain](docs/screenshots/flight-log.png) |
 
-| Route map & waypoint | Settings & saved flights |
+| Route map & waypoint | Explain route & navaids |
 | --- | --- |
-| ![Route map over coastlines and borders with a waypoint selected and its details](docs/screenshots/route-map-waypoint.png) | ![Saved flights and stored entries](docs/screenshots/settings.png) |
+| ![Route map over coastlines and borders with a waypoint selected and its details](docs/screenshots/route-map-waypoint.png) | ![The route drawn leg by leg on printer paper, with the radio navaids beside it](docs/screenshots/explain-route.png) |
+
+| Planned vs actual timeline | Settings & saved flights |
+| --- | --- |
+| ![Times table with planned and actual timeline bars](docs/screenshots/times.png) | ![Saved flights and stored entries](docs/screenshots/settings.png) |
 
 **Weather cards page**
 
 ![ATIS, METAR and TAF for Heathrow as weather cards, with a TAF timeline](docs/screenshots/weather-cards.png)
-
-**Planned vs actual timeline**
-
-![Times table with planned and actual timeline bars](docs/screenshots/times.png)
 
 ## Getting started
 

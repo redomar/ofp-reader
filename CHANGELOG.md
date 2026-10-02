@@ -2,7 +2,7 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.7.0] - 2026-10-02
 
 ### Added
 
@@ -147,6 +147,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.7.0]: https://github.com/redomar/ofp-reader/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/redomar/ofp-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/redomar/ofp-reader/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/redomar/ofp-reader/compare/v1.3.1...v1.4.0
