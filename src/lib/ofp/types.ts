@@ -48,7 +48,8 @@ export interface Header {
   altn: Str;
   tkofAltn: Str;
   flSteps: { fix: string; fl: string }[];
-  dispRmks: Str;
+  /** Dispatcher remarks, one per sentence-ending line group ("NIL" when none). */
+  dispRmks: string[];
 }
 
 export interface FuelRow {

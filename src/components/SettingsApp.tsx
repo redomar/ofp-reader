@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
@@ -14,6 +14,7 @@ import {
   deleteFlight,
   getServerVersion,
   getVersion,
+  importFlight,
   listFlights,
   readTheme,
   storageBytes,
@@ -58,6 +59,39 @@ function exportFlight(r: FlightRecord) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+interface ImportMsg {
+  ok: boolean;
+  text: string;
+}
+
+/** Imports each chosen export file; returns one line per file and the last imported id. */
+async function importFiles(files: FileList): Promise<{ msgs: ImportMsg[]; lastId: string | null }> {
+  const msgs: ImportMsg[] = [];
+  let lastId: string | null = null;
+  for (const file of Array.from(files)) {
+    try {
+      let data: unknown;
+      try {
+        data = JSON.parse(await file.text());
+      } catch {
+        throw new Error("Not valid JSON.");
+      }
+      const r = importFlight(data);
+      lastId = r.id;
+      const n = r.added + r.replaced;
+      const what = r.isNew
+        ? `added with ${r.added} ${r.added === 1 ? "entry" : "entries"}`
+        : n
+          ? `merged: ${r.added} new, ${r.replaced} updated`
+          : "already up to date";
+      msgs.push({ ok: true, text: `${r.label}: ${what}` });
+    } catch (e) {
+      msgs.push({ ok: false, text: `${file.name}: ${e instanceof Error ? e.message : "couldn't import"}` });
+    }
+  }
+  return { msgs, lastId };
+}
+
 /** Tiny schematic of each flight-summary graphic for the Appearance picker. */
 function StripIcon({ mode }: { mode: StripMode }) {
   const paths: Record<StripMode, React.ReactNode> = {
@@ -95,6 +129,8 @@ export function SettingsApp() {
   const pdfBytes = flights.reduce((s, f) => s + (f.meta.pdfSize ?? 0), 0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stripMode, setStripMode] = useStripMode();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importMsgs, setImportMsgs] = useState<ImportMsg[]>([]);
   const sel = flights.find((f) => f.meta.id === selectedId) ?? flights[0] ?? null;
 
   const groups = useMemo(() => {
@@ -155,6 +191,36 @@ export function SettingsApp() {
               </Tip>
               . Anything typed into the reader is saved as you type. Select a flight to see what is stored.
             </p>
+            <div className="row import-bar">
+              <button type="button" className="btn" disabled={!ready} onClick={() => fileRef.current?.click()}>
+                Import JSON
+              </button>
+              <span className="small muted">Restore files saved with Export JSON, from this or another browser. Entries are merged; the file&apos;s values win.</span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="application/json,.json"
+                multiple
+                hidden
+                onChange={async (e) => {
+                  const files = e.currentTarget.files;
+                  if (!files?.length) return;
+                  const input = e.currentTarget;
+                  const { msgs, lastId } = await importFiles(files);
+                  input.value = "";
+                  setImportMsgs(msgs);
+                  if (lastId) setSelectedId(lastId);
+                }}
+              />
+            </div>
+            <ul className="import-msgs small" role="status">
+              {importMsgs.map((m, i) => (
+                <li key={i} className={m.ok ? "import-ok" : "status-err"}>
+                  {m.ok ? "✓ " : "⚠ "}
+                  {m.text}
+                </li>
+              ))}
+            </ul>
             {ready && flights.length === 0 ? (
               <div className="hello" style={{ gridTemplateColumns: "1fr" }}>
                 <div>

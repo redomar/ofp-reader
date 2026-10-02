@@ -271,7 +271,15 @@ export function SummarySection({ no }: { no: number }) {
               )}
             </Field>
             <Field label="DISP RMKS" tip={G["DISP RMKS"]}>
-              <V v={h?.dispRmks} w={24} />
+              {h?.dispRmks.length ? (
+                <ul className="rmks">
+                  {h.dispRmks.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              ) : (
+                <V v={null} w={24} />
+              )}
             </Field>
             <Field label="WX PROG / OBS" tip={`${G["WX PROG"]}. ${G.OBS}`}>
               <span className="row" style={{ gap: 4 }}>

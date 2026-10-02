@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useField, useFieldGroup, useOfp } from "../context";
 import { Replay } from "../replay";
 import { Act, Badge, Section, Sub, Tip, V, cx } from "../ui";
@@ -8,6 +8,7 @@ import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/ofp/format";
 import type { LogPoint } from "@/lib/ofp/types";
 import { picExtraModel, type PicExtraModel } from "@/lib/ofp/picExtra";
+import { outlinePath, useOutlines } from "@/lib/outlines";
 
 interface P extends LogPoint {
   i: number;
@@ -185,6 +186,17 @@ function Profile({
 }
 
 function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number | null; setActive: (i: number | null) => void; onKey: (e: KeyboardEvent) => void }) {
+  const outlines = useOutlines();
+  // The frame's width, so the drawing area matches its shape instead of letterboxing.
+  const [frameW, setFrameW] = useState<number | null>(null);
+  const ro = useRef<ResizeObserver | null>(null);
+  const svgRef = useCallback((el: SVGSVGElement | null) => {
+    ro.current?.disconnect();
+    ro.current = null;
+    if (!el) return;
+    ro.current = new ResizeObserver(([e]) => setFrameW(Math.round(e.contentRect.width)));
+    ro.current.observe(el);
+  }, []);
   const geo = pts.filter((p) => p.latDeg != null && p.lonDeg != null);
   if (!geo.length) return null;
   const lats = geo.map((p) => p.latDeg!);
@@ -198,17 +210,27 @@ function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number 
   const spanX = (lo1 - lo0 + pad * 2) * k;
   const spanY = la1 - la0 + pad * 2;
   const H = 520;
-  const MW = Math.round(Math.max(560, Math.min(1300, (H * spanX) / spanY)));
+  // Shown height: 80% of the width, between 300 and 560 px. The width of the drawing
+  // follows from it, so the whole frame is map; the route is centred in it.
+  const shownH = frameW ? Math.min(560, Math.max(300, frameW * 0.8)) : null;
+  const MW = frameW && shownH ? Math.round((H * frameW) / shownH) : Math.round(Math.max(560, Math.min(1300, (H * spanX) / spanY)));
   const s = Math.min(MW / spanX, H / spanY);
   const offX = (MW - spanX * s) / 2;
   const offY = (H - spanY * s) / 2;
   const px = (lon: number) => offX + (lon - lo0 + pad) * k * s;
   const py = (lat: number) => offY + (la1 + pad - lat) * s;
+  // Everything the map shows, in degrees.
+  const view = {
+    lon0: lo0 - pad - offX / (k * s),
+    lon1: lo0 - pad + (MW - offX) / (k * s),
+    lat0: la1 + pad - (H - offY) / s,
+    lat1: la1 + pad + offY / s,
+  };
   const step = Math.max(lo1 - lo0, la1 - la0) > 8 ? 2 : 1;
   const gLon: number[] = [];
-  for (let v = Math.floor(lo0 - pad); v <= Math.ceil(lo1 + pad); v += step) gLon.push(v);
+  for (let v = Math.ceil(view.lon0 / step) * step; v <= view.lon1; v += step) gLon.push(v);
   const gLat: number[] = [];
-  for (let v = Math.floor(la0 - pad); v <= Math.ceil(la1 + pad); v += step) gLat.push(v);
+  for (let v = Math.ceil(view.lat0 / step) * step; v <= view.lat1; v += step) gLat.push(v);
   const wpts = geo.filter((p) => p.kind === "wpt");
   const path = wpts.map((p, i) => `${i ? "L" : "M"}${px(p.lonDeg!).toFixed(1)} ${py(p.latDeg!).toFixed(1)}`).join(" ");
   // Declutter labels
@@ -225,15 +247,19 @@ function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number 
   labelled.add(wpts.at(-1)!.i);
   const first = wpts[0];
   const end = wpts.at(-1)!;
+  // A margin so outlines run off the edge instead of stopping short of it.
+  const clip = { lon0: view.lon0 - 0.5, lon1: view.lon1 + 0.5, lat0: view.lat0 - 0.5, lat1: view.lat1 + 0.5 };
+  const coast = outlines ? outlinePath(outlines.coast, clip, px, py) : "";
+  const borders = outlines ? outlinePath(outlines.borders, clip, px, py) : "";
 
   return (
-    <svg viewBox={`0 0 ${MW} ${H}`} className="chart" style={{ maxHeight: 560, margin: "0 auto" }} role="group" tabIndex={0} onKeyDown={onKey} aria-label="Route map with waypoints and FIR boundaries. Use arrow keys to step through waypoints." onPointerLeave={() => setActive(null)}>
+    <svg ref={svgRef} viewBox={`0 0 ${MW} ${H}`} className="chart" style={{ height: shownH ?? undefined, maxHeight: 560 }} role="group" tabIndex={0} onKeyDown={onKey} aria-label="Route map with waypoints and FIR boundaries. Use arrow keys to step through waypoints." onPointerLeave={() => setActive(null)}>
       <rect x={0} y={0} width={MW} height={H} fill="var(--field)" />
       {gLon.map((v) => (
         <g key={"lo" + v}>
           <line x1={px(v)} x2={px(v)} y1={0} y2={H} className="gridline" />
           <text x={px(v) + 3} y={H - 4} style={{ fontSize: 10 }}>
-            {v >= 0 ? `E${String(v).padStart(3, "0")}` : `MW${String(-v).padStart(3, "0")}`}
+            {v >= 0 ? `E${String(v).padStart(3, "0")}` : `W${String(-v).padStart(3, "0")}`}
           </text>
         </g>
       ))}
@@ -245,6 +271,8 @@ function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number 
           </text>
         </g>
       ))}
+      {borders && <path d={borders} className="map-border" />}
+      {coast && <path d={coast} className="map-coast" />}
       <path d={path} className="route" />
       {geo
         .filter((p) => p.kind === "fir")

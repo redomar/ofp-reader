@@ -2,6 +2,19 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Import JSON** in Settings → Saved flights restores files saved with Export JSON, from this or another browser (several at once). Entries are merged with anything already saved for that flight, with the file's values winning. Since the file doesn't include the PDF, a new flight reopens from its stored SimBrief link and keeps a copy from then on. Files that aren't flight exports are rejected with a reason.
+- **Coastlines and country borders on the route map**: thin solid coastlines and dashed borders under the route, from Natural Earth 1:50m (public domain, via world-atlas). The outlines are built into a compact file at build time (`copy-assets`) and fetched only when a map is shown (about 140 KB compressed).
+- The route map fills its frame at every width instead of sitting in a fixed box with blank bands at the sides; gridlines and outlines run edge to edge.
+
+### Fixed
+
+- Route-map longitude labels west of Greenwich read "MW003" instead of "W003".
+- Dispatcher remarks (DISP RMKS) showed only their first line, cutting off multi-line remarks mid-sentence. All lines are now read and shown as a list, one remark per item, with wrapped sentences joined back together.
+
 ## [1.3.1] - 2026-10-01
 
 ### Fixed

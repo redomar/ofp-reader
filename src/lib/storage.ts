@@ -237,6 +237,85 @@ export function findByUrl(url: string): FlightRecord | null {
   return listFlights().find((f) => f.meta.sourceUrl && normUrl(f.meta.sourceUrl) === n) ?? null;
 }
 
+export interface ImportResult {
+  id: string;
+  label: string;
+  isNew: boolean;
+  /** Entries that weren't saved here before. */
+  added: number;
+  /** Entries already saved here that the file's value overwrote. */
+  replaced: number;
+}
+
+const str = (v: unknown): v is string => typeof v === "string";
+const strOrNull = (v: unknown) => (str(v) ? v : null);
+
+/**
+ * Restores a file saved with Settings → Export JSON. Entries in the file win over
+ * ones already saved for the same field; entries only saved here are kept. The PDF
+ * isn't in the file, so a new flight reopens from its stored link.
+ * Throws an Error with a readable message when the file isn't a flight export.
+ */
+export function importFlight(data: unknown): ImportResult {
+  const bad = (why: string) => new Error(`Not an OFP Reader export: ${why}.`);
+  if (!data || typeof data !== "object") throw bad("expected a JSON object");
+  const { meta, fields } = data as { meta?: Record<string, unknown>; fields?: Record<string, unknown> };
+  if (!meta || typeof meta !== "object") throw bad("missing flight details");
+  if (!fields || typeof fields !== "object" || Array.isArray(fields)) throw bad("missing saved entries");
+  const id = meta.id;
+  if (!str(id) || !/^[A-Za-z0-9_.-]{1,120}$/.test(id)) throw bad("missing or invalid storage key");
+
+  const incoming: Record<string, FieldEntry> = {};
+  for (const [key, f] of Object.entries(fields)) {
+    const e = f as Partial<FieldEntry> | null;
+    if (!e || !str(e.value) || e.value === "" || !str(e.label) || !str(e.section)) continue;
+    incoming[key] = { section: e.section, label: e.label, value: e.value, order: typeof e.order === "number" ? e.order : Date.now() };
+  }
+
+  // Only reopen links that are plain web addresses.
+  const url = strOrNull(meta.sourceUrl);
+  const sourceUrl = url && /^https?:\/\//i.test(url) ? url : null;
+
+  const prev = readFlight(id);
+  const now = new Date().toISOString();
+  const latest = (...d: unknown[]) => d.filter(str).sort().pop() ?? now;
+  const rec: FlightRecord = {
+    meta: {
+      id,
+      keyBasis: meta.keyBasis === "fallback" ? "fallback" : "flight",
+      flightNo: strOrNull(meta.flightNo),
+      ofpNo: strOrNull(meta.ofpNo),
+      date: strOrNull(meta.date),
+      dep: strOrNull(meta.dep),
+      arr: strOrNull(meta.arr),
+      reg: strOrNull(meta.reg),
+      acType: strOrNull(meta.acType),
+      release: strOrNull(meta.release),
+      source: str(meta.source) ? meta.source : "imported.pdf",
+      sourceUrl: prev?.meta.sourceUrl ?? sourceUrl,
+      // The exported size describes the other browser's copy, not one saved here.
+      pdfSize: prev?.meta.pdfSize ?? null,
+      firstSeen: [prev?.meta.firstSeen, meta.firstSeen].filter(str).sort()[0] ?? now,
+      updatedAt: latest(prev?.meta.updatedAt, meta.updatedAt),
+    },
+    fields: { ...(prev?.fields ?? {}) },
+  };
+
+  let added = 0;
+  let replaced = 0;
+  for (const [key, e] of Object.entries(incoming)) {
+    const old = rec.fields[key];
+    if (!old) added++;
+    else if (old.value !== e.value) replaced++;
+    rec.fields[key] = { ...e, order: old?.order ?? e.order };
+  }
+
+  if (!writeRecord(rec)) throw new Error("Couldn't save: browser storage is unavailable or full.");
+  const m = rec.meta;
+  const label = [m.flightNo ?? id, m.ofpNo && `OFP ${m.ofpNo}`, m.dep && m.arr && `${m.dep}→${m.arr}`].filter(Boolean).join(" · ");
+  return { id, label, isNew: !prev, added, replaced };
+}
+
 /** Deletes the record; callers also remove the cached PDF (pdfCache.deletePdf). */
 export function deleteFlight(id: string) {
   del(recKey(id));

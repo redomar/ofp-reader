@@ -7,3 +7,4 @@ public/pdf.worker.min.mjs
 *.log
 .env*
 public/flags
+public/geo

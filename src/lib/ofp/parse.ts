@@ -148,6 +148,29 @@ function cleanPages(pages: { page: number; lines: Lines }[]) {
 
 /* ---------- OFP page 1 ---------- */
 
+/**
+ * DISP RMKS runs onto indented lines below it, hard-wrapped at the column width
+ * (e.g. "…IF WITHIN MAX" / "FL."). A line ending in "." closes a remark; anything
+ * else continues onto the next line.
+ */
+function dispRemarks(block: Lines): string[] {
+  const i = block.findIndex((l) => /^DISP RMKS\s/.test(l));
+  if (i < 0) return [];
+  const lines = [block[i].replace(/^DISP RMKS\s+/, "").trim()];
+  for (let k = i + 1; k < block.length && /^\s{4,}\S/.test(block[k]) && !/^\s*-{3,}/.test(block[k]); k++) lines.push(block[k].trim());
+  const out: string[] = [];
+  let cur = "";
+  for (const l of lines.filter(Boolean)) {
+    cur = cur ? `${cur} ${l}` : l;
+    if (/\.$/.test(l)) {
+      out.push(cur);
+      cur = "";
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
 function parseHeader(block: Lines, title: string | null): Header {
   const l1 = match(block, /^(\S+)\s+(\d{2}[A-Z]{3}\d{4})\s+([A-Z]{4})-([A-Z]{4})\s+(\S+)\s+(\S+)\s+RELEASE\s+(\d{4})\s+(\S+)/);
   const l2 = match(block, /^OFP\s+(\d+)\s+(.+)$/);
@@ -214,7 +237,7 @@ function parseHeader(block: Lines, title: string | null): Header {
     altn: g(/^ALTN\s+([A-Z]{4})/),
     tkofAltn: g(/TKOF ALTN\s+(\S+)/),
     flSteps,
-    dispRmks: g(/^DISP RMKS\s+(.+)$/)?.trim() ?? null,
+    dispRmks: dispRemarks(block),
   };
 }
 

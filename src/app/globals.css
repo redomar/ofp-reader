@@ -980,6 +980,24 @@ table.tbl {
   stroke: var(--grid);
   stroke-width: 1;
 }
+/* Route map: coastlines and country borders (context only, under the route) */
+.chart .map-coast,
+.chart .map-border {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.chart .map-coast {
+  stroke-width: 0.9;
+  opacity: 0.55;
+}
+.chart .map-border {
+  stroke-width: 0.7;
+  stroke-dasharray: 4 2.5;
+  opacity: 0.45;
+}
 .chart .route {
   stroke: var(--magenta);
   fill: none;
@@ -2334,4 +2352,36 @@ dialog.lightbox img {
 .replay.play .a-spin {
   animation: a-spin 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   animation-delay: calc(var(--i, 0) * 25ms);
+}
+
+/* Settings → Import JSON */
+.import-bar {
+  align-items: center;
+  margin-bottom: 8px;
+}
+.import-msgs {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.import-msgs:empty {
+  display: none;
+}
+.import-ok {
+  color: var(--green);
+  font-weight: 500;
+}
+
+/* Dispatcher remarks: one remark per line, wrapped lines hang under their text */
+.rmks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.rmks li {
+  padding-left: 10px;
+  border-left: 2px solid var(--magenta);
+  line-height: 1.35;
 }

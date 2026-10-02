@@ -182,7 +182,7 @@ src/
     └── pdfCache.ts           per-flight PDF copies in IndexedDB
 ```
 
-**Stack:** Next.js 16 (static export) · React 19 · TypeScript · pdf.js 6 · [flag-icons](https://github.com/lipis/flag-icons) (MIT) for country flags. No UI framework; styles are plain CSS with design tokens.
+**Stack:** Next.js 16 (static export) · React 19 · TypeScript · pdf.js 6 · [flag-icons](https://github.com/lipis/flag-icons) (MIT) for country flags · [Natural Earth](https://www.naturalearthdata.com/) (public domain, via [world-atlas](https://github.com/topojson/world-atlas)) for map outlines. No UI framework; styles are plain CSS with design tokens.
 
 ## Accessibility
 
