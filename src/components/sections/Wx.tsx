@@ -6,7 +6,8 @@ import { CATEGORY_TIP, decodeMetar, decodeToken, type Category } from "@/lib/ofp
 import { pageOf } from "@/lib/ofp/format";
 import { WindArrow, parseSector } from "../WindArrow";
 import { ObsCard, TafCard } from "../WxCards";
-import { parseReport } from "@/lib/wx/reports";
+import { headline, parseReport } from "@/lib/wx/reports";
+import { BoxToggleIcon, useCollapse } from "../collapse";
 
 const CAT_TONE: Record<Category, "green" | "blue" | "red" | "mag"> = { VFR: "green", MVFR: "blue", IFR: "red", LIFR: "mag" };
 
@@ -47,6 +48,7 @@ function tafHazards(lines: string[]) {
 
 export function WxSection({ no }: { no: number }) {
   const { ofp } = useOfp();
+  const { isCollapsed, toggle, open } = useCollapse();
   const wx = ofp?.wx;
   const airports = wx?.airports.length ? wx.airports : (["Departure", "Destination", "Destination Alternates"].map((role) => ({ role, icao: "", iata: null, name: "", metar: null, taf: [], other: [] })) as NonNullable<typeof wx>["airports"]);
 
@@ -85,9 +87,27 @@ export function WxSection({ no }: { no: number }) {
           // The OFP lists reports under an airport heading, so the ICAO code is added back for parsing.
           const metarR = a.metar ? parseReport(`METAR ${a.icao} ${a.metar}`) : null;
           const tafR = a.taf.length ? parseReport(`TAF ${a.icao} ${a.taf.join(" ")}`) : null;
+          // Each airport folds. Departure / destination remember "collapsed" per role (every plan);
+          // alternates start collapsed, so theirs remembers "opened", per airport.
+          const isAlt = /alt/i.test(a.role);
+          const key = isAlt ? `wxapt:open:${a.icao || i}` : `wxapt:${a.role.startsWith("Dep") ? "dep" : "dest"}`;
+          const collapsed = isAlt ? !isCollapsed(key) : isCollapsed(key);
+          const bodyId = `wxapt-${a.icao || i}-body`;
+          // Folded: one line of the METAR so the weather is still visible at a glance.
+          const mc = metarR?.cond;
+          const summary =
+            collapsed && mc
+              ? [
+                  headline(mc),
+                  mc.wind ? (mc.wind.calm ? "calm" : `${mc.wind.dir == null ? "VRB" : `${String(mc.wind.dir).padStart(3, "0")}°`} ${mc.wind.spd}${mc.wind.gust ? `G${mc.wind.gust}` : ""} kt`) : null,
+                  mc.visM != null ? `vis ${mc.visM >= 10000 ? "≥10 km" : `${mc.visM} m`}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : null;
           return (
-            <article className="wx-card" key={a.icao + i} aria-label={`${a.role} ${a.icao} weather`}>
-              <header>
+            <article className={`wx-card${collapsed ? " is-folded" : ""}`} key={a.icao + i} aria-label={`${a.role} ${a.icao} weather`}>
+              <header className="wx-fold" onClick={(e) => !(e.target as Element).closest("button") && toggle(key)}>
                 <Badge tone={a.role.startsWith("Dest") && !a.role.includes("Alt") ? "mag" : a.role === "Departure" ? "blue" : "ink"}>{a.role}</Badge>
                 <h3>
                   <V v={a.icao} w={4} />
@@ -101,8 +121,30 @@ export function WxSection({ no }: { no: number }) {
                     </Badge>
                   </span>
                 )}
+                {summary && <span className="small muted wx-fold-summary">{summary}</span>}
+                <button
+                  type="button"
+                  className="wx-fold-btn"
+                  aria-expanded={!collapsed}
+                  aria-controls={bodyId}
+                  aria-label={`${collapsed ? "Show" : "Hide"} ${a.role} ${a.icao} weather`}
+                  onClick={() => toggle(key)}
+                  style={d?.category ? undefined : { marginLeft: "auto" }}
+                >
+                  <BoxToggleIcon open={!collapsed} />
+                </button>
               </header>
-              <div className="body">
+              <div
+                className="body"
+                id={bodyId}
+                ref={(el) => {
+                  if (!el) return;
+                  // "until-found": hidden, but find-in-page can still reach it (and opens the card).
+                  if (collapsed) el.setAttribute("hidden", "until-found");
+                  else el.removeAttribute("hidden");
+                  (el as HTMLElement & { onbeforematch: (() => void) | null }).onbeforematch = () => (isAlt ? !isCollapsed(key) && toggle(key) : open(key));
+                }}
+              >
                 {metarR || tafR ? (
                   <>
                     {metarR && <ObsCard r={metarR} />}

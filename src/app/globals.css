@@ -3079,3 +3079,40 @@ hr.ldg-split {
   display: flex;
   justify-content: space-between;
 }
+
+/* Airport weather: each airport card folds from its header */
+.wx-card header.wx-fold {
+  cursor: pointer;
+}
+.wx-card.is-folded header.wx-fold {
+  border-bottom: 0;
+}
+.wx-fold-summary {
+  flex-basis: 100%;
+  order: 9;
+}
+.wx-fold-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: none;
+  color: var(--blue);
+  cursor: pointer;
+}
+.wx-fold-btn:hover,
+.wx-fold-btn:focus-visible {
+  border-color: var(--rule-strong);
+}
+.wx-card .body[hidden] {
+  padding: 0 !important;
+}
+@media print {
+  .wx-card .body[hidden] {
+    display: flex !important;
+    content-visibility: visible !important;
+  }
+}

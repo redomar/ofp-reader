@@ -2,6 +2,12 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Collapsible airports in Airport weather.** Click an airport's header (or its ⊟ / ⊞ box) to fold its weather cards away. Departure and destination start open and remember your choice for every plan; destination alternates start collapsed and remember the ones you open. A folded airport shows a one-line summary of its METAR (weather, wind, visibility) next to its category. Folded cards still open for find-in-page and always print expanded.
+
 ## [1.6.0] - 2026-10-02
 
 ### Added
