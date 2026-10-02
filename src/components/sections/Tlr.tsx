@@ -252,11 +252,20 @@ function LdgDistance({ title, dry, wet, length, estimate = false, tip }: { title
         ["Wet", wet],
       ].map(([k, d]) => {
         const p = ((d as number) / length) * 100;
+        const fill = Math.min(100, p);
+        const colour = p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)";
+        const text = `${k} ${fmtNum(d as number)} ft · ${p.toFixed(0)}%`;
+        // The label is drawn twice across the whole bar: ink where it's over the empty track,
+        // sheet-coloured (clipped to the fill) where it's over the bar, so it reads at any length.
         return (
           <Replay key={k as string}>
-            <div className={cx("rwybar", estimate && "est")} role="meter" aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`} aria-valuemin={0} aria-valuemax={length} aria-valuenow={d as number}>
-              <span className="a-grow-x" style={{ width: `${Math.min(100, p)}%`, background: p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)" }}>
-                {k} {fmtNum(d as number)} ft · {p.toFixed(0)}%
+            <div className={cx("rwybar", estimate && "est")} style={{ ["--fill" as string]: `${fill}%`, ["--barc" as string]: colour }} role="meter" aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`} aria-valuemin={0} aria-valuemax={length} aria-valuenow={d as number}>
+              <span className="rwybar-fill a-grow-x" />
+              <span className="rwybar-lbl" aria-hidden="true">
+                <span>{text}</span>
+              </span>
+              <span className="rwybar-lbl on" aria-hidden="true">
+                <span>{text}</span>
               </span>
             </div>
           </Replay>

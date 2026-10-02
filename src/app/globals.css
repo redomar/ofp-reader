@@ -1225,18 +1225,29 @@ table.tbl {
   border-radius: 2px;
   overflow: hidden;
 }
-.rwybar span {
+.rwybar-fill {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
+  width: var(--fill);
+  background: var(--barc);
+}
+.rwybar-lbl {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   padding-left: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--sheet);
   white-space: nowrap;
+  color: var(--ink);
+}
+/* the same label in the sheet colour, shown only over the filled part */
+.rwybar-lbl.on {
+  color: var(--sheet);
+  clip-path: inset(0 calc(100% - var(--fill)) 0 0);
 }
 
 /* ---------- weather ---------- */
@@ -3015,10 +3026,18 @@ dialog.lightbox img {
 .rwybar.est {
   border-style: dashed;
 }
-.rwybar.est span {
-  /* the bar colour is an inline background, so the stripes need !important; sheet-coloured
-     stripes read in both themes (light on the day green, dark on the night green) */
-  background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--sheet) 30%, transparent) 6px 9px) !important;
+.rwybar.est .rwybar-fill {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--sheet) 30%, transparent) 6px 9px);
+}
+/* both label layers get the same padding so they line up; over the hatch the label sits on a
+   solid patch of the bar colour, so no stripe is ever behind the letters */
+.rwybar-lbl > span {
+  padding: 2px 4px;
+  margin-left: -4px;
+  border-radius: 2px;
+}
+.rwybar.est .rwybar-lbl.on > span {
+  background: var(--barc);
 }
 hr.ldg-split {
   border: none;
