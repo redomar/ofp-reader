@@ -105,6 +105,46 @@ export function McduSheet() {
 
 const PAGES = ["INIT A", "INIT B", "F-PLN", "PERF T/O", "RAD NAV", "WINDS"];
 
+/** The print-job button face: icon, title, chips and a line of description. */
+export function PrintFace({
+  title,
+  chips,
+  sub,
+  icon = "printer",
+  ...rest
+}: { title: string; chips: string[]; sub: string; icon?: "printer" | "route" } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button type="button" className="mcdu-btn" {...rest}>
+      {icon === "printer" ? (
+        <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" className="mcdu-btn-icon">
+          <path d="M7 9V3h10v6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="3" y="9" width="18" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M7 14h10v7H7z" fill="var(--pp)" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M9 17h6M9 19h4" stroke="currentColor" strokeWidth="1.2" />
+          <circle cx="18" cy="12" r="0.9" fill="currentColor" />
+        </svg>
+      ) : (
+        <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" className="mcdu-btn-icon">
+          <path d="M6 3v18" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="6" cy="5" r="2.2" fill="currentColor" />
+          <circle cx="6" cy="12" r="2" fill="var(--pp)" stroke="currentColor" strokeWidth="1.6" />
+          <circle cx="6" cy="19" r="2.2" fill="currentColor" />
+          <path d="M11 5h9M11 12h7M11 19h9" stroke="currentColor" strokeWidth="1.4" />
+        </svg>
+      )}
+      <span className="mcdu-btn-text">
+        <b>{title}</b>
+        <span className="mcdu-btn-pages">
+          {chips.map((p) => (
+            <span key={p}>{p}</span>
+          ))}
+        </span>
+        <span className="mcdu-btn-sub">{sub}</span>
+      </span>
+    </button>
+  );
+}
+
 /**
  * A button that "prints" a sheet: opens it full screen over a dimmed page (a modal
  * dialog, so Esc and focus work), with the paper's punched holes see-through.
@@ -128,24 +168,7 @@ function PrintButton({ title, chips, sub, label, disabled, children }: { title: 
   };
   return (
     <>
-      <button type="button" className="mcdu-btn" onClick={open} disabled={disabled} aria-haspopup="dialog">
-        <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" className="mcdu-btn-icon">
-          <path d="M7 9V3h10v6" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <rect x="3" y="9" width="18" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M7 14h10v7H7z" fill="var(--pp)" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M9 17h6M9 19h4" stroke="currentColor" strokeWidth="1.2" />
-          <circle cx="18" cy="12" r="0.9" fill="currentColor" />
-        </svg>
-        <span className="mcdu-btn-text">
-          <b>{title}</b>
-          <span className="mcdu-btn-pages">
-            {chips.map((p) => (
-              <span key={p}>{p}</span>
-            ))}
-          </span>
-          <span className="mcdu-btn-sub">{sub}</span>
-        </span>
-      </button>
+      <PrintFace title={title} chips={chips} sub={sub} onClick={open} disabled={disabled} aria-haspopup="dialog" />
       <dialog ref={ref} className="mcdu-dialog" aria-label={label} onClick={(e) => e.target === ref.current && close()}>
         <div className="mcdu-dialog-bar">
           <button type="button" className="btn" onClick={copy}>

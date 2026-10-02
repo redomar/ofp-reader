@@ -2,10 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import { useOfp } from "../context";
-import { Badge, Section, Sub, Tip, V } from "../ui";
+import { Section, Sub, Tip, V } from "../ui";
 import { RouteExplain } from "../RouteExplain";
-import { AIRCRAFT, EQUIP_SHORT, OPERATORS, SURV_SHORT, speedLevel } from "@/lib/ofp/fplRef";
-import { EQUIP, FLIGHT_RULES, FLIGHT_TYPE, G, PBN, SURV, WAKE, splitEquip } from "@/lib/ofp/glossary";
+import { AIRCRAFT, EQUIP_SHORT, OPERATORS, SURV_SHORT, routeLegs, speedLevel } from "@/lib/ofp/fplRef";
+import { PrintFace } from "../McduSheet";
+import { EQUIP, FLIGHT_RULES, FLIGHT_TYPE, PBN, SURV, WAKE, splitEquip } from "@/lib/ofp/glossary";
 import { fmtHhmm, fmtReg, pageOf } from "@/lib/ofp/format";
 import { RouteString } from "./Route";
 
@@ -17,15 +18,23 @@ const PER: Record<string, string> = {
   E: "Cat E — Vat 166–210 kt",
 };
 
+/** One labelled line of a decoded card; hovering it lights up that item in the message. */
+function FcRow({ it, label, children, on, setOn }: { it: string; label: string; children: ReactNode; on: string | null; setOn: (v: string | null) => void }) {
+  return (
+    <div className={`fc-row${on === it ? " on" : ""}`} onPointerEnter={() => setOn(it)} onPointerLeave={() => setOn(null)}>
+      <dt>{label}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
 export function FplSection({ no }: { no: number }) {
   const { ofp } = useOfp();
   const [on, setOn] = useState<string | null>(null);
   const [explain, setExplain] = useState(false);
   const fpl = ofp?.fpl;
   const item = (id: string) => fpl?.items.find((i) => i.item === id)?.value ?? null;
-  const firNames = new Map((ofp?.log ?? []).filter((l) => l.kind === "fir").map((l) => [l.position, l.firName]));
 
-  const decoded: { id: string; label: string; body: ReactNode }[] = [];
   const i7 = item("7");
   const i8 = item("8");
   const i9 = item("9");
@@ -33,167 +42,60 @@ export function FplSection({ no }: { no: number }) {
   const i13 = item("13");
   const i15 = item("15");
   const i16 = item("16");
+  const i18 = new Map((fpl?.item18 ?? []).map((kv) => [kv.key, kv.value]));
   const opr = i7 ? OPERATORS[i7.slice(0, 3)] : undefined;
   const aptName = (icao: string) => ofp?.wx.airports.find((a) => a.icao === icao)?.name ?? null;
-  decoded.push({
-    id: "7",
-    label: "Aircraft ID",
-    body: i7 ? (
-      <span className="codes">
-        <span className="code">{i7}</span>
-        {opr && (
-          <Badge tone="blue" tip={`${i7.slice(0, 3)} is the ICAO designator for ${opr.name}; on the radio the flight is "${opr.call} ${i7.slice(3)}"`}>
-            {opr.name}
-          </Badge>
-        )}
-        {opr && <Badge tone="ink" tip="Radio callsign (telephony designator + flight number)">“{opr.call} {i7.slice(3)}”</Badge>}
-      </span>
-    ) : (
-      <V v={i7} w={7} />
-    ),
-  });
-  decoded.push({
-    id: "8",
-    label: "Rules / type",
-    body: i8 ? (
-      <span className="codes">
-        <Badge tone="blue" tip={`Flight rules ${i8[0]}`}>
-          {FLIGHT_RULES[i8[0]] ?? i8[0]}
-        </Badge>
-        <Badge tone="ink" tip={`Type of flight ${i8[1]}`}>
-          {FLIGHT_TYPE[i8[1]] ?? i8[1]}
-        </Badge>
-      </span>
-    ) : (
-      <V v={null} w={16} />
-    ),
-  });
   const [type, wake] = i9?.split("/") ?? [];
-  decoded.push({
-    id: "9",
-    label: "Type / wake",
-    body: i9 ? (
-      <span className="codes">
-        <span className="code">{type}</span>
-        {AIRCRAFT[type] && <Badge tone="blue">{AIRCRAFT[type]}</Badge>}
-        <Badge tone={wake === "H" || wake === "J" ? "amber" : "ink"} tip="Wake turbulence category: sets separation behind and ahead">
-          {WAKE[wake] ?? wake} wake
-        </Badge>
-      </span>
-    ) : (
-      <V v={null} w={12} />
-    ),
-  });
   const [eq, surv] = i10?.split("/") ?? [];
-  decoded.push({
-    id: "10",
-    label: "Equipment",
-    body: i10 ? (
-      <span className="stack" style={{ gap: 6 }}>
-        <span className="codes">
-          <span className="field-label" style={{ margin: 0 }}>
-            Comms / nav
-          </span>
-          {splitEquip(eq).map((c, k) => (
-            <Badge key={c + k} tone={c === "W" || c === "R" || c === "G" ? "blue" : "ink"} tip={EQUIP[c] ?? "Code not in the quick reference"}>
-              {c} · {EQUIP_SHORT[c] ?? c}
-            </Badge>
-          ))}
-        </span>
-        {surv && (
-          <span className="codes">
-            <span className="field-label" style={{ margin: 0 }}>
-              Surveillance
-            </span>
-            {splitEquip(surv).map((c, k) => (
-              <Badge key={c + k} tone="ink" tip={SURV[c] ?? "Code not in the quick reference"}>
-                {c} · {SURV_SHORT[c] ?? c}
-              </Badge>
-            ))}
-          </span>
-        )}
-      </span>
-    ) : (
-      <V v={null} w={20} />
-    ),
-  });
-  decoded.push({
-    id: "13",
-    label: "Departure / EOBT",
-    body: i13 ? (
-      <span className="codes">
-        <span className="code">{i13.slice(0, 4)}</span>
-        {aptName(i13.slice(0, 4)) && <span className="small muted">{aptName(i13.slice(0, 4))}</span>}
-        <Badge tone="blue" tip="Estimated off-block time: when you plan to push back">
-          EOBT {fmtHhmm(i13.slice(4))}Z
-        </Badge>
-        {ofp?.header.outTime && ofp.header.outTime !== i13.slice(4) && (
-          <Badge tone="amber" tip="The OFP's OUT time differs from the filed EOBT">
-            OFP OUT {fmtHhmm(ofp.header.outTime)}Z
-          </Badge>
-        )}
-      </span>
-    ) : (
-      <V v={null} w={10} />
-    ),
-  });
   const cruise = i15 ? speedLevel(i15.split(/\s+/)[0]) : null;
   const changes = i15 ? [...i15.matchAll(/([A-Z]{2,5})\/([NKM]\d{3,4}[FASM]\d{3,4})/g)].map((m) => ({ at: m[1], sl: speedLevel(m[2]) })) : [];
-  decoded.push({
-    id: "15",
-    label: "Speed / level / route",
-    body: i15 ? (
-      <span className="stack" style={{ gap: 6 }}>
-        <span className="codes">
-          {cruise && (
-            <>
-              <Badge tone="mag" tip="Initial cruising speed (true airspeed)">
-                {cruise.speed}
-              </Badge>
-              <Badge tone="mag" tip="Initial requested cruising level">
-                {cruise.level}
-              </Badge>
-            </>
-          )}
-          {changes.map((c, k) =>
-            c.sl ? (
-              <Badge key={k} tone="ink" tip={`Filed speed / level change at ${c.at}`}>
-                from {c.at}: {c.sl.speed} · {c.sl.level}
-              </Badge>
-            ) : null,
-          )}
-        </span>
-        <RouteString route={i15} />
-      </span>
-    ) : (
-      <V v={null} w={40} />
-    ),
-  });
   const [destEet, ...altns] = i16?.split(/\s+/) ?? [];
-  decoded.push({
-    id: "16",
-    label: "Destination / EET / altn",
-    body: i16 ? (
-      <span className="codes">
-        <span className="code">{destEet.slice(0, 4)}</span>
-        {aptName(destEet.slice(0, 4)) && <span className="small muted">{aptName(destEet.slice(0, 4))}</span>}
-        <Badge tone="blue" tip="Total estimated elapsed time, take-off to destination">
-          EET {fmtHhmm(destEet.slice(4))}
-        </Badge>
-        {altns.map((a) => (
-          <Badge key={a} tone="ink" tip={`Destination alternate${aptName(a) ? `: ${aptName(a)}` : ""}`}>
-            ALTN {a}
-          </Badge>
-        ))}
-        {!altns.length && <span className="small muted">no alternate</span>}
+  const dep = i13?.slice(0, 4) ?? null;
+  const dest = destEet?.slice(0, 4) ?? null;
+  const dof = i18.get("DOF")?.match(/^(\d{2})(\d{2})(\d{2})$/);
+  const dofText = dof ? new Date(Date.UTC(2000 + Number(dof[1]), Number(dof[2]) - 1, Number(dof[3]))).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : null;
+  const known = new Set(["PBN", "DOF", "REG", "EET", "OPR", "PER", "RMK"]);
+  const other = [...i18].filter(([k, v]) => !known.has(k) || (k === "RMK" && v !== "TCAS"));
+
+  // Item 10 grouped by what the codes are for.
+  const codes = eq ? splitEquip(eq) : [];
+  const groups: [string, string[]][] = [
+    ["Comms", codes.filter((c) => /^(S|V|H|U|Y|M\d)$/.test(c))],
+    ["Datalink", codes.filter((c) => /^(E\d|J\d)$/.test(c))],
+    ["Nav", codes.filter((c) => /^(D|F|G|I|O|L|B|K|T|A|C)$/.test(c))],
+    ["Approvals", codes.filter((c) => /^(R|W|X|Z|N)$/.test(c))],
+  ];
+  const svs = surv ? splitEquip(surv) : [];
+  const pbn = i18.get("PBN")?.match(/[A-Z]\d/g) ?? [];
+
+  const chip = (c: string, label: string, tip: string, key?: string) => (
+    <Tip key={key ?? c} tip={tip} title={c} plain>
+      <span className="fc-chip">
+        <b>{c}</b> {label}
       </span>
-    ) : (
-      <V v={null} w={20} />
-    ),
-  });
+    </Tip>
+  );
+  const legs = i15 && dep && dest ? routeLegs(i15, dep, dest).legs : [];
+  const vors = (ofp?.log ?? []).filter((p) => p.freq).length;
 
   return (
     <Section id="fpl" no={no} title="ATC flight plan" meta={<span>ICAO · PDF p.{pageOf(ofp?.pages, /ICAO FLIGHT PLAN/) ?? 8}</span>}>
+      <PrintFace
+        icon="route"
+        title={explain ? "Hide route explanation" : "Explain route & navaids"}
+        chips={dep && dest ? [`${dep} → ${dest}`, `${legs.length} legs`, vors ? `${vors} VOR${vors > 1 ? "s" : ""}` : "RNAV only"] : ["ROUTE", "NAVAIDS"]}
+        sub="Each leg of item 15 drawn on printer paper, with the radio navaids beside it."
+        aria-expanded={explain}
+        aria-controls="fpl-explain"
+        disabled={!fpl?.items.length}
+        onClick={() => setExplain(!explain)}
+      />
+      {explain && (
+        <div id="fpl-explain">
+          <RouteExplain />
+        </div>
+      )}
+      <hr className="mcdu-rule" />
       <div className="cols" style={{ ["--min" as string]: "360px" }}>
         <div>
           <Sub>Message</Sub>
@@ -236,118 +138,130 @@ export function FplSection({ no }: { no: number }) {
         </div>
         <div>
           <Sub>Decoded</Sub>
-          <dl className="dl">
-            {decoded.map((d) => (
-              <div key={d.id} style={{ display: "contents" }} onPointerEnter={() => setOn(d.id)} onPointerLeave={() => setOn(null)}>
-                <dt style={{ color: on === d.id ? "var(--magenta)" : undefined }}>
-                  <span className="mono small">{d.id}</span> {d.label}
-                </dt>
-                <dd>{d.body}</dd>
-              </div>
-            ))}
-          </dl>
+          {fpl?.items.length ? (
+            <div className="fc-grid">
+              <section className="fc">
+                <h4>Flight</h4>
+                <div className="fc-hero">
+                  <span className="fc-big mono">{i7}</span>
+                  {opr && (
+                    <span className="fc-hero-sub">
+                      {opr.name} · <span title="Radio callsign">“{opr.call} {i7?.slice(3)}”</span>
+                    </span>
+                  )}
+                </div>
+                <dl>
+                  <FcRow on={on} setOn={setOn} it="8" label="Rules">
+                    {i8 ? `${FLIGHT_RULES[i8[0]] ?? i8[0]} · ${FLIGHT_TYPE[i8[1]] ?? i8[1]}` : "—"}
+                  </FcRow>
+                  {dofText && <FcRow on={on} setOn={setOn} it="18" label="Date">{dofText}</FcRow>}
+                  {i18.get("OPR") && <FcRow on={on} setOn={setOn} it="18" label="Operator">{OPERATORS[i18.get("OPR")!]?.name ?? i18.get("OPR")}</FcRow>}
+                </dl>
+              </section>
+
+              <section className="fc">
+                <h4>Aircraft</h4>
+                <div className="fc-hero">
+                  <span className="fc-big mono">{type}</span>
+                  {AIRCRAFT[type] && <span className="fc-hero-sub">{AIRCRAFT[type]}</span>}
+                </div>
+                <dl>
+                  {i18.get("REG") && <FcRow on={on} setOn={setOn} it="18" label="Registration">{fmtReg(i18.get("REG")!) ?? i18.get("REG")}</FcRow>}
+                  <FcRow on={on} setOn={setOn} it="9" label="Wake">
+                    <Tip tip="Wake turbulence category: sets separation behind and ahead" plain>
+                      <span>{WAKE[wake] ?? wake ?? "—"}</span>
+                    </Tip>
+                  </FcRow>
+                  {i18.get("PER") && (
+                    <FcRow on={on} setOn={setOn} it="18" label="Approach">
+                      {PER[i18.get("PER")!] ?? i18.get("PER")}
+                    </FcRow>
+                  )}
+                  {i18.get("RMK") === "TCAS" && <FcRow on={on} setOn={setOn} it="18" label="TCAS">Fitted (ACAS II)</FcRow>}
+                </dl>
+              </section>
+
+              <section className="fc fc-wide">
+                <h4>Route &amp; times</h4>
+                <div className="fc-route" onPointerEnter={() => setOn("13")} onPointerLeave={() => setOn(null)}>
+                  <span>
+                    <span className="fc-big mono">{dep}</span>
+                    <span className="fc-hero-sub">{dep && aptName(dep)}</span>
+                  </span>
+                  <span className="fc-arrow" aria-hidden="true">
+                    → <span className="small mono">{destEet ? `EET ${fmtHhmm(destEet.slice(4))}` : ""}</span>
+                  </span>
+                  <span>
+                    <span className="fc-big mono">{dest}</span>
+                    <span className="fc-hero-sub">{dest && aptName(dest)}</span>
+                  </span>
+                </div>
+                <dl>
+                  <FcRow on={on} setOn={setOn} it="13" label="EOBT">
+                    {i13 ? `${fmtHhmm(i13.slice(4))}Z` : "—"}
+                    {ofp?.header.outTime && i13 && ofp.header.outTime !== i13.slice(4) && <span className="muted"> (OFP OUT {fmtHhmm(ofp.header.outTime)}Z)</span>}
+                  </FcRow>
+                  <FcRow on={on} setOn={setOn} it="15" label="Cruise">
+                    {cruise ? `${cruise.speed} · ${cruise.level}` : "—"}
+                    {changes.map((c, k) => (c.sl ? <span key={k} className="muted"> · from {c.at}: {c.sl.speed}, {c.sl.level}</span> : null))}
+                  </FcRow>
+                  <FcRow on={on} setOn={setOn} it="15" label="Route">
+                    <RouteString route={i15} />
+                  </FcRow>
+                  <FcRow on={on} setOn={setOn} it="16" label="Alternates">
+                    {altns.length ? altns.map((a) => `${a}${aptName(a) ? ` ${aptName(a)}` : ""}`).join(" · ") : "none"}
+                  </FcRow>
+                  {i18.get("EET") && (
+                    <FcRow on={on} setOn={setOn} it="18" label="FIR times">
+                      {i18
+                        .get("EET")!
+                        .split(/\s+/)
+                        .map((e) => `${e.slice(0, 4)} +${fmtHhmm(e.slice(4))}`)
+                        .join(" · ")}
+                    </FcRow>
+                  )}
+                </dl>
+              </section>
+
+              <section className="fc fc-wide">
+                <h4>Capabilities</h4>
+                <dl>
+                  {groups
+                    .filter(([, list]) => list.length)
+                    .map(([g, list]) => (
+                      <FcRow on={on} setOn={setOn} key={g} it="10" label={g}>
+                        <span className="fc-chips">{list.map((c) => chip(c, EQUIP_SHORT[c] ?? c, EQUIP[c] ?? "Code not in the quick reference"))}</span>
+                      </FcRow>
+                    ))}
+                  {svs.length > 0 && (
+                    <FcRow on={on} setOn={setOn} it="10" label="Surveillance">
+                      <span className="fc-chips">{svs.map((c) => chip(c, SURV_SHORT[c] ?? c, SURV[c] ?? "Code not in the quick reference"))}</span>
+                    </FcRow>
+                  )}
+                  {pbn.length > 0 && (
+                    <FcRow on={on} setOn={setOn} it="18" label="PBN">
+                      <span className="fc-chips">{pbn.map((c) => chip(c, (PBN[c] ?? c).replace(/ — all permitted sensors/, ""), `PBN capability ${c}: ${PBN[c] ?? "not in the quick reference"}`))}</span>
+                    </FcRow>
+                  )}
+                  {other.map(([k, v]) => (
+                    <FcRow on={on} setOn={setOn} key={k} it="18" label={k}>
+                      {v}
+                    </FcRow>
+                  ))}
+                </dl>
+              </section>
+            </div>
+          ) : (
+            <div className="stack" style={{ gap: 6 }}>
+              {Array.from({ length: 6 }, (_, i) => (
+                <V key={i} v={null} w={[18, 26, 22, 30, 24, 28][i]} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="row" style={{ marginTop: 12 }}>
-        <button type="button" className="btn" aria-expanded={explain} aria-controls="fpl-explain" disabled={!fpl?.items.length} onClick={() => setExplain(!explain)}>
-          {explain ? "▾ Hide route explanation" : "▸ Explain route & navaids"}
-        </button>
-        <span className="small muted">Each leg of item 15 diagrammed with distance, time and levels, plus the VOR / NDB frequencies on the route.</span>
-      </div>
-      {explain && (
-        <div id="fpl-explain">
-          <RouteExplain />
-        </div>
-      )}
 
-      <Sub>Item 18 · other information</Sub>
-      <dl className="dl" onPointerEnter={() => setOn("18")} onPointerLeave={() => setOn(null)}>
-        {(fpl?.item18.length ? fpl.item18 : [{ key: "PBN", value: "" }, { key: "DOF", value: "" }, { key: "REG", value: "" }, { key: "EET", value: "" }]).map((kv) => (
-          <div key={kv.key} style={{ display: "contents" }}>
-            <dt>
-              <Tip tip={G[kv.key] ?? G[`${kv.key}/`]} title={kv.key}>
-                {kv.key}/
-              </Tip>
-            </dt>
-            <dd>{render18(kv.key, kv.value, firNames)}</dd>
-          </div>
-        ))}
-      </dl>
     </Section>
   );
-}
-
-function render18(key: string, value: string, firs: Map<string | null, string | null>): ReactNode {
-  if (!value) return <V v={null} w={14} />;
-  if (key === "PBN")
-    return (
-      <span className="codes">
-        {(value.match(/[A-Z]\d/g) ?? []).map((c) => (
-          <Badge key={c} tone={/^[ST]/.test(c) ? "green" : "blue"} tip={`PBN capability ${c}: ${PBN[c] ?? "not in the quick reference"}${/^[ST]/.test(c) ? " (approach)" : " (en route / terminal)"}`}>
-            {c} · {(PBN[c] ?? c).replace(/ — all permitted sensors/, "")}
-          </Badge>
-        ))}
-      </span>
-    );
-  if (key === "DOF") {
-    const m = value.match(/^(\d{2})(\d{2})(\d{2})$/);
-    if (!m) return value;
-    const d = new Date(Date.UTC(2000 + Number(m[1]), Number(m[2]) - 1, Number(m[3])));
-    return (
-      <span className="codes">
-        <span className="code">{value}</span>
-        <Badge tone="blue" tip="Date of flight (YYMMDD)">
-          {d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}
-        </Badge>
-      </span>
-    );
-  }
-  if (key === "REG")
-    return (
-      <span className="codes">
-        <span className="code">{value}</span>
-        <Badge tone="ink" tip="Aircraft registration">
-          {fmtReg(value) ?? value}
-        </Badge>
-      </span>
-    );
-  if (key === "OPR")
-    return (
-      <span className="codes">
-        <span className="code">{value}</span>
-        {OPERATORS[value] && <Badge tone="blue">{OPERATORS[value].name}</Badge>}
-      </span>
-    );
-  if (key === "PER")
-    return (
-      <span className="codes">
-        <span className="code">{value}</span>
-        <Badge tone="ink" tip="Aircraft approach category, from the speed at the threshold: sets the approach minima you use">
-          {PER[value] ?? value}
-        </Badge>
-      </span>
-    );
-  if (key === "EET")
-    return (
-      <span className="codes">
-        {value.split(/\s+/).map((e, i) => {
-          const fir = e.slice(0, 4);
-          return (
-            <Tip key={i} tip={`${firs.get(fir) ?? fir} boundary at ${fmtHhmm(e.slice(4))} after take-off`} title={fir} plain>
-              <span className="code">
-                {fir} +{fmtHhmm(e.slice(4))}
-              </span>
-            </Tip>
-          );
-        })}
-      </span>
-    );
-  if (key === "RMK" && value === "TCAS")
-    return (
-      <Badge tone="green" tip="Remark: the aircraft carries ACAS II (TCAS)">
-        TCAS fitted
-      </Badge>
-    );
-  return value;
 }
