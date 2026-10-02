@@ -68,6 +68,17 @@ export function RouteSection({ no }: { no: number }) {
 
   return (
     <Section id="route" no={no} title="Alternate, routing & impacts" meta={<span>PDF p.{pageOf(ofp?.pages, /ALTERNATE ROUTE TO/) ?? 2}</span>}>
+      <div className="row" style={{ marginBottom: 14 }}>
+        <button type="button" className="btn" aria-expanded={sheet} aria-controls="mcdu-sheet" disabled={!ofp?.fpl} onClick={() => setSheet(!sheet)}>
+          {sheet ? "▾ Hide MCDU set-up sheet" : "▸ Print MCDU set-up sheet"}
+        </button>
+        <span className="small muted">INIT A, INIT B fuel, F-PLN, PERF TAKE OFF, RAD NAV and cruise winds in MCDU page order.</span>
+      </div>
+      {sheet && (
+        <div id="mcdu-sheet" className="mcdu-sheet" style={{ marginBottom: 16 }}>
+          <McduSheet />
+        </div>
+      )}
       <Sub>
         Alternate route to{" "}
         <span className="mono" style={{ color: "var(--ink)" }}>
@@ -200,17 +211,6 @@ export function RouteSection({ no }: { no: number }) {
           </span>
         ))}
       </div>
-      <div className="row" style={{ marginTop: 10 }}>
-        <button type="button" className="btn" aria-expanded={sheet} aria-controls="mcdu-sheet" disabled={!ofp?.fpl} onClick={() => setSheet(!sheet)}>
-          {sheet ? "▾ Hide MCDU set-up sheet" : "▸ Print MCDU set-up sheet"}
-        </button>
-        <span className="small muted">INIT A, INIT B fuel, F-PLN, PERF TAKE OFF, RAD NAV and cruise winds in MCDU page order.</span>
-      </div>
-      {sheet && (
-        <div id="mcdu-sheet" className="mcdu-sheet">
-          <McduSheet />
-        </div>
-      )}
 
       <Sub>
         <Tip tip={G["OPERATIONAL IMPACTS"]} title="Operational impacts">
