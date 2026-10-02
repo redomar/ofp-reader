@@ -17,6 +17,10 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - **MCDU set-up sheet**: a print button at the top of Alternate, routing & impacts (printer icon, the pages it covers as chips) opens the plan full screen over the dimmed page, as a line-printer listing that hugs its content and feeds in from the top; Esc, Close or clicking outside dismisses it, and Copy text copies it line by line. The listing in MCDU page order, to type straight in: INIT A (from/to, alternate, flight number, cost index, cruise level and step), INIT B (ZFW, block including any PIC extra, taxi, trip / time, route reserve, alternate, final, extra, TOW / LW in tonnes), F-PLN (one line per fix with ETO, via, distance, minutes, level, frequency, FIR crossings and totals), PERF TAKE OFF (runway, actual if picked, V1 / VR / V2, flaps, FLEX), RAD NAV and winds / temperatures for climb, cruise and descent at the levels flown.
 - **Collapsible airports in Airport weather.** Click an airport's header (or its ⊟ / ⊞ box) to fold its weather cards away. Departure and destination start open and remember your choice for every plan; destination alternates start collapsed and remember the ones you open. A folded airport shows a one-line summary of its METAR (weather, wind, visibility) next to its category. Folded cards still open for find-in-page and always print expanded.
 
+### Fixed
+
+- The flight-summary graphic stayed hidden while it should have been drawing in, then appeared all at once at the end (most visible on second and later views): its SMIL reveal held its start value. The reveal is now a CSS animation with the same timing.
+
 ## [1.6.0] - 2026-10-02
 
 ### Added
