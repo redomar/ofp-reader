@@ -96,7 +96,7 @@ export function FplSection({ no }: { no: number }) {
         </div>
       )}
       <hr className="mcdu-rule" />
-      <div className="cols" style={{ ["--min" as string]: "360px" }}>
+      <div className="stack" style={{ gap: 16 }}>
         <div>
           <Sub>Message</Sub>
           <div className="fpl">
@@ -181,7 +181,34 @@ export function FplSection({ no }: { no: number }) {
                 </dl>
               </section>
 
-              <section className="fc fc-wide">
+              <section className="fc fc-caps">
+                <h4>Capabilities</h4>
+                <dl>
+                  {groups
+                    .filter(([, list]) => list.length)
+                    .map(([g, list]) => (
+                      <FcRow on={on} setOn={setOn} key={g} it="10" label={g}>
+                        <span className="fc-chips">{list.map((c) => chip(c, EQUIP_SHORT[c] ?? c, EQUIP[c] ?? "Code not in the quick reference"))}</span>
+                      </FcRow>
+                    ))}
+                  {svs.length > 0 && (
+                    <FcRow on={on} setOn={setOn} it="10" label="Surveillance">
+                      <span className="fc-chips">{svs.map((c) => chip(c, SURV_SHORT[c] ?? c, SURV[c] ?? "Code not in the quick reference"))}</span>
+                    </FcRow>
+                  )}
+                  {pbn.length > 0 && (
+                    <FcRow on={on} setOn={setOn} it="18" label="PBN">
+                      <span className="fc-chips">{pbn.map((c) => chip(c, (PBN[c] ?? c).replace(/ — all permitted sensors/, ""), `PBN capability ${c}: ${PBN[c] ?? "not in the quick reference"}`))}</span>
+                    </FcRow>
+                  )}
+                  {other.map(([k, v]) => (
+                    <FcRow on={on} setOn={setOn} key={k} it="18" label={k}>
+                      {v}
+                    </FcRow>
+                  ))}
+                </dl>
+              </section>
+              <section className="fc fc-route-card">
                 <h4>Route &amp; times</h4>
                 <div className="fc-route" onPointerEnter={() => setOn("13")} onPointerLeave={() => setOn(null)}>
                   <span>
@@ -223,33 +250,6 @@ export function FplSection({ no }: { no: number }) {
                 </dl>
               </section>
 
-              <section className="fc fc-wide">
-                <h4>Capabilities</h4>
-                <dl>
-                  {groups
-                    .filter(([, list]) => list.length)
-                    .map(([g, list]) => (
-                      <FcRow on={on} setOn={setOn} key={g} it="10" label={g}>
-                        <span className="fc-chips">{list.map((c) => chip(c, EQUIP_SHORT[c] ?? c, EQUIP[c] ?? "Code not in the quick reference"))}</span>
-                      </FcRow>
-                    ))}
-                  {svs.length > 0 && (
-                    <FcRow on={on} setOn={setOn} it="10" label="Surveillance">
-                      <span className="fc-chips">{svs.map((c) => chip(c, SURV_SHORT[c] ?? c, SURV[c] ?? "Code not in the quick reference"))}</span>
-                    </FcRow>
-                  )}
-                  {pbn.length > 0 && (
-                    <FcRow on={on} setOn={setOn} it="18" label="PBN">
-                      <span className="fc-chips">{pbn.map((c) => chip(c, (PBN[c] ?? c).replace(/ — all permitted sensors/, ""), `PBN capability ${c}: ${PBN[c] ?? "not in the quick reference"}`))}</span>
-                    </FcRow>
-                  )}
-                  {other.map(([k, v]) => (
-                    <FcRow on={on} setOn={setOn} key={k} it="18" label={k}>
-                      {v}
-                    </FcRow>
-                  ))}
-                </dl>
-              </section>
             </div>
           ) : (
             <div className="stack" style={{ gap: 6 }}>

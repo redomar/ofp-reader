@@ -3759,10 +3759,30 @@ hr.mcdu-rule {
 }
 
 /* ---------- ATC flight plan: decoded cards ---------- */
+/* Flight | Aircraft | Capabilities (x2), then Route & times across */
 .fc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+.fc-caps {
+  grid-column: span 2;
+}
+.fc-route-card {
+  grid-column: 1 / -1;
+}
+@media (max-width: 1100px) {
+  .fc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .fc-grid {
+    grid-template-columns: 1fr;
+  }
+  .fc-caps {
+    grid-column: auto;
+  }
 }
 .fc {
   border: 1px solid var(--rule);
@@ -3864,4 +3884,17 @@ hr.mcdu-rule {
   padding: 0 4px;
   border: 1px solid var(--rule-strong);
   border-radius: 2px;
+}
+
+/* flight-summary strip: wipe in from the left (same timing as the arc's SMIL plane) */
+@keyframes fs-reveal {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--w);
+  }
+}
+.fs-reveal {
+  animation: fs-reveal 1.6s cubic-bezier(0.3, 0, 0.2, 1) both;
 }

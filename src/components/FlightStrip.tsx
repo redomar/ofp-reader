@@ -124,7 +124,7 @@ const PAD = 8;
 const REVEAL = { dur: "1.6s", spline: "0.3 0 0.2 1" };
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Wipes its children in from left to right (SMIL, so it shares a clock with the arc's plane). */
+/** Wipes its children in from left to right, on the same duration and easing as the arc's plane. */
 function Reveal({ w, h, children }: { w: number; h: number; children: ReactNode }) {
   const id = `fs-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [still] = useState(reducedMotion);
@@ -132,9 +132,8 @@ function Reveal({ w, h, children }: { w: number; h: number; children: ReactNode 
     <>
       <defs>
         <clipPath id={id}>
-          <rect x={-20} y={-30} height={h + 60} width={still ? w + 40 : 0}>
-            {!still && <animate attributeName="width" from="0" to={w + 40} dur={REVEAL.dur} fill="freeze" calcMode="spline" keyTimes="0;1" keySplines={REVEAL.spline} />}
-          </rect>
+          {/* CSS, not SMIL: the SMIL width animation held 0 until it ended on replays, hiding the strip */}
+          <rect x={-20} y={-30} height={h + 60} width={w + 40} className={still ? undefined : "fs-reveal"} style={{ ["--w" as string]: `${w + 40}px` }} />
         </clipPath>
       </defs>
       <g clipPath={`url(#${id})`}>{children}</g>
