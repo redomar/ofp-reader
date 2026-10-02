@@ -200,7 +200,8 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][
     const v = ((m % 1440) + 1440) % 1440;
     return `${String(Math.floor(v / 60)).padStart(2, "0")}${String(v % 60).padStart(2, "0")}Z`;
   };
-  return alts.map((a, i) => {
+  const pageNo = (n: number) => `PAGE ${String(n).padStart(3, "0")}`;
+  const altPagesOut = alts.map((a, i) => {
     const [icao, aptRwy] = a.apt.split("/");
     const rwy = a.rwy ?? aptRwy;
     const wx = ofp.wx.airports.find((w) => w.icao === icao);
@@ -208,7 +209,7 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][
     const eta = onMin != null ? onMin + altMin : null;
     const nav = ofp.log.find((p) => p.freq && ident(p) === icao);
     const lines = [
-      `${col("OFP READER  ALTERNATE SHEET", 40)}${col(`PAGE ${String(i + 1).padStart(3, "0")}`, 12, true)}`,
+      `${col("OFP READER  ALTERNATE SHEET", 40)}${col(pageNo(i + 2), 12, true)}`,
       `${col(h.flightNo, 9)}${col(`${h.dep}-${h.arr}`, 11)}${col(h.date, 11)}${col(`ALTN ${i + 1} OF ${alts.length}`, 21)}`,
       RULE,
       `[ FINRES ]    ${finres != null ? `${finres.toLocaleString("en-GB")} ${u}` : "....."}${finresTime ? `  ${finresTime.slice(0, 2)}:${finresTime.slice(2)}` : ""}`,
@@ -233,9 +234,69 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][
       } else lines.push("ETA OUTSIDE THE TAF VALIDITY");
     }
     if (wx?.metar) lines.push(...head("METAR"), ...wrap(`${icao} ${wx.metar}`, "", 52, 0));
-    lines.push(RULE, "", `${col("", 10)}*** END OF PAGE ${String(i + 1).padStart(3, "0")} ***`);
+    lines.push(RULE, "", `${col("", 10)}*** END OF PAGE ${String(i + 2).padStart(3, "0")} ***`);
     return lines;
   });
+
+  // Page 001: return to departure (air turnback), and the take-off alternate if one is filed.
+  const dep = h.dep ?? "DEP";
+  const depWx = ofp.wx.airports.find((w) => w.icao === dep);
+  const to = ofp.tlr.takeoff.planned;
+  const acars = ofp.tlr.takeoff.tables.find((t) => /ACARS/.test(t.title));
+  const ci = (name: string) => acars?.columns.indexOf(name) ?? -1;
+  const tow = h.estTow;
+  const over = tow != null && h.maxLaw != null ? tow - h.maxLaw : null;
+  const offMin = hhmmToMin(h.offTime);
+  const ret: string[] = [
+    `${col("OFP READER  ALTERNATE SHEET", 40)}${col(pageNo(1), 12, true)}`,
+    `${col(h.flightNo, 9)}${col(`${h.dep}-${h.arr}`, 11)}${col(h.date, 11)}${col("RETURN TO DEP", 21)}`,
+    RULE,
+    `[ FINRES ]    ${finres != null ? `${finres.toLocaleString("en-GB")} ${u}` : "....."}${finresTime ? `  ${finresTime.slice(0, 2)}:${finresTime.slice(2)}` : ""}`,
+    ...head(`RETURN TO DEPARTURE  ${dep}`),
+    ...wrap(`${depWx?.name ? `${depWx.name}  ` : ""}(AIR TURNBACK)`, "", 52, 0),
+  ];
+  if (acars) {
+    ret.push(`${col("RWY", 7)}${col("LENGTH", 9, true)}  NOTES`);
+    for (const r of acars.rows) {
+      const len = Number(r[ci("LENGTH")]);
+      ret.push(`${col(r[0] + (r[0] === to?.PRWY ? "*" : ""), 7)}${col(len ? `${len.toLocaleString("en-GB")} FT` : "", 9, true)}  ${r[ci("NOTES")] ?? ""}`);
+    }
+    if (to?.PRWY) ret.push(`${col("", 7)}* PLANNED TAKE-OFF RUNWAY`);
+  }
+  ret.push(...wrap("NO LANDING PERFORMANCE FOR THE DEPARTURE IN THE OFP: CHECK THE LANDING DISTANCE WITH YOUR PERFORMANCE TOOL.", "", 52, 0));
+  ret.push(...head("WEIGHT"));
+  ret.push(`${col("TOW / MLW", 14)}${tow != null ? tow.toLocaleString("en-GB") : "..."} / ${h.maxLaw != null ? h.maxLaw.toLocaleString("en-GB") : "..."} ${u}`);
+  if (over != null && over > 0) {
+    const mins = h.avgFf ? Math.round((over / h.avgFf) * 60) : null;
+    ret.push(`${col("OVERWEIGHT", 14)}${over.toLocaleString("en-GB")} ${u} ABOVE MLW`);
+    if (mins != null) ret.push(...wrap(`ABOUT ${mins} MIN TO BURN AT THE PLANNED AVG FUEL FLOW (${h.avgFf} ${u}/H), OR LAND OVERWEIGHT PER YOUR PROCEDURES`, col("", 14)));
+  } else if (over != null) ret.push(`${col("OVERWEIGHT", 14)}NO, ${(-over).toLocaleString("en-GB")} ${u} BELOW MLW`);
+  const mora = ofp.log.find((p) => p.mora)?.mora;
+  const sid = routeLegs(ofp.fpl?.items.find((i) => i.item === "15")?.value ?? "", dep, h.arr ?? "").legs[0];
+  ret.push(...head("DEPARTURE"));
+  if (sid?.via === "SID") ret.push(`${col("SID", 14)}${sid.proc} TO ${sid.to}`);
+  if (mora) ret.push(`${col("MORA", 14)}${(Number(mora) * 100).toLocaleString("en-GB")} FT (FIRST LEG)`);
+  if (offMin != null) ret.push(`${col("PLANNED OFF", 14)}${clockOf(offMin)}`);
+  if (depWx?.taf.length && offMin != null && day) {
+    const back = offMin + 45;
+    const taf = parseReport(`TAF ${dep} ${depWx.taf.join(" ")}`);
+    const f = forecastAt(taf, { day: day + (back >= 1440 ? 1 : 0), hour: Math.floor((back % 1440) / 60), min: back % 60 });
+    ret.push(...head(`FCST AT ${clockOf(back)} (OFF + 45 MIN)`));
+    if (f) {
+      ret.push(...wrap(`${headline(f.prevailing)}${f.prevailing.category ? ` · ${f.prevailing.category}` : ""}`.toUpperCase(), col("PREVAILING", 14)));
+      for (const g of f.temporary) ret.push(...wrap(`${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(), col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14)));
+    } else ret.push("OUTSIDE THE TAF VALIDITY");
+  }
+  if (depWx?.metar) ret.push(...head("METAR"), ...wrap(`${dep} ${depWx.metar}`, "", 52, 0));
+  const tk = h.tkofAltn && !/^\.+$/.test(h.tkofAltn) ? h.tkofAltn : null;
+  ret.push(...head("TAKE-OFF ALTERNATE"));
+  if (tk) {
+    const tkWx = ofp.wx.airports.find((w) => w.icao === tk);
+    ret.push(`${col("FILED", 14)}${tk}${tkWx?.name ? `  ${tkWx.name}` : ""}`);
+    if (tkWx?.metar) ret.push(...wrap(`${tk} ${tkWx.metar}`, "", 52, 0));
+  } else ret.push("NONE FILED");
+  ret.push(RULE, "", `${col("", 10)}*** END OF PAGE 001 ***`);
+  return [ret, ...altPagesOut];
 }
 
 function AltSheet() {
@@ -260,10 +321,10 @@ export function AltPrint() {
   return (
     <PrintButton
       title="Print alternate sheet"
-      chips={alts.length ? alts.map((a) => a.apt.split("/")[0]) : ["ALTN"]}
-      sub={alts.length > 1 ? `One page per alternate (${alts.length}), each starting with FINRES.` : "Diversion figures, routing and the forecast at your ETA."}
+      chips={[`${ofp?.header.dep ?? "DEP"} RTN`, ...alts.map((a) => a.apt.split("/")[0])]}
+      sub={`Return to departure, then one page per alternate (${alts.length}); each page starts with FINRES.`}
       label="Alternate sheet"
-      disabled={!alts.length}
+      disabled={!ofp}
     >
       <AltSheet />
     </PrintButton>
