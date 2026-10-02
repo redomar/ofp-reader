@@ -3293,3 +3293,100 @@ hr.ldg-split {
   border: 1px solid var(--amber);
   color: var(--amber);
 }
+
+/* ---------- ATC flight plan: route explained ---------- */
+.rx {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  background: var(--field);
+}
+@media (max-width: 900px) {
+  .rx {
+    grid-template-columns: 1fr;
+  }
+}
+.rx-node {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding-left: 22px;
+  min-height: 24px;
+}
+.rx-dot {
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border: 2px solid var(--magenta);
+  border-radius: 50%;
+  background: var(--sheet);
+}
+.rx-node.end .rx-dot {
+  background: var(--magenta);
+}
+.rx-node b {
+  font-size: 14px;
+}
+.rx-time {
+  margin-left: auto;
+}
+.rx-leg {
+  position: relative;
+  display: flex;
+  padding-left: 22px;
+  min-height: 26px;
+}
+.rx-line {
+  position: absolute;
+  left: 8px;
+  top: -6px;
+  bottom: -6px;
+  border-left: 3px solid var(--magenta);
+}
+.rx-leg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0 8px;
+}
+.rx-between {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.rx-wpt {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 0 4px;
+  border: 1px dashed var(--rule-strong);
+  border-radius: 2px;
+  color: var(--ink-2);
+}
+.rx-wpt.nav {
+  border-style: solid;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.rx-fir {
+  font-style: italic;
+}
+.rx-navaids .field-label {
+  display: block;
+  margin-bottom: 6px;
+}
+.rx-wpt.top {
+  border-style: solid;
+  border-color: var(--magenta);
+  color: var(--magenta);
+}
+.rx-navaids .tbl {
+  font-size: 13px;
+}
