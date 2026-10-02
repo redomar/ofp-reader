@@ -1,8 +1,8 @@
 "use client";
 
 /*
- * WIND LAB — local demonstration page only (excluded from git via .git/info/exclude).
- * Tune the wind-arrow sway before it goes into the app.
+ * WIND LAB — demonstration page (/wind-lab) for tuning the wind-arrow sway before
+ * it goes into the app. Not linked from the reader.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -30,6 +30,8 @@ interface Cfg {
   floorBpm: number;
   capBpm: number;
   calmKt: number;
+  /** Colour arrows and cards by wind category (otherwise all blue). */
+  catColour: boolean;
   capKt: number;
   baseAmp: number;
   ampPerKt: number;
@@ -68,6 +70,7 @@ const PROPOSAL: Cfg = {
   floorBpm: 70,
   capBpm: 500,
   calmKt: 3,
+  catColour: true,
   capKt: 45,
   baseAmp: 3,
   ampPerKt: 1.5,
@@ -233,14 +236,25 @@ function bpmFor(kt: number, c: Cfg) {
   return clamp(bpm, c.floorBpm, c.capBpm);
 }
 
-function category(kt: number, gust: number | null) {
+type Cat = "calm" | "light" | "moderate" | "strong" | "gale";
+
+/** Wind categories, coloured with the theme's tokens so they keep AA contrast in day and night. */
+const CATS: Record<Cat, { label: string; color: string; rule: (calmKt: number) => string }> = {
+  calm: { label: "Calm", color: "var(--ink-3)", rule: (c) => `≤ ${c} kt` },
+  light: { label: "Light", color: "var(--green)", rule: (c) => `${c + 1}–10 kt` },
+  moderate: { label: "Moderate", color: "var(--blue)", rule: () => "11–19 kt" },
+  strong: { label: "Strong", color: "var(--amber)", rule: () => "≥ 20 kt or gusts ≥ 28" },
+  gale: { label: "Gale", color: "var(--red)", rule: () => "≥ 34 kt or gusts ≥ 43" },
+};
+
+/** Met Office strong-wind warning (20 kt mean / 28 kt gusts) and gale (34 / 43); calm from the config. */
+function category(kt: number, gust: number | null, calmKt: number): Cat {
   const g = gust ?? 0;
-  if (kt >= 48) return ["Storm", "#b0241b"];
-  if (kt >= 34 || g >= 43) return ["Gale", "#b0241b"];
-  if (kt >= 20 || g >= 28) return ["Strong", "#8a5100"];
-  if (kt > 10) return ["Moderate", "#0f5aa6"];
-  if (kt > 3) return ["Light", "#1f6a3b"];
-  return ["Calm", "#5a6477"];
+  if (kt >= 34 || g >= 43) return "gale";
+  if (kt >= 20 || g >= 28) return "strong";
+  if (kt > 10) return "moderate";
+  if (kt > calmKt) return "light";
+  return "calm";
 }
 
 function compute(s: Sample, c: Cfg) {
@@ -281,8 +295,9 @@ function compute(s: Sample, c: Cfg) {
   }
   // VRB/kick spread equivalent for kick rate
   const kickSpread = s.dir == null ? 10 : sectorHalf != null && why === "sector" ? sectorHalf / 4 : spread;
-  const [cat, catColor] = category(s.spd, s.gust);
-  return { scaleKt, bpm, swingMs, cycleHz: 1000 / (swingMs * 2), spread, amp, chaosAmp, sectorHalf, centre, cat, catColor, why, kickSpread, limit };
+  // AVG WIND is categorised on the same scaled speed that drives its rhythm.
+  const cat = category(scaleKt, s.gust != null && s.kind !== "AVG" ? s.gust : null, c.calmKt);
+  return { scaleKt, bpm, swingMs, cycleHz: 1000 / (swingMs * 2), spread, amp, chaosAmp, sectorHalf, centre, cat, why, kickSpread, limit };
 }
 
 /* ---------------- visuals ---------------- */
@@ -303,14 +318,14 @@ function Arrow({ dir, amp, chaosAmp, size, guides, swayRef }: { dir: number; amp
         <svg width={size} height={size} viewBox="-8 -8 16 16" className="wl-guide" aria-hidden="true">
           <circle r="7.6" fill="none" stroke="var(--rule)" strokeWidth="0.25" />
           {chaosAmp > 0 && <path d={wedge(Math.min(179, amp + chaosAmp))} fill="var(--magenta)" opacity="0.1" />}
-          <path d={wedge(Math.max(0.5, amp))} fill="var(--blue)" opacity="0.14" />
+          <path d={wedge(Math.max(0.5, amp))} fill="var(--cat, var(--blue))" opacity="0.16" />
           <line x1="0" y1="0" x2={mid[0]} y2={mid[1]} stroke="var(--ink-3)" strokeWidth="0.25" strokeDasharray="0.6 0.6" />
         </svg>
       )}
       <span className="wl-sway" ref={swayRef}>
         <svg width={size} height={size} viewBox="-8 -8 16 16" aria-hidden="true">
           <g transform={`rotate(${dir + 180})`}>
-            <path d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z" fill="var(--blue)" />
+            <path d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z" fill="var(--cat, var(--blue))" />
           </g>
         </svg>
       </span>
@@ -385,13 +400,13 @@ function Card({ s, i, cfg, phase }: { s: Sample; i: number; cfg: Cfg; phase: num
   const input: SwayInput = { amp: d.amp, chaosAmp: d.chaosAmp, swingMs: d.swingMs, spread: d.kickSpread, ease, seed, chaos: cfg.chaos, maxDeg: d.limit + 10 };
   const { bindBig, bindSmall, canvas } = useMotion(input, cfg.reduced);
   return (
-    <article className="wl-card">
+    <article className="wl-card" data-cat={d.cat} style={{ ["--cat" as string]: cfg.catColour ? CATS[d.cat].color : "var(--blue)" }}>
       <header>
         <span className="wl-kind" data-k={s.kind}>
           {kindLabel[s.kind]}
         </span>
-        <span className="wl-cat" style={{ color: d.catColor, borderColor: d.catColor }}>
-          {d.cat}
+        <span className="wl-cat" title={CATS[d.cat].rule(cfg.calmKt)}>
+          {CATS[d.cat].label}
         </span>
       </header>
       <div className="wl-raw">{s.raw}</div>
@@ -449,6 +464,7 @@ const kindLabel: Record<Kind, string> = { METAR: "METAR wind chip", PWIND: "TLR 
 export default function WindLab() {
   const [cfg, setCfg] = useState<Cfg>(PROPOSAL);
   const [filter, setFilter] = useState<Kind | "ALL">("ALL");
+  const [catFilter, setCatFilter] = useState<Cat | "ALL">("ALL");
   const [custom, setCustom] = useState({ dir: 240, spd: 22, gust: 34, s0: "", s1: "" });
   const set = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
   const setChaos = <K extends keyof ChaosCfg>(k: K, v: ChaosCfg[K]) => setCfg((c) => ({ ...c, chaos: { ...c.chaos, [k]: v } }));
@@ -467,7 +483,10 @@ export default function WindLab() {
     gust: custom.gust > custom.spd ? custom.gust : null,
     sector: custom.s0 && custom.s1 ? [Number(custom.s0), Number(custom.s1)] : null,
   };
-  const list = [customSample, ...SAMPLES].filter((s) => filter === "ALL" || s.kind === filter || s.kind === "CUSTOM");
+  const list = [customSample, ...SAMPLES].filter(
+    (s) => s.kind === "CUSTOM" || ((filter === "ALL" || s.kind === filter) && (catFilter === "ALL" || compute(s, cfg).cat === catFilter)),
+  );
+  const catCount = (k: Cat) => SAMPLES.filter((s) => (filter === "ALL" || s.kind === filter) && compute(s, cfg).cat === k).length;
 
   const num = (k: keyof Cfg, label: string, min: number, max: number, step: number, unit = "") => (
     <label className="wl-ctl">
@@ -684,6 +703,7 @@ export default function WindLab() {
           {num("size", "Card arrow size", 24, 140, 2, "px")}
           {chk("randomPhase", "Randomise phase (arrows not in sync)")}
           {chk("guides", "Show sway sector guides")}
+          {chk("catColour", "Colour by wind category")}
           {chk("reduced", "Simulate reduced motion")}
         </div>
       </section>
@@ -694,6 +714,21 @@ export default function WindLab() {
             {k === "ALL" ? `All (${SAMPLES.length})` : kindLabel[k]}
           </button>
         ))}
+      </div>
+
+      <div className="wl-row wl-cats" role="group" aria-label="Filter by wind category">
+        <button aria-pressed={catFilter === "ALL"} onClick={() => setCatFilter("ALL")}>
+          Any strength
+        </button>
+        {(Object.keys(CATS) as Cat[]).map((k) => (
+          <button key={k} className="wl-catbtn" aria-pressed={catFilter === k} onClick={() => setCatFilter(catFilter === k ? "ALL" : k)} style={{ ["--cat" as string]: CATS[k].color }}>
+            <i aria-hidden="true" />
+            {CATS[k].label}
+            <small>{CATS[k].rule(cfg.calmKt)}</small>
+            <small>({catCount(k)})</small>
+          </button>
+        ))}
+        <span className="wl-mini">AVG WIND uses its ÷ scaled speed; thresholds follow the Met Office strong-wind (20 kt / 28 G) and gale (34 / 43 G) warnings.</span>
       </div>
 
       <div className="wl-custom-bar">
@@ -753,7 +788,15 @@ const CSS = `
 .wl-card header { display: flex; justify-content: space-between; align-items: center; }
 .wl-kind { font-family: var(--font-cond); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; color: var(--ink-3); }
 .wl-kind[data-k=CUSTOM] { color: var(--magenta); }
-.wl-cat { font-family: var(--font-cond); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; border: 1px solid; padding: 0 6px; border-radius: 2px; }
+.wl-cat { font-family: var(--font-cond); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; border: 1px solid var(--cat); color: var(--cat); padding: 0 6px; border-radius: 2px; cursor: help; }
+.wl-card { border-top: 3px solid var(--cat, var(--rule-strong)) !important; }
+.wl-cats { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 14px; }
+.wl-catbtn { display: inline-flex; align-items: center; gap: 6px; }
+.wl-catbtn i { width: 10px; height: 10px; border-radius: 50%; background: var(--cat); display: inline-block; }
+.wl-catbtn small { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--ink-3); letter-spacing: 0; }
+.wl-catbtn[aria-pressed="true"] { background: var(--cat) !important; color: var(--sheet) !important; border-color: var(--cat) !important; }
+.wl-catbtn[aria-pressed="true"] i { background: var(--sheet); }
+.wl-catbtn[aria-pressed="true"] small { color: var(--sheet); }
 .wl-raw { font-family: var(--font-mono); font-weight: 600; font-size: 15px; }
 .wl-note { font-size: 12px; color: var(--ink-2); min-height: 16px; }
 .wl-stage { display: flex; align-items: center; gap: 14px; padding: 8px 0; border-top: 1px dashed var(--rule); border-bottom: 1px dashed var(--rule); margin: 4px 0; }
