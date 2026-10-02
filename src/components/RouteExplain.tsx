@@ -13,6 +13,58 @@ const clock = (m: number) => {
 const plus = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
 const ident = (p: LogPoint) => p.ident ?? p.position?.replace(/\s/g, "") ?? "";
 
+/** Fixed-width text columns for the printout. */
+const col = (v: string | number | null | undefined, w: number, right = false) => {
+  const t = v == null ? "" : String(v);
+  return (right ? t.padStart(w) : t.padEnd(w)).slice(0, w);
+};
+
+type Rows = ReturnType<typeof legMetrics>;
+
+/** The route as a 1980s line-printer listing: header, one line per fix, FIR crossings, totals. */
+function listing(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, dep: string, dest: string, rows: Rows, off: number | null, navOf: (n: string) => LogPoint | undefined): string[] {
+  const h = ofp.header;
+  const hhmm = (m: number | null | undefined) => (m == null || off == null ? "...." : clock(off + m).replace(/[:Z]/g, ""));
+  const fl = (m: Rows[number]["m"]) => (!m || m.flMin == null ? "" : m.flMin === m.flMax ? String(m.flMin).padStart(3, "0") : `${String(m.flMin).padStart(3, "0")}-${String(m.flMax).padStart(3, "0")}`);
+  const line = "-".repeat(52);
+  const out = [
+    `${col("OFP READER  ROUTE LISTING", 40)}${col("PAGE 001", 12, true)}`,
+    `${col(h.flightNo, 9)}${col(`${dep}-${dest}`, 11)}${col(h.date, 11)}${col(h.acType, 6)}${col(h.reg, 15)}`,
+    line,
+    `${col("ETO", 6)}${col("FIX", 7)}${col("VIA", 9)}${col("NM", 5, true)}${col("MIN", 5, true)} ${col("FL", 8)}${col("FREQ", 7, true)}`,
+    line,
+    `${col(hhmm(0), 6)}${col(dep, 7)}${col("", 9)}${col("", 5)}${col("", 5)} ${col("", 8)}${col("", 7)}`,
+  ];
+  let nm = 0;
+  for (const { leg, m } of rows) {
+    for (const f of m?.firs ?? []) out.push(`${col("", 6)}  -- ${col(`ENTER ${f.name.toUpperCase()}`, 34)} +${plus(f.t)}`);
+    nm += m?.dist ?? 0;
+    const via = leg.via === "SID" || leg.via === "STAR" ? leg.proc ?? leg.via : leg.via;
+    out.push(`${col(hhmm(m?.t1), 6)}${col(leg.to, 7)}${col(via, 9)}${col(m ? Math.round(m.dist) : "", 5, true)}${col(m ? m.t1 - m.t0 : "", 5, true)} ${col(fl(m), 8)}${col(navOf(leg.to)?.freq, 7, true)}`);
+    if (leg.change) out.push(`${col("", 6)}  ** ${leg.change.speed.toUpperCase()} ${leg.change.level} FROM ${leg.from}`);
+  }
+  const last = rows.at(-1)?.m;
+  out.push(line, `${col("TOTAL", 22)}${col(Math.round(nm), 5, true)}${col(last ? plus(last.t1) : "", 6, true)}`, "", `${col("", 12)}*** END OF LISTING ***`);
+  return out;
+}
+
+/** Continuous-form paper: tractor-feed edges and alternating white / pink line bands. */
+function printout(lines: string[]) {
+  return (
+    <figure className="rx-print" aria-label="Route listing, printed">
+      <span className="rx-feed left" aria-hidden="true" />
+      <pre className="rx-paper">
+        {lines.map((l, i) => (
+          <span key={i} className="rx-pline">
+            {l || " "}
+          </span>
+        ))}
+      </pre>
+      <span className="rx-feed right" aria-hidden="true" />
+    </figure>
+  );
+}
+
 /** Distance, time, levels, waypoints and FIR crossings for each leg, from the nav log. */
 function legMetrics(legs: RouteLeg[], log: LogPoint[], dep: string, dest: string) {
   // Walk the log alongside the legs, so repeated names resolve in order.
@@ -59,7 +111,7 @@ export function RouteExplain() {
     const k = nav?.freq ? navaidKind(nav.freq) : null;
     const t = end === "dep" ? 0 : rows.find((r) => r.leg.to === name)?.m?.t1;
     return (
-      <div className={cx("rx-node", end && "end")}>
+      <div className={cx("rx-node", end && "end", end)}>
         <span className="rx-time mono">{t != null && off != null ? clock(off + t).replace("Z", "") : ""}</span>
         <span className="rx-rail" aria-hidden="true">
           <span className="rx-dot" />
@@ -157,6 +209,7 @@ export function RouteExplain() {
       </div>
 
       <span className="rx-vr" aria-hidden="true" />
+      <div className="rx-side">
       <div className="rx-navaids">
         <span className="field-label">Radio navaids on the route</span>
         {navaids.length ? (
@@ -205,6 +258,8 @@ export function RouteExplain() {
         ) : (
           <p className="small muted">No radio navaids with frequencies on this route (it&apos;s flown on RNAV waypoints).</p>
         )}
+      </div>
+      {printout(listing(ofp, dep, dest, rows, off, navOf))}
       </div>
     </div>
   );

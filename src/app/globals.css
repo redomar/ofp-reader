@@ -3344,9 +3344,10 @@ hr.ldg-split {
   display: flex;
   justify-content: center;
 }
+/* the line: through every leg; at a fix, above it unless it's the departure and below it unless it's the destination */
 .rx-leg .rx-rail::before,
-.rx-node:not(.end) .rx-rail::after,
-.rx-node.end:not(:first-of-type) .rx-rail::before {
+.rx-node:not(.dep) .rx-rail::before,
+.rx-node:not(.dest) .rx-rail::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -3357,25 +3358,13 @@ hr.ldg-split {
   top: 0;
   bottom: 0;
 }
-.rx-node .rx-rail::after {
-  top: 50%;
-  bottom: 0;
-}
 .rx-node .rx-rail::before {
   top: 0;
   bottom: 50%;
 }
-.rx-node:not(.end) .rx-rail::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  margin-left: -1.5px;
-  top: 0;
-  bottom: 50%;
-  border-left: 3px solid var(--magenta);
-}
-.rx-node.end:last-child .rx-rail::after {
-  display: none;
+.rx-node .rx-rail::after {
+  top: 50%;
+  bottom: 0;
 }
 .rx-dot {
   position: relative;
@@ -3466,9 +3455,78 @@ hr.ldg-split {
 }
 /* the navaid table stays in view beside a long route */
 @media (min-width: 901px) {
-  .rx-navaids {
+  .rx-side {
     position: sticky;
     top: 132px;
     align-self: start;
   }
+}
+.rx-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ---------- route listing on continuous-form printer paper ---------- */
+:root {
+  --paper: #fffdf7;
+  --paper-band: #fbe4ea;
+  --paper-ink: #2a2a33;
+  --paper-edge: #f3eee2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1b2230;
+    --paper-band: #2b2232;
+    --paper-ink: #dfe3ea;
+    --paper-edge: #161c27;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1b2230;
+  --paper-band: #2b2232;
+  --paper-ink: #dfe3ea;
+  --paper-edge: #161c27;
+}
+.rx-print {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 22px;
+  margin: 0;
+  background: var(--paper);
+  box-shadow: 0 1px 0 var(--rule), 0 6px 14px -10px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+/* tractor-feed strips: punched holes and a perforation line */
+.rx-feed {
+  background:
+    radial-gradient(circle at 50% 11px, var(--field) 0 4.5px, transparent 5px) 0 0 / 22px 22px repeat-y,
+    var(--paper-edge);
+}
+.rx-feed.left {
+  border-right: 1px dashed var(--rule-strong);
+}
+.rx-feed.right {
+  border-left: 1px dashed var(--rule-strong);
+}
+.rx-paper {
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 22px;
+  color: var(--paper-ink);
+  letter-spacing: 0.03em;
+  /* a little ink bleed, like a ribbon on paper */
+  text-shadow: 0 0 0.7px color-mix(in srgb, var(--paper-ink) 60%, transparent);
+}
+.rx-pline {
+  display: block;
+  height: 22px;
+  padding: 0 10px;
+  white-space: pre;
+}
+.rx-pline:nth-child(even) {
+  background: var(--paper-band);
 }
