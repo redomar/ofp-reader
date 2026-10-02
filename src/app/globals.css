@@ -3029,18 +3029,33 @@ dialog.lightbox img {
 .rwybar.est .rwybar-fill {
   background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--sheet) 30%, transparent) 6px 9px);
 }
-/* Over the hatch, the label gets a solid 1px outline in the ink colour (dark by day, light at
-   night: the opposite of the text), so stripes behind the letters don't lower the contrast. */
+/* Over the hatch, the label is outlined so the stripes don't lower its contrast:
+   yellow letters with a dark outline by day, light letters with a deep-blue outline at night. */
+:root {
+  --est-text: #f5cc2a;
+  --est-outline: var(--ink);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --est-text: var(--ink);
+    --est-outline: #1f3fbf;
+  }
+}
+:root[data-theme="dark"] {
+  --est-text: var(--ink);
+  --est-outline: #1f3fbf;
+}
 .rwybar.est .rwybar-lbl.on {
+  color: var(--est-text);
   text-shadow:
-    1px 0 0 var(--ink),
-    -1px 0 0 var(--ink),
-    0 1px 0 var(--ink),
-    0 -1px 0 var(--ink),
-    1px 1px 0 var(--ink),
-    -1px -1px 0 var(--ink),
-    1px -1px 0 var(--ink),
-    -1px 1px 0 var(--ink);
+    1px 0 0 var(--est-outline),
+    -1px 0 0 var(--est-outline),
+    0 1px 0 var(--est-outline),
+    0 -1px 0 var(--est-outline),
+    1px 1px 0 var(--est-outline),
+    -1px -1px 0 var(--est-outline),
+    1px -1px 0 var(--est-outline),
+    -1px 1px 0 var(--est-outline);
 }
 hr.ldg-split {
   border: none;

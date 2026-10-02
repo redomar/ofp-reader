@@ -16,7 +16,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ### Fixed
 
-- Landing-distance bar labels could become unreadable: on a short bar the white text ran off the fill onto the light track, and on the hatched estimate the stripes crossed the letters. The label is now drawn in ink over the track and in the sheet colour over the fill (switching exactly at the fill edge), and on hatched bars it has a solid outline in the contrasting ink colour, keeping it readable over the stripes at any length.
+- Landing-distance bar labels could become unreadable: on a short bar the white text ran off the fill onto the light track, and on the hatched estimate the stripes crossed the letters. The label is now drawn in ink over the track and in the sheet colour over the fill (switching exactly at the fill edge), and on hatched bars it is outlined (yellow letters with a dark outline by day, light letters with a deep-blue outline at night), keeping it readable over the stripes at any length.
 - The ACARS runway tables were shifted one column: "ACARS LENGTH" was split into two headings, so the length showed under ACARS, the weight limit under LENGTH, and PMTOW / PMRLW and the ILS notes were empty.
 
 ## [1.5.0] - 2026-10-02
