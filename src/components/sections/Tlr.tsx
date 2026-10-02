@@ -242,27 +242,27 @@ function ActualRunway({
   );
 }
 
-/**
- * Factored landing distance against runway length as a touching pair of bars: the dry
- * figure's text above the top bar, the wet figure's below the bottom one.
- */
+/** Factored landing distance (dry, wet) against runway length, one bar each with the figure inside. */
 function LdgDistance({ title, dry, wet, length, estimate = false, tip }: { title: string; dry: number; wet: number; length: number; estimate?: boolean; tip?: string }) {
-  const pct = (d: number) => (d / length) * 100;
-  const colour = (p: number) => (p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)");
-  const label = (k: string, d: number) => `${k} ${fmtNum(d)} ft · ${pct(d).toFixed(0)}%`;
-  const bar = (k: string, d: number) => (
-    <div className="rwybar" role="meter" aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`} aria-valuemin={0} aria-valuemax={length} aria-valuenow={d}>
-      <span className="a-grow-x" style={{ width: `${Math.min(100, pct(d))}%`, background: colour(pct(d)) }} />
-    </div>
-  );
   return (
-    <Replay className={cx("pair", estimate && "pair-est")}>
+    <>
       <span className="field-label">{tip ? <Tip tip={tip}>{title}</Tip> : title}</span>
-      <span className="pair-top">{label("Dry", dry)}</span>
-      {bar("Dry", dry)}
-      {bar("Wet", wet)}
-      <span className="pair-bottom">{label("Wet", wet)}</span>
-    </Replay>
+      {[
+        ["Dry", dry],
+        ["Wet", wet],
+      ].map(([k, d]) => {
+        const p = ((d as number) / length) * 100;
+        return (
+          <Replay key={k as string}>
+            <div className={cx("rwybar", estimate && "est")} role="meter" aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`} aria-valuemin={0} aria-valuemax={length} aria-valuenow={d as number}>
+              <span className="a-grow-x" style={{ width: `${Math.min(100, p)}%`, background: p > 90 ? "var(--red)" : p > 75 ? "var(--amber)" : "var(--green)" }}>
+                {k} {fmtNum(d as number)} ft · {p.toFixed(0)}%
+              </span>
+            </div>
+          </Replay>
+        );
+      })}
+    </>
   );
 }
 

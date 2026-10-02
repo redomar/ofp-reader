@@ -7,12 +7,12 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 ### Added
 
 - **Actual runway in Runway analysis.** A radio in the last (ACT) column of the take-off and landing runway tables marks the runway you actually used; the planned runway stays blue and your pick turns green, like the TFOB column. It shares the RWY box in the Takeoff / Landing actual row, so typing a runway there selects it too (click the radio again to clear). Below the actual row, a readout for that runway: whether it matches the plan, head- and crosswind from the actual wind (or the planned wind), FLEX and V1/VR/V2 from the performance table in view, MTOW or MLW with the margin over the planned weight, max landing weight at the actual OAT from the landing grid, length and ILS frequency. Runways that aren't in the TLR are flagged.
-- **Estimated landing distance on a selected runway.** When the runway you landed on isn't the planned one, Runway analysis adds an estimate below the planned figures (after a rule): the planned-weight factored distances, corrected by the TLR's per-knot head/tailwind rows for that runway's wind component (actual wind if entered, otherwise planned), against that runway's ACARS length, with the wet margin. Drawn dashed and hatched, and marked as an estimate that isn't certified for that runway.
+- **Estimated landing distance on a selected runway.** When the runway you landed on isn't the planned one, Runway analysis adds an estimate below the planned figures (after a rule): the planned-weight factored distances, corrected by the TLR's per-knot head/tailwind rows for that runway's wind component (actual wind if entered, otherwise planned), against that runway's ACARS length, with the wet margin. Same bars as the planned runway with a dashed outline, and marked as an estimate that isn't certified for that runway.
 - **Times & weights OFF switch** in the navigation log, next to Include PIC extra. Off by default; when on it adds a **RETO** column (the Actual OFF from Times & weights + TTLT) and ATO is compared with it. It's disabled until Times & weights has an Actual OFF, and when both Actual OFF boxes are filled.
 
 ### Changed
 
-- **Paired bars.** Landing distance shows dry and wet as two touching bars, the dry figure above and the wet figure below. The planned vs actual timeline in Times & weights works the same way: the planned bar with its phase names above, the actual bar with its names below, and the Z time scale (start, whole hours, end) running between them. On phones the names shorten to durations and the hour marks drop.
+- **Planned vs actual timeline** in Times & weights: the PLANNED label sits above its bar, the Z start and end times run between the two bars, and the ACTUAL label sits below its bar; the bars span the full width.
 
 ### Fixed
 
