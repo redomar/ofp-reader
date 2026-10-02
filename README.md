@@ -35,9 +35,9 @@ and every value gets context: derived margins, decoded weather, a vertical profi
   - Fuel: block composition bar, landing fuel, margin above ALTN + FINRES, endurance, burn per NM, PIC extra → total fuel.
   - Weights: max vs estimated gauges, and whether the take-off weight is actually landing-weight limited.
   - Times: taxi / airborne / block durations, local UTC offsets, and a **planned vs actual timeline** on a shared clock.
-  - Flight log: vertical profile with MORA terrain, fuel on board and minimum-fuel line, a route map from the waypoint coordinates over coastlines and country borders, FIR crossings, and a navigation log where ETOs follow your actual take-off time.
+  - Flight log: vertical profile with MORA terrain, fuel on board and minimum-fuel line, a route map from the waypoint coordinates over coastlines and country borders, FIR crossings, and a navigation log where ETOs follow your actual take-off time (or a RETO column from the Actual OFF in Times & weights).
   - PIC extra: switch it into the nav log to get a **TFOB** column (and profile line): EFOB plus the extra still on board, less the cost of carrying it, taken from the OFP's own weight-change impact.
-  - Runway analysis: V-speed cards, FLEX, head- and crosswind components for the planned runway, and factored landing distance against runway length.
+  - Runway analysis: V-speed cards, FLEX, head- and crosswind components for the planned runway, and factored landing distance against runway length. Mark the runway you actually used to get its wind components, limits and margins, and an estimated landing distance when it isn't the planned one.
   - Weather: each airport's METAR and TAF as weather cards (sky picture, wind, visibility, cloud layers, TAF timeline by flight category), decoded token by token with hazard flags, plus a forecast badge on the summary flags for take-off and landing time.
   - Wind: AVG WIND, PWIND and METAR arrows sway like a windsock (faster with more wind, wider and irregular with gusts) and are coloured by strength, calm → storm.
   - NOTAMs: search, category filters, "critical" (CLSD, U/S, NOT AVBL…) and "mentions my planned runway" filters.
@@ -50,13 +50,13 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 
 ## Screenshots
 
-| Blank template | Flight log (night theme) |
+| Runway analysis | Flight log (night theme) |
 | --- | --- |
-| ![Blank flight plan template](docs/screenshots/blank.png) | ![Vertical profile, route map and waypoint panel](docs/screenshots/flight-log.png) |
+| ![Runway analysis with the actual landing runway picked, its readout and the estimated landing distance](docs/screenshots/runway-analysis.png) | ![Vertical profile with fuel and terrain](docs/screenshots/flight-log.png) |
 
-| Airport weather | Settings & saved flights |
+| Route map & waypoint | Settings & saved flights |
 | --- | --- |
-| ![Decoded METAR and TAF cards](docs/screenshots/weather.png) | ![Saved flights and stored entries](docs/screenshots/settings.png) |
+| ![Route map over coastlines and borders with a waypoint selected and its details](docs/screenshots/route-map-waypoint.png) | ![Saved flights and stored entries](docs/screenshots/settings.png) |
 
 **Weather cards page**
 

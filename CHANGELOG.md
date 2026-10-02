@@ -2,7 +2,7 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.6.0] - 2026-10-02
 
 ### Added
 
@@ -12,6 +12,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ### Changed
 
+- README screenshots: the blank template and airport weather shots are replaced by Runway analysis (actual runway and landing-distance estimate) and the route map with a waypoint selected; the weather cards shot now shows a deteriorating 30-hour TAF; the times shot shows the new timeline.
 - **Planned vs actual timeline** in Times & weights: the PLANNED label sits above its bar, the Z start and end times run between the two bars, and the ACTUAL label sits below its bar; the bars span the full width.
 
 ### Fixed
@@ -127,6 +128,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.6.0]: https://github.com/redomar/ofp-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/redomar/ofp-reader/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/redomar/ofp-reader/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/redomar/ofp-reader/compare/v1.3.0...v1.3.1
