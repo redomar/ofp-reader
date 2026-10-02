@@ -1,6 +1,6 @@
 "use client";
 
-import { McduPrint } from "../McduSheet";
+import { AltPrint, McduPrint } from "../McduSheet";
 import { useField, useOfp } from "../context";
 import { Replay } from "../replay";
 import { Section, Sub, Tip, V } from "../ui";
@@ -66,7 +66,10 @@ export function RouteSection({ no }: { no: number }) {
 
   return (
     <Section id="route" no={no} title="Alternate, routing & impacts" meta={<span>PDF p.{pageOf(ofp?.pages, /ALTERNATE ROUTE TO/) ?? 2}</span>}>
-      <McduPrint />
+      <div className="mcdu-btns">
+        <McduPrint />
+        <AltPrint />
+      </div>
       <hr className="mcdu-rule" />
       <Sub>
         Alternate route to{" "}

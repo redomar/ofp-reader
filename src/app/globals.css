@@ -3531,12 +3531,16 @@ hr.ldg-split {
   background: var(--pp-band);
 }
 /* MCDU set-up sheet: the print button and the full-screen sheet */
+.mcdu-btns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+}
 .mcdu-btn {
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
-  max-width: 640px;
   padding: 12px 16px;
   text-align: left;
   font: inherit;
@@ -3680,4 +3684,34 @@ hr.mcdu-rule {
 }
 .rx-route-paper .rx-route > .rx-filed {
   padding: 8px 12px 8px 14px;
+}
+
+/* multi-page printouts: pages torn apart with a zigzag gap */
+.rx-pages {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.rx-page.zz-bottom {
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+}
+.rx-page.zz-top {
+  -webkit-mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+  mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+}
+.rx-page.zz-top.zz-bottom {
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% 100% / 16px 51% repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% 0 / 16px 51% repeat-x;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% 100% / 16px 51% repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% 0 / 16px 51% repeat-x;
+}
+/* the torn edge needs a little room so the teeth don't cut the text */
+.rx-page.zz-bottom .rx-paper {
+  padding-bottom: 8px;
+}
+.rx-page.zz-top .rx-paper {
+  padding-top: 8px;
 }

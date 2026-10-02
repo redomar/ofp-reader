@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useField, useFieldGroup, useOfp } from "./context";
 import { legMetrics, ident, listing, printout } from "./RouteExplain";
 import { hhmmToMin } from "@/lib/ofp/format";
 import { routeLegs } from "@/lib/ofp/fplRef";
+import { forecastAt, headline, parseReport } from "@/lib/wx/reports";
 
 const col = (v: string | number | null | undefined, w: number, right = false) => {
   const t = v == null ? "" : String(v);
@@ -105,20 +106,20 @@ export function McduSheet() {
 const PAGES = ["INIT A", "INIT B", "F-PLN", "PERF T/O", "RAD NAV", "WINDS"];
 
 /**
- * The button that "prints" the MCDU set-up sheet: opens it full screen over a dimmed
- * page (a modal dialog, so Esc and focus work), with the paper's punched holes see-through.
+ * A button that "prints" a sheet: opens it full screen over a dimmed page (a modal
+ * dialog, so Esc and focus work), with the paper's punched holes see-through.
  */
-export function McduPrint() {
-  const { ofp } = useOfp();
+function PrintButton({ title, chips, sub, label, disabled, children }: { title: string; chips: string[]; sub: string; label: string; disabled: boolean; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [copied, setCopied] = useState(false);
   const open = () => ref.current?.showModal();
   const close = () => ref.current?.close();
   const copy = async () => {
-    const paper = ref.current?.querySelector<HTMLElement>(".rx-paper");
-    const text = paper ? [...paper.querySelectorAll(".rx-pline")].map((l) => l.textContent?.replace(/\s+$/, "") ?? "").join("\n") : "";
+    // Every printed line, pages separated by a blank line.
+    const pages = [...(ref.current?.querySelectorAll<HTMLElement>(".rx-paper") ?? [])];
+    const text = pages.map((pg) => [...pg.querySelectorAll(".rx-pline")].map((l) => l.textContent?.replace(/\s+$/, "") ?? "").join("\n")).join("\n\n");
     try {
-      await navigator.clipboard.writeText(text.replace(/\n+$/, ""));
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -127,7 +128,7 @@ export function McduPrint() {
   };
   return (
     <>
-      <button type="button" className="mcdu-btn" onClick={open} disabled={!ofp?.fpl} aria-haspopup="dialog">
+      <button type="button" className="mcdu-btn" onClick={open} disabled={disabled} aria-haspopup="dialog">
         <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" className="mcdu-btn-icon">
           <path d="M7 9V3h10v6" fill="none" stroke="currentColor" strokeWidth="1.6" />
           <rect x="3" y="9" width="18" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
@@ -136,16 +137,16 @@ export function McduPrint() {
           <circle cx="18" cy="12" r="0.9" fill="currentColor" />
         </svg>
         <span className="mcdu-btn-text">
-          <b>Print MCDU set-up sheet</b>
+          <b>{title}</b>
           <span className="mcdu-btn-pages">
-            {PAGES.map((p) => (
+            {chips.map((p) => (
               <span key={p}>{p}</span>
             ))}
           </span>
-          <span className="mcdu-btn-sub">The plan in MCDU page order, ready to type in.</span>
+          <span className="mcdu-btn-sub">{sub}</span>
         </span>
       </button>
-      <dialog ref={ref} className="mcdu-dialog" aria-label="MCDU set-up sheet" onClick={(e) => e.target === ref.current && close()}>
+      <dialog ref={ref} className="mcdu-dialog" aria-label={label} onClick={(e) => e.target === ref.current && close()}>
         <div className="mcdu-dialog-bar">
           <button type="button" className="btn" onClick={copy}>
             {copied ? "Copied ✓" : "Copy text"}
@@ -154,10 +155,117 @@ export function McduPrint() {
             Close ✕
           </button>
         </div>
-        <div className="mcdu-dialog-paper">
-          <McduSheet />
+        <div className="mcdu-dialog-paper" onClick={(e) => e.target === e.currentTarget && close()}>
+          {children}
         </div>
       </dialog>
     </>
+  );
+}
+
+export function McduPrint() {
+  const { ofp } = useOfp();
+  return (
+    <PrintButton title="Print MCDU set-up sheet" chips={PAGES} sub="The plan in MCDU page order, ready to type in." label="MCDU set-up sheet" disabled={!ofp?.fpl}>
+      <McduSheet />
+    </PrintButton>
+  );
+}
+
+/** Wraps text to the paper width, continuation lines indented. */
+function wrap(text: string, first: string, width = 52, indent = 14): string[] {
+  const out: string[] = [];
+  let cur = first;
+  for (const w of text.split(/\s+/).filter(Boolean)) {
+    if (cur.length + w.length + 1 > width && cur.trim().length > indent - 1) {
+      out.push(cur);
+      cur = " ".repeat(indent);
+    }
+    cur += (cur.endsWith(" ") || !cur.length ? "" : " ") + w;
+  }
+  out.push(cur);
+  return out;
+}
+
+/** One page per destination alternate, each starting with FINRES. */
+function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][] {
+  const h = ofp.header;
+  const alts = ofp.alternates;
+  const u = h.unit === "LBS" ? "LBS" : "KG";
+  const finres = ofp.finresAltn ?? ofp.fuel.rows.find((r) => r.label.startsWith("FINRES"))?.fuel ?? null;
+  const finresTime = ofp.fuel.rows.find((r) => r.label.startsWith("FINRES"))?.time;
+  const onMin = hhmmToMin(h.onTime);
+  const day = Number(h.flightDate?.slice(0, 2)) || null;
+  const clockOf = (m: number) => {
+    const v = ((m % 1440) + 1440) % 1440;
+    return `${String(Math.floor(v / 60)).padStart(2, "0")}${String(v % 60).padStart(2, "0")}Z`;
+  };
+  return alts.map((a, i) => {
+    const [icao, aptRwy] = a.apt.split("/");
+    const rwy = a.rwy ?? aptRwy;
+    const wx = ofp.wx.airports.find((w) => w.icao === icao);
+    const altMin = hhmmToMin(a.time) ?? 0;
+    const eta = onMin != null ? onMin + altMin : null;
+    const nav = ofp.log.find((p) => p.freq && ident(p) === icao);
+    const lines = [
+      `${col("OFP READER  ALTERNATE SHEET", 40)}${col(`PAGE ${String(i + 1).padStart(3, "0")}`, 12, true)}`,
+      `${col(h.flightNo, 9)}${col(`${h.dep}-${h.arr}`, 11)}${col(h.date, 11)}${col(`ALTN ${i + 1} OF ${alts.length}`, 21)}`,
+      RULE,
+      `[ FINRES ]    ${finres != null ? `${finres.toLocaleString("en-GB")} ${u}` : "....."}${finresTime ? `  ${finresTime.slice(0, 2)}:${finresTime.slice(2)}` : ""}`,
+      ...head(`ALTN ${icao}${wx?.name ? `  ${wx.name}` : ""}`),
+      `${col("RWY", 14)}${rwy ?? "..."}`,
+      `${col("TRK / DIST", 14)}${a.trk ?? "..."}° / ${a.dst ?? "..."} NM`,
+      ...wrap(a.via, col("ROUTE", 14)),
+      `${col("FL / W/C", 14)}${a.fl ? `FL${a.fl}` : "..."} / ${a.wc ?? "..."}`,
+      `${col("TIME / FUEL", 14)}${a.time ? `${a.time.slice(0, 2)}:${a.time.slice(2)}` : "..."} / ${a.fuel != null ? `${a.fuel.toLocaleString("en-GB")} ${u}` : "..."}`,
+      `${col("MIN DIVERT", 14)}${a.fuel != null && finres != null ? `${(a.fuel + finres).toLocaleString("en-GB")} ${u} at ${h.arr} (ALTN + FINRES)` : "....."}`,
+      `${col("ETA ALTN", 14)}${eta != null ? `${clockOf(eta)}  if diverting from ${clockOf(onMin!)} at ${h.arr}` : "....."}`,
+    ];
+    if (nav?.freq) lines.push(`${col("NAVAID", 14)}${nav.freq}`);
+    if (wx?.taf.length && eta != null && day) {
+      const taf = parseReport(`TAF ${icao} ${wx.taf.join(" ")}`);
+      const at = { day: day + (eta >= 1440 ? 1 : 0), hour: Math.floor((eta % 1440) / 60), min: eta % 60 };
+      const f = forecastAt(taf, at);
+      lines.push(...head(`FCST AT ETA ${clockOf(eta)}`));
+      if (f) {
+        lines.push(...wrap(`${headline(f.prevailing)}${f.prevailing.category ? ` · ${f.prevailing.category}` : ""}`.toUpperCase(), col("PREVAILING", 14)));
+        for (const g of f.temporary) lines.push(...wrap(`${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(), col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14)));
+      } else lines.push("ETA OUTSIDE THE TAF VALIDITY");
+    }
+    if (wx?.metar) lines.push(...head("METAR"), ...wrap(`${icao} ${wx.metar}`, "", 52, 0));
+    lines.push(RULE, "", `${col("", 10)}*** END OF PAGE ${String(i + 1).padStart(3, "0")} ***`);
+    return lines;
+  });
+}
+
+function AltSheet() {
+  const { ofp } = useOfp();
+  if (!ofp) return null;
+  const pages = altPages(ofp);
+  // Pages torn apart with a zigzag gap between them.
+  return (
+    <div className="rx-pages">
+      {pages.map((lines, i) => (
+        <div key={i} className={`rx-page${i > 0 ? " zz-top" : ""}${i < pages.length - 1 ? " zz-bottom" : ""}`}>
+          {printout(lines)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AltPrint() {
+  const { ofp } = useOfp();
+  const alts = ofp?.alternates ?? [];
+  return (
+    <PrintButton
+      title="Print alternate sheet"
+      chips={alts.length ? alts.map((a) => a.apt.split("/")[0]) : ["ALTN"]}
+      sub={alts.length > 1 ? `One page per alternate (${alts.length}), each starting with FINRES.` : "Diversion figures, routing and the forecast at your ETA."}
+      label="Alternate sheet"
+      disabled={!alts.length}
+    >
+      <AltSheet />
+    </PrintButton>
   );
 }
