@@ -7,6 +7,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 ### Changed
 
 - **Weather cards in the reader.** Airport weather now shows each airport's METAR and TAF as the same cards as the weather page (sky picture, headline, swaying wind arrow, visibility and cloud diagrams, TAF timeline and change groups, raw text with tooltips), under the existing airport header with its role, name, category and "Watch" hazards. The blank template is unchanged.
+- **Weather cards animate as they come into view** and replay when you scroll back, like the other graphics: the card rises in, the sun spins up, clouds drift in, rain and snow fall, lightning flashes, fog lines spread, cloud layers grow, the visibility marker slides to its value, the wind arrow spins into direction, the facts rise in turn, the ATIS letter flips, and the TAF timeline, TEMPO/PROB bars and change groups wipe and rise in. Reduced motion shows the final state at once.
 - Weather cards: observation cards share a row and each TAF takes the full width below, so a lone METAR no longer leaves half the row empty.
 
 ### Fixed

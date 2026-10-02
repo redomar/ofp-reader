@@ -2367,6 +2367,85 @@ dialog.lightbox img {
   animation-delay: calc(var(--i, 0) * 25ms);
 }
 
+/* Weather cards (components/WxCards.tsx) */
+@keyframes a-drift {
+  from { opacity: 0; transform: translateX(-7px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes a-fall {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes a-flash {
+  0%, 30% { opacity: 0; }
+  40% { opacity: 1; }
+  55% { opacity: 0.2; }
+  70%, 100% { opacity: 1; }
+}
+@keyframes a-slide {
+  from { left: 0; }
+}
+@keyframes a-flip {
+  from { opacity: 0; transform: perspective(120px) rotateX(-90deg); }
+  to { opacity: 1; transform: none; }
+}
+.wxc-replay {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.wxc-replay > .wxc {
+  flex: 1;
+}
+.a-inline {
+  display: inline-block;
+  line-height: 0;
+}
+/* SVG pieces scale and rotate about themselves, not the drawing's origin */
+.a-sun,
+.a-svg,
+.a-spread,
+.a-drift,
+.a-fall,
+.a-flash {
+  transform-box: fill-box;
+}
+.a-sun {
+  transform-origin: center;
+}
+.a-spread {
+  transform-origin: center;
+}
+.a-svg {
+  transform-origin: left center;
+}
+.replay.play .a-sun {
+  animation: a-spin 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.replay.play .a-drift {
+  animation: a-drift 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.replay.play .a-fall {
+  animation: a-fall 0.5s ease-in both;
+  animation-delay: calc(450ms + var(--i, 0) * 110ms);
+}
+.replay.play .a-flash {
+  animation: a-flash 0.9s linear both;
+  animation-delay: 350ms;
+}
+.replay.play .a-spread {
+  animation: a-grow-x 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+.replay.play .a-slide {
+  animation: a-slide 1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: 250ms;
+}
+.replay.play .a-flip {
+  animation: a-flip 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: 150ms;
+}
+
 /* Settings → Import JSON */
 .import-bar {
   align-items: center;
@@ -2507,9 +2586,12 @@ dialog.lightbox img {
 .wxc-taf {
   border-top-color: var(--blue);
 }
-.wxc-grid + .wxc-taf,
-.wxc-taf + .wxc-taf {
+.wxc-grid + .wxc-replay,
+.wxc-replay + .wxc-replay {
   margin-top: 14px;
+}
+.wx-airports .wxc-replay + .wxc-replay {
+  margin-top: 0;
 }
 .wxc-head {
   display: flex;
