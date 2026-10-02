@@ -3011,9 +3011,14 @@ dialog.lightbox img {
   font-size: 15px;
 }
 
-/* Estimated landing distance on a selected runway: dashed outline */
+/* Estimated landing distance on a selected runway: dashed outline and hatched fill */
 .rwybar.est {
   border-style: dashed;
+}
+.rwybar.est span {
+  /* the bar colour is an inline background, so the stripes need !important; sheet-coloured
+     stripes read in both themes (light on the day green, dark on the night green) */
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--sheet) 30%, transparent) 6px 9px) !important;
 }
 hr.ldg-split {
   border: none;
