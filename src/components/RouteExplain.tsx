@@ -113,7 +113,7 @@ export function RouteExplain() {
     const t = end === "dep" ? 0 : rows.find((r) => r.leg.to === name)?.m?.t1;
     return (
       <div className={cx("rx-node", end && "end", end, band % 2 === 1 && "band")}>
-        <span className="rx-time mono">{t != null && off != null ? clock(off + t).replace("Z", "") : ""}</span>
+        <span className="rx-time mono">{t != null && off != null ? clock(off + t) : ""}</span>
         <span className="rx-rail" aria-hidden="true">
           <span className="rx-dot" />
         </span>
@@ -137,13 +137,10 @@ export function RouteExplain() {
       <span className="rx-feed left" aria-hidden="true" />
       <div className="rx-route" aria-label="Route diagram, departure to destination">
         {initial && (
-          <p className="small" style={{ margin: "0 0 8px" }}>
+          <p className="small rx-filed band">
             Filed cruise <Badge tone="mag">{initial.speed}</Badge> <Badge tone="mag">{initial.level}</Badge>
           </p>
         )}
-        <div className="rx-head" aria-hidden="true">
-          <span className="rx-time">ETO Z</span>
-        </div>
         {node(dep, "dep", 0)}
         {rows.map(({ leg, m }, k) => (
           <div key={k}>

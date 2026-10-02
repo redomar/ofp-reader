@@ -3323,7 +3323,7 @@ hr.ldg-split {
 .rx-leg,
 .rx-head {
   display: grid;
-  grid-template-columns: 46px 20px 1fr;
+  grid-template-columns: 54px 20px 1fr;
   column-gap: 8px;
 }
 .rx-time {
@@ -3540,7 +3540,7 @@ hr.ldg-split {
   align-self: start;
 }
 .rx-route-paper .rx-route {
-  padding: 8px 0 10px;
+  padding: 0 0 10px;
   color: var(--pp-ink);
   background: var(--pp);
 }
@@ -3559,4 +3559,11 @@ hr.ldg-split {
 }
 .rx-route-paper .rx-dot {
   background: var(--pp);
+}
+.rx-filed {
+  margin: 0;
+  padding: 8px 12px 8px 4px;
+}
+.rx-route-paper .rx-route > .rx-filed {
+  padding: 8px 12px 8px 14px;
 }
