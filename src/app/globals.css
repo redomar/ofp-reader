@@ -3116,3 +3116,180 @@ hr.ldg-split {
     content-visibility: visible !important;
   }
 }
+
+/* ---------- SIGMET / AIRMET cards ---------- */
+.sig-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+}
+.sig-card {
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--red);
+  background: var(--field);
+  border-radius: 2px;
+  transition: box-shadow 0.15s;
+}
+.sig-card.mod {
+  border-left-color: var(--amber);
+}
+.sig-card.hl {
+  box-shadow: 0 0 0 2px var(--red);
+}
+.sig-card.mod.hl {
+  box-shadow: 0 0 0 2px var(--amber);
+}
+.sig-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.sig-what {
+  margin: 10px 12px 4px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sig-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px 14px;
+  margin: 6px 12px 10px;
+}
+.sig-facts dt {
+  font-family: var(--font-cond);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sig-facts dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.sig-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0 12px 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  border-left: 3px solid var(--rule-strong);
+  background: var(--sunk);
+}
+.sig-verdict.v-red {
+  border-left-color: var(--red);
+  background: var(--red-bg, var(--sunk));
+}
+.sig-verdict.v-amber {
+  border-left-color: var(--amber);
+  background: var(--amber-bg);
+}
+.sig-verdict.v-green {
+  border-left-color: var(--green);
+  background: var(--green-bg);
+}
+.sig-verdict span:not(.badge) {
+  flex: 1 1 260px;
+}
+
+/* SIGMET areas on the route map and level bands on the profile */
+.sig-toggle {
+  gap: 6px;
+  margin: -4px 0 6px;
+}
+.chart .sig-hatch-line {
+  stroke: var(--red);
+  stroke-width: 2;
+  opacity: 0.45;
+}
+.chart .sig-area .sig-fill {
+  fill: url(#sig-hatch);
+  opacity: 0.55;
+}
+.chart .sig-area .sig-edge {
+  fill: color-mix(in srgb, var(--red) 8%, transparent);
+  stroke: var(--red);
+  stroke-width: 1.5;
+}
+.chart .sig-area.mod .sig-edge {
+  stroke: var(--amber);
+  fill: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+.chart .sig-area .sig-end {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+.chart .sig-area.hl .sig-edge {
+  stroke-width: 3;
+  fill: color-mix(in srgb, var(--red) 18%, transparent);
+}
+.chart .sig-area .sig-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--red);
+  paint-order: stroke;
+  stroke: var(--field);
+  stroke-width: 3px;
+}
+.chart .sig-area.mod .sig-label {
+  fill: var(--amber);
+}
+.chart .route-in-sig {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 5;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.chart .sig-band rect {
+  fill: color-mix(in srgb, var(--red) 14%, transparent);
+  stroke: var(--red);
+  stroke-dasharray: 4 3;
+}
+.chart .sig-band.mod rect {
+  fill: color-mix(in srgb, var(--amber) 14%, transparent);
+  stroke: var(--amber);
+}
+.chart .sig-band.hl rect {
+  fill: color-mix(in srgb, var(--red) 28%, transparent);
+  stroke-dasharray: none;
+  stroke-width: 2;
+}
+.chart .sig-band text {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--red);
+}
+/* nav log: waypoint inside a SIGMET area */
+.sig-mark {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-family: var(--font-cond);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+  cursor: help;
+}
+.sig-mark.on {
+  background: var(--red);
+  color: var(--sheet);
+}
+.sig-mark.clear {
+  border: 1px solid var(--amber);
+  color: var(--amber);
+}

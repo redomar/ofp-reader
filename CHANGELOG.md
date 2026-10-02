@@ -6,6 +6,8 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ### Added
 
+- **SIGMETs and AIRMETs, decoded and checked against your route.** Each one becomes a card in Airport weather: the phenomenon in plain English (embedded thunderstorms, severe turbulence, icing, mountain wave, volcanic ash…), validity with "active now / upcoming / expired", levels, observed or forecast, movement and trend, and a verdict for this flight: on your route (inside its area, within its levels, while it's valid), crosses it but clear of its levels, crosses it outside its time, or off your route, with the waypoints, minutes after take-off and levels involved. The take-off time is the nav log's Actual OFF, else Times & weights, else planned. The raw text keeps hover explanations. The section badges count SIGMETs (not text lines) and flag ones on your route.
+- SIGMET / AIRMET areas on the route map (hatched; the stretch of route inside is drawn red; areas the route crosses are kept in view), their level band on the vertical profile over the stretch they cover, and a SIG marker on the affected waypoints in the navigation log. Hovering any of them highlights the matching card, and a switch above the map hides them.
 - **Collapsible airports in Airport weather.** Click an airport's header (or its ⊟ / ⊞ box) to fold its weather cards away. Departure and destination start open and remember your choice for every plan; destination alternates start collapsed and remember the ones you open. A folded airport shows a one-line summary of its METAR (weather, wind, visibility) next to its category. Folded cards still open for find-in-page and always print expanded.
 
 ## [1.6.0] - 2026-10-02

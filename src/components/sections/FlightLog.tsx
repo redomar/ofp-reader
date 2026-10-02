@@ -9,6 +9,8 @@ import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/
 import type { LogPoint } from "@/lib/ofp/types";
 import { picExtraModel, type PicExtraModel } from "@/lib/ofp/picExtra";
 import { outlinePath, useOutlines } from "@/lib/outlines";
+import { setHighlightedSigmet, useHighlightedSigmet, useSigmets, type SigmetOnRoute } from "../useSigmets";
+import type { Area } from "@/lib/wx/sigmet";
 
 interface P extends LogPoint {
   i: number;
@@ -47,6 +49,7 @@ function Profile({
   minFuel,
   onKey,
   pic,
+  sigs = [],
 }: {
   pts: P[];
   active: number | null;
@@ -54,7 +57,10 @@ function Profile({
   minFuel: number | null;
   onKey: (e: KeyboardEvent) => void;
   pic: PicExtraModel | null;
+  /** SIGMETs the route passes through, drawn as level bands over that stretch. */
+  sigs?: SigmetOnRoute[];
 }) {
+  const hlSig = useHighlightedSigmet();
   const H = 280;
   const m = { l: 46, r: 46, t: 16, b: 30 };
   const total = pts.at(-1)?.cum || 1;
@@ -128,6 +134,29 @@ function Profile({
           {t}t
         </text>
       ))}
+      {sigs
+        .filter((x) => x.impact.lateral && x.impact.from && x.impact.to && x.s.levels)
+        .map(({ s, impact }) => {
+          const x0 = x(impact.from!.cum);
+          const x1 = Math.max(x0 + 4, x(impact.to!.cum));
+          const top = Math.min(yMax, (s.levels!.top ?? yMax * 100) / 100);
+          const base = s.levels!.base / 100;
+          return (
+            <g
+              key={s.id}
+              className={cx("sig-band", s.phenomenon?.severity === "mod" || s.kind === "AIRMET" ? "mod" : "sev", hlSig === s.id && "hl")}
+              onPointerEnter={() => setHighlightedSigmet(s.id)}
+              onPointerLeave={() => setHighlightedSigmet(null)}
+              data-tip={`${s.phenomenon?.text ?? "Hazard"} · ${s.levels!.text} · valid ${s.validFrom ? `${String(s.validFrom.hour).padStart(2, "0")}${String(s.validFrom.min).padStart(2, "0")}` : "?"}–${s.validTo ? `${String(s.validTo.hour).padStart(2, "0")}${String(s.validTo.min).padStart(2, "0")}` : "?"}Z`}
+              data-tip-title={`${s.kind} ${s.seq} · ${s.fir ?? ""}`}
+            >
+              <rect x={x0} y={y(top)} width={x1 - x0} height={Math.max(2, y(base) - y(top))} />
+              <text x={x0 + 4} y={y(top) + 12}>
+                {s.kind} {s.seq}
+              </text>
+            </g>
+          );
+        })}
       <path d={terr} className="terrain a-grow-y" />
       {minFuel != null && (
         <g>
@@ -185,8 +214,9 @@ function Profile({
   );
 }
 
-function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number | null; setActive: (i: number | null) => void; onKey: (e: KeyboardEvent) => void }) {
+function RouteMap({ pts, active, setActive, onKey, sigs = [] }: { pts: P[]; active: number | null; setActive: (i: number | null) => void; onKey: (e: KeyboardEvent) => void; sigs?: SigmetOnRoute[] }) {
   const outlines = useOutlines();
+  const hlSig = useHighlightedSigmet();
   // The frame's width, so the drawing area matches its shape instead of letterboxing.
   const [frameW, setFrameW] = useState<number | null>(null);
   const ro = useRef<ResizeObserver | null>(null);
@@ -199,8 +229,10 @@ function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number 
   }, []);
   const geo = pts.filter((p) => p.latDeg != null && p.lonDeg != null);
   if (!geo.length) return null;
-  const lats = geo.map((p) => p.latDeg!);
-  const lons = geo.map((p) => p.lonDeg!);
+  // Frame the route, plus any SIGMET area the route passes through so it's seen whole.
+  const sigPts = sigs.flatMap((x) => (x.impact.lateral && x.s.area.kind === "polygon" ? x.s.area.points : []));
+  const lats = [...geo.map((p) => p.latDeg!), ...sigPts.map((q) => q[0])];
+  const lons = [...geo.map((p) => p.lonDeg!), ...sigPts.map((q) => q[1])];
   const la0 = Math.min(...lats);
   const la1 = Math.max(...lats);
   const lo0 = Math.min(...lons);
@@ -249,6 +281,23 @@ function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number 
   const end = wpts.at(-1)!;
   // A margin so outlines run off the edge instead of stopping short of it.
   const clip = { lon0: view.lon0 - 0.5, lon1: view.lon1 + 0.5, lat0: view.lat0 - 0.5, lat1: view.lat1 + 0.5 };
+  // SIGMET / AIRMET areas: polygons as given; lat/long bounds as the part of the view they cover.
+  const areaPath = (a: Area) => {
+    if (a.kind === "polygon") return a.points.map(([la, lo], k) => `${k ? "L" : "M"}${px(lo).toFixed(1)} ${py(la).toFixed(1)}`).join(" ") + " Z";
+    if (a.kind === "bounds") {
+      let [la0, la1, lo0b, lo1b] = [clip.lat0, clip.lat1, clip.lon0, clip.lon1];
+      for (const p of a.planes) {
+        if (p.axis === "lat" && p.op === "gt") la0 = Math.max(la0, p.value);
+        else if (p.axis === "lat") la1 = Math.min(la1, p.value);
+        else if (p.op === "gt") lo0b = Math.max(lo0b, p.value);
+        else lo1b = Math.min(lo1b, p.value);
+      }
+      if (la0 >= la1 || lo0b >= lo1b) return null;
+      return `M${px(lo0b)} ${py(la0)} L${px(lo1b)} ${py(la0)} L${px(lo1b)} ${py(la1)} L${px(lo0b)} ${py(la1)} Z`;
+    }
+    return null;
+  };
+  const sigAreas = sigs.map((x) => ({ ...x, d: areaPath(x.s.area), end: x.s.endArea ? areaPath(x.s.endArea) : null })).filter((x) => x.d);
   const coast = outlines ? outlinePath(outlines.coast, clip, px, py) : "";
   const borders = outlines ? outlinePath(outlines.borders, clip, px, py) : "";
 
@@ -273,7 +322,44 @@ function RouteMap({ pts, active, setActive, onKey }: { pts: P[]; active: number 
       ))}
       {borders && <path d={borders} className="map-border" />}
       {coast && <path d={coast} className="map-coast" />}
+      <defs>
+        <pattern id="sig-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" className="sig-hatch-line" />
+        </pattern>
+        {sigAreas.map((x) => (
+          <clipPath key={x.s.id} id={`sigclip-${x.s.id}`}>
+            <path d={x.d!} />
+          </clipPath>
+        ))}
+      </defs>
+      {sigAreas.map(({ s, d, end, impact }) => {
+        const pts2 = s.area.kind === "polygon" ? s.area.points : null;
+        const c = pts2 ? [pts2.reduce((a, p) => a + p[0], 0) / pts2.length, pts2.reduce((a, p) => a + p[1], 0) / pts2.length] : null;
+        return (
+          <g
+            key={s.id}
+            className={cx("sig-area", s.phenomenon?.severity === "mod" || s.kind === "AIRMET" ? "mod" : "sev", hlSig === s.id && "hl", impact.verdict === "affects" && "on-route")}
+            onPointerEnter={() => setHighlightedSigmet(s.id)}
+            onPointerLeave={() => setHighlightedSigmet(null)}
+            data-tip={`${s.phenomenon?.text ?? "Hazard"}${s.levels ? ` · ${s.levels.text}` : ""} · valid ${s.validFrom ? `${String(s.validFrom.hour).padStart(2, "0")}${String(s.validFrom.min).padStart(2, "0")}` : "?"}–${s.validTo ? `${String(s.validTo.hour).padStart(2, "0")}${String(s.validTo.min).padStart(2, "0")}` : "?"}Z`}
+            data-tip-title={`${s.kind} ${s.seq} · ${s.firName ?? s.fir ?? ""}`}
+          >
+            <path d={d!} className="sig-fill" />
+            <path d={d!} className="sig-edge" />
+            {end && <path d={end} className="sig-end" />}
+            {c && (
+              <text x={px(c[1])} y={py(c[0])} textAnchor="middle" className="sig-label">
+                {s.kind} {s.seq} · {s.phenomenon?.code ?? ""}
+              </text>
+            )}
+          </g>
+        );
+      })}
       <path d={path} className="route" />
+      {/* the stretch of route inside each area */}
+      {sigAreas.map(({ s }) => (
+        <path key={"r" + s.id} d={path} className="route-in-sig" clipPath={`url(#sigclip-${s.id})`} />
+      ))}
       {geo
         .filter((p) => p.kind === "fir")
         .map((p) => (
@@ -362,6 +448,10 @@ export function FlightLogSection({ no }: { no: number }) {
   const pic = useMemo(() => (ofp && picKg > 0 && picOn === "on" ? picExtraModel(ofp, picKg) : null), [ofp, picKg, picOn]);
   const unitShort = ofp?.header.unit === "LBS" ? "lb" : "kg";
 
+  const sigmets = useSigmets();
+  const [sigHidden, setSigHidden] = useField("log.hideSigmets", "Flight log", "Hide SIGMET areas on the route map");
+  const drawable = sigmets.list.filter((x) => x.s.area.kind === "polygon" || x.s.area.kind === "bounds");
+  const sigsShown = sigHidden === "on" ? [] : sigmets.list;
   const crit = ofp?.criticalMora?.match(/MORA\s+(\d+)\s+FEET AT\s+(\S+?)\/\/\/MXSHR\s+(\d+)\s+AT\s+(\S+)/);
 
   const step = (e: KeyboardEvent) => {
@@ -432,7 +522,7 @@ export function FlightLogSection({ no }: { no: number }) {
       </div>
 
       <Sub>Vertical profile</Sub>
-      <Replay className="chart-frame" mode="once" sectionId="log">{pts.length ? <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} pic={pic} /> : <EmptyChart label="Profile" />}</Replay>
+      <Replay className="chart-frame" mode="once" sectionId="log">{pts.length ? <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} pic={pic} sigs={sigsShown} /> : <EmptyChart label="Profile" />}</Replay>
       <div className="legend small" aria-hidden="true">
         <span>
           <i style={{ background: "var(--magenta)" }} />
@@ -461,8 +551,14 @@ export function FlightLogSection({ no }: { no: number }) {
       <div className="cols" style={{ ["--min" as string]: "340px", marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))" }}>
         <div style={{ gridColumn: "span 2" }} className="map-col">
           <Sub>Route map</Sub>
+          {drawable.length > 0 && (
+            <label className="row small sig-toggle">
+              <input type="checkbox" checked={sigHidden !== "on"} onChange={(e) => setSigHidden(e.target.checked ? "" : "on")} />
+              Show SIGMET / AIRMET areas ({drawable.length}) on the map and profile
+            </label>
+          )}
           <div className="chart-frame" style={{ padding: 0 }}>
-            {pts.length ? <RouteMap pts={pts} active={active} setActive={setActive} onKey={step} /> : <EmptyChart label="Map" />}
+            {pts.length ? <RouteMap pts={pts} active={active} setActive={setActive} onKey={step} sigs={sigsShown} /> : <EmptyChart label="Map" />}
           </div>
         </div>
         <div>
@@ -639,7 +735,24 @@ export function FlightLogSection({ no }: { no: number }) {
               return (
                 <tr key={p.i} className={cx(isFir && "fir", active === p.i && "active")} onPointerEnter={() => setActive(p.i)} onPointerLeave={() => setActive(null)}>
                   <th scope="row" style={{ position: "sticky", left: 0, background: "var(--sheet)", zIndex: 1 }}>
-                    <span style={{ display: "block" }}>{isFir ? `▸ ${p.name}` : p.name}</span>
+                    <span style={{ display: "block" }}>
+                      {isFir ? `▸ ${p.name}` : p.name}
+                      {/* SIGMET / AIRMET areas this waypoint is in */}
+                      {sigmets.list
+                        .filter((x) => x.impact.lateral && x.impact.names.includes(p.ident ?? p.position ?? ""))
+                        .map((x) => (
+                          <span
+                            key={x.s.id}
+                            className={cx("sig-mark", x.impact.verdict === "affects" ? "on" : "clear")}
+                            data-tip={`${x.s.phenomenon?.text ?? "Hazard"} · ${x.s.levels?.text ?? ""}${x.impact.verdict === "affects" ? " · at your level while valid" : x.impact.verdict === "clear-time" ? " · not valid when you're here" : x.impact.verdict === "clear-level" ? " · you're clear of its levels" : ""}`}
+                            data-tip-title={`${x.s.kind} ${x.s.seq} · ${x.s.fir ?? ""}`}
+                            onPointerEnter={() => setHighlightedSigmet(x.s.id)}
+                            onPointerLeave={() => setHighlightedSigmet(null)}
+                          >
+                            {x.s.kind === "AIRMET" ? "AIR" : "SIG"} {x.s.seq}
+                          </span>
+                        ))}
+                    </span>
                     {(isFir ? p.firName : p.position !== p.name ? p.position : null) && (
                       <span className="small muted" style={{ fontFamily: "var(--font-sans)", fontWeight: 400 }}>
                         {isFir ? p.firName : p.position}

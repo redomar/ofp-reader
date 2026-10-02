@@ -8,6 +8,9 @@ import { WindArrow, parseSector } from "../WindArrow";
 import { ObsCard, TafCard } from "../WxCards";
 import { headline, parseReport } from "@/lib/wx/reports";
 import { BoxToggleIcon, useCollapse } from "../collapse";
+import { SigmetCard } from "../SigmetCard";
+import { useSigmets } from "../useSigmets";
+import { parseSigmets } from "@/lib/wx/sigmet";
 
 const CAT_TONE: Record<Category, "green" | "blue" | "red" | "mag"> = { VFR: "green", MVFR: "blue", IFR: "red", LIFR: "mag" };
 
@@ -49,6 +52,7 @@ function tafHazards(lines: string[]) {
 export function WxSection({ no }: { no: number }) {
   const { ofp } = useOfp();
   const { isCollapsed, toggle, open } = useCollapse();
+  const sigmets = useSigmets();
   const wx = ofp?.wx;
   const airports = wx?.airports.length ? wx.airports : (["Departure", "Destination", "Destination Alternates"].map((role) => ({ role, icao: "", iata: null, name: "", metar: null, taf: [], other: [] })) as NonNullable<typeof wx>["airports"]);
 
@@ -60,9 +64,11 @@ export function WxSection({ no }: { no: number }) {
       <div className="row" style={{ marginBottom: 14 }}>
         {(wx?.advisories.length ? wx.advisories : [{ title: "AIRMETs", lines: [] }, { title: "SIGMETs", lines: [] }]).map((a) => {
           const none = a.lines.every((l) => /No Wx data/i.test(l));
+          const n = parseSigmets(a.lines).length;
+          const onRoute = sigmets.list.filter((x) => x.impact.verdict === "affects" && a.lines.join(" ").includes(x.s.raw.slice(0, 30))).length;
           return (
-            <Badge key={a.title} tone={!ofp ? "ink" : none ? "green" : "amber"} tip={a.lines.join(" ") || "Not loaded"}>
-              {a.title}: {!ofp ? "—" : none ? "none" : `${a.lines.length} active`}
+            <Badge key={a.title} tone={!ofp ? "ink" : none ? "green" : onRoute ? "red" : "amber"} tip={none ? "None issued for this route" : `${n || "Some"} issued for the FIRs on this route${onRoute ? `; ${onRoute} on your route at your level and time` : ""}`}>
+              {a.title}: {!ofp ? "—" : none ? "none" : `${n || a.lines.length}${onRoute ? ` · ${onRoute} on route` : ""}`}
             </Badge>
           );
         })}
@@ -71,12 +77,24 @@ export function WxSection({ no }: { no: number }) {
         <div className="stack" style={{ marginBottom: 14 }}>
           {wx.advisories
             .filter((a) => a.lines.some((l) => !/No Wx data/i.test(l)))
-            .map((a) => (
-              <div key={a.title}>
-                <Sub>{a.title}</Sub>
-                <p className="pre">{a.lines.join("\n")}</p>
-              </div>
-            ))}
+            .map((a) => {
+              const items = sigmets.list.filter((x) => a.lines.join(" ").replace(/\s+/g, " ").includes(x.s.raw.slice(0, 30)));
+              return (
+                <div key={a.title}>
+                  <Sub>{a.title}</Sub>
+                  {/* Decoded cards; anything that doesn't parse stays as text */}
+                  {items.length ? (
+                    <div className="sig-grid">
+                      {items.map((x) => (
+                        <SigmetCard key={x.s.id} item={x} offLabel={sigmets.offLabel} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="pre">{a.lines.join("\n")}</p>
+                  )}
+                </div>
+              );
+            })}
         </div>
       )}
 
