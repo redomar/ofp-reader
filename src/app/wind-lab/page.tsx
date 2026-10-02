@@ -236,20 +236,25 @@ function bpmFor(kt: number, c: Cfg) {
   return clamp(bpm, c.floorBpm, c.capBpm);
 }
 
-type Cat = "calm" | "light" | "moderate" | "strong" | "gale";
+type Cat = "calm" | "light" | "moderate" | "strong" | "gale" | "storm";
 
-/** Wind categories, coloured with the theme's tokens so they keep AA contrast in day and night. */
+/**
+ * Wind categories on a cool-to-warm scale (calm slate → blue → teal → amber → red →
+ * storm violet), as --wc-* tokens with day and night values that keep AA contrast.
+ */
 const CATS: Record<Cat, { label: string; color: string; rule: (calmKt: number) => string }> = {
-  calm: { label: "Calm", color: "var(--ink-3)", rule: (c) => `≤ ${c} kt` },
-  light: { label: "Light", color: "var(--green)", rule: (c) => `${c + 1}–10 kt` },
-  moderate: { label: "Moderate", color: "var(--blue)", rule: () => "11–19 kt" },
-  strong: { label: "Strong", color: "var(--amber)", rule: () => "≥ 20 kt or gusts ≥ 28" },
-  gale: { label: "Gale", color: "var(--red)", rule: () => "≥ 34 kt or gusts ≥ 43" },
+  calm: { label: "Calm", color: "var(--wc-calm)", rule: (c) => `≤ ${c} kt` },
+  light: { label: "Light", color: "var(--wc-light)", rule: (c) => `${c + 1}–10 kt` },
+  moderate: { label: "Moderate", color: "var(--wc-moderate)", rule: () => "11–19 kt" },
+  strong: { label: "Strong", color: "var(--wc-strong)", rule: () => "≥ 20 kt or gusts ≥ 28" },
+  gale: { label: "Gale", color: "var(--wc-gale)", rule: () => "≥ 34 kt or gusts ≥ 43" },
+  storm: { label: "Storm", color: "var(--wc-storm)", rule: () => "≥ 48 kt" },
 };
 
-/** Met Office strong-wind warning (20 kt mean / 28 kt gusts) and gale (34 / 43); calm from the config. */
+/** Met Office strong-wind warning (20 kt mean / 28 kt gusts), gale (34 / 43) and storm (48, force 10); calm from the config. */
 function category(kt: number, gust: number | null, calmKt: number): Cat {
   const g = gust ?? 0;
+  if (kt >= 48) return "storm";
   if (kt >= 34 || g >= 43) return "gale";
   if (kt >= 20 || g >= 28) return "strong";
   if (kt > 10) return "moderate";
@@ -728,7 +733,7 @@ export default function WindLab() {
             <small>({catCount(k)})</small>
           </button>
         ))}
-        <span className="wl-mini">AVG WIND uses its ÷ scaled speed; thresholds follow the Met Office strong-wind (20 kt / 28 G) and gale (34 / 43 G) warnings.</span>
+        <span className="wl-mini">AVG WIND uses its ÷ scaled speed; thresholds follow the Met Office strong-wind (20 kt / 28 G), gale (34 / 43 G) and storm (48 kt) warnings.</span>
       </div>
 
       <div className="wl-custom-bar">
@@ -790,6 +795,11 @@ const CSS = `
 .wl-kind[data-k=CUSTOM] { color: var(--magenta); }
 .wl-cat { font-family: var(--font-cond); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; border: 1px solid var(--cat); color: var(--cat); padding: 0 6px; border-radius: 2px; cursor: help; }
 .wl-card { border-top: 3px solid var(--cat, var(--rule-strong)) !important; }
+:root { --wc-calm: #4f6478; --wc-light: #0f5aa6; --wc-moderate: #0a6b6b; --wc-strong: #8a5100; --wc-gale: #b0241b; --wc-storm: #6d28a8; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --wc-calm: #9fb0c4; --wc-light: #7db8f0; --wc-moderate: #5ccfc4; --wc-strong: #f2be5c; --wc-gale: #ff9a8f; --wc-storm: #c9a2ff; }
+}
+:root[data-theme="dark"] { --wc-calm: #9fb0c4; --wc-light: #7db8f0; --wc-moderate: #5ccfc4; --wc-strong: #f2be5c; --wc-gale: #ff9a8f; --wc-storm: #c9a2ff; }
 .wl-cats { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 14px; }
 .wl-catbtn { display: inline-flex; align-items: center; gap: 6px; }
 .wl-catbtn i { width: 10px; height: 10px; border-radius: 50%; background: var(--cat); display: inline-block; }
