@@ -2,6 +2,17 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Actual runway in Runway analysis.** A radio in the last (ACT) column of the take-off and landing runway tables marks the runway you actually used; the planned runway stays blue and your pick turns green, like the TFOB column. It shares the RWY box in the Takeoff / Landing actual row, so typing a runway there selects it too (click the radio again to clear). Below the actual row, a readout for that runway: whether it matches the plan, head- and crosswind from the actual wind (or the planned wind), FLEX and V1/VR/V2 from the performance table in view, MTOW or MLW with the margin over the planned weight, max landing weight at the actual OAT from the landing grid, length and ILS frequency. Runways that aren't in the TLR are flagged.
+- **Times & weights OFF switch** in the navigation log, next to Include PIC extra. Off by default; when on it adds a **RETO** column (the Actual OFF from Times & weights + TTLT) and ATO is compared with it. It's disabled until Times & weights has an Actual OFF, and when both Actual OFF boxes are filled.
+
+### Fixed
+
+- The ACARS runway tables were shifted one column: "ACARS LENGTH" was split into two headings, so the length showed under ACARS, the weight limit under LENGTH, and PMTOW / PMRLW and the ILS notes were empty.
+
 ## [1.5.0] - 2026-10-02
 
 ### Added

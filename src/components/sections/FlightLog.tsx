@@ -343,6 +343,14 @@ export function FlightLogSection({ no }: { no: number }) {
   const lg = useFieldGroup("log", "Flight log");
   const [picExtraRaw] = useField("fuel.picExtra", "Planned fuel", "PIC extra fuel");
   const [picOn, setPicOn] = useField("log.includePic", "Flight log", "Include PIC extra in nav log");
+  // RETO: ETOs worked from the Actual OFF typed in Times & weights, so it needn't be typed twice.
+  const timesActual = useFieldGroup("times.actual", "Times & weights");
+  const timesOff = /^\d{4}$/.test(timesActual.get("OFF")) ? timesActual.get("OFF") : null;
+  const [retoOn, setRetoOn] = useField("log.useTimesOff", "Flight log", "Use Times & weights OFF in nav log");
+  const logOffSet = /^\d{4}$/.test(off);
+  // Both OFF boxes filled is ambiguous, so the switch is off then; it also needs a Times & weights OFF.
+  const retoBlocked = !timesOff ? "Fill in Actual OFF in Times & weights to enable" : logOffSet ? "Both Actual OFF boxes are filled; clear one to use this" : null;
+  const reto = retoOn === "on" && !retoBlocked;
   const wkey = (p: P) => String(p.i).padStart(3, "0");
   const pts = useMemo(() => (ofp ? prep(ofp.log) : []), [ofp]);
   const finAlt = ofp?.fuel.fmc.find((f) => f.label === "FINRES+ALTN")?.value;
@@ -371,8 +379,8 @@ export function FlightLogSection({ no }: { no: number }) {
     else if (e.key === "Escape") setActive(null);
   };
 
-  const eto = (p: P) => {
-    const m = hhmmToMin(offTime);
+  const eto = (p: P, from: string | null = offTime) => {
+    const m = hhmmToMin(from);
     const t = hhmmToMin(p.ttlt);
     if (m == null || t == null) return null;
     const v = (m + t) % 1440;
@@ -496,6 +504,21 @@ export function FlightLogSection({ no }: { no: number }) {
         </label>
         <span
           className="switch-wrap"
+          data-tip={retoBlocked ?? `Adds a RETO column: ETOs worked from the Actual OFF in Times & weights (${fmtHhmm(timesOff)}Z); ATO is then compared with RETO`}
+          data-tip-title="Times & weights OFF"
+        >
+          <button type="button" role="switch" aria-checked={reto} disabled={!!retoBlocked} className="switch" onClick={() => setRetoOn(retoOn === "on" ? "" : "on")} aria-describedby="navlog-reto-note">
+            <span className="switch-main">
+              <span className="switch-track" aria-hidden="true">
+                <span className="switch-thumb" />
+              </span>
+              Times &amp; weights OFF
+            </span>
+            {timesOff && <span className="switch-value">{fmtHhmm(timesOff)}Z</span>}
+          </button>
+        </span>
+        <span
+          className="switch-wrap next"
           data-tip={!picKg ? "Add PIC extra in Planned fuel to enable" : "Adds a TFOB column: EFOB plus the PIC extra still on board"}
           data-tip-title="Include PIC extra"
         >
@@ -539,15 +562,25 @@ export function FlightLogSection({ no }: { no: number }) {
                   </Tip>
                 </th>
               ))}
-              {(["ETO", "ATO"] as const).map((k) => (
-                <th key={k} scope="col" className="num">
-                  <Tip tip={G[k]} title={k}>
-                    {k}
+              <th scope="col" className="num">
+                <Tip tip={G.ETO} title="ETO">
+                  ETO
+                </Tip>
+              </th>
+              {reto && (
+                <th scope="col" className="num">
+                  <Tip tip={G.RETO} title="RETO">
+                    RETO
                   </Tip>
                 </th>
-              ))}
+              )}
+              <th scope="col" className="num">
+                <Tip tip={G.ATO} title="ATO">
+                  ATO
+                </Tip>
+              </th>
               <th scope="col" className="num delta">
-                <Tip tip="ATO minus ETO, in minutes (+ late, − early)" title="Δ time">
+                <Tip tip={`ATO minus ${reto ? "RETO" : "ETO"}, in minutes (+ late, − early)`} title="Δ time">
                   Δ
                 </Tip>
               </th>
@@ -587,7 +620,7 @@ export function FlightLogSection({ no }: { no: number }) {
               if (!p)
                 return (
                   <tr key={r}>
-                    {Array.from({ length: COLS.length + TAIL.length + 7 + (pic ? 1 : 0) }, (_, c) => (
+                    {Array.from({ length: COLS.length + TAIL.length + 7 + (pic ? 1 : 0) + (reto ? 1 : 0) }, (_, c) => (
                       <td key={c}>
                         <V v={null} w={c === 0 ? 6 : 3} />
                       </td>
@@ -595,8 +628,9 @@ export function FlightLogSection({ no }: { no: number }) {
                   </tr>
                 );
               const e = eto(p);
+              const re = reto ? eto(p, timesOff) : null;
               const atoV = lg.get(`${wkey(p)}.ato`);
-              const dAto = atoV && /^\d{4}$/.test(atoV) && e ? signedMin(e, atoV) : null;
+              const dAto = atoV && /^\d{4}$/.test(atoV) && (re ?? e) ? signedMin((re ?? e)!, atoV) : null;
               const af = lg.get(`${wkey(p)}.afob`);
               const tf = pic ? pic.tfob(p.efob, p.pbrn) : null;
               const ref = tf ?? (p.efob ? Number(p.efob) : null);
@@ -626,6 +660,11 @@ export function FlightLogSection({ no }: { no: number }) {
                     );
                   })}
                   <td className="num muted">{isFir ? "" : fmtHhmm(e)}</td>
+                  {reto && (
+                    <td className="num tfob" data-tip={!isFir && re ? `Actual OFF ${fmtHhmm(timesOff)}Z (Times & weights) + TTLT ${fmtHhmm(p.ttlt)}` : undefined} data-tip-title={!isFir && re ? `RETO ${fmtHhmm(re)}Z` : undefined}>
+                      {isFir ? "" : fmtHhmm(re)}
+                    </td>
+                  )}
                   <td className="num">
                     {!isFir && <Act label={`Actual time over ${p.name}`} value={atoV ?? ""} onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))} w={4} />}
                   </td>
@@ -676,6 +715,14 @@ export function FlightLogSection({ no }: { no: number }) {
         <dt>ETO</dt>
         <dd>
           Actual OFF{plannedOff ? ` (or planned ${fmtHhmm(plannedOff)}Z)` : ""} + TTLT. Type ATO and AFOB as you fly; differences from plan are coloured.
+        </dd>
+        <dt>RETO</dt>
+        <dd id="navlog-reto-note">
+          {retoBlocked
+            ? `Revised ETO from the Actual OFF in Times & weights. ${retoBlocked}.`
+            : reto
+              ? `Actual OFF ${fmtHhmm(timesOff)}Z from Times & weights + TTLT; ATO is compared with RETO.`
+              : `Switch on Times & weights OFF to add a RETO column from ${fmtHhmm(timesOff)}Z.`}
         </dd>
         <dt>TFOB</dt>
         <dd id="navlog-tfob-note">

@@ -1936,6 +1936,10 @@ dialog.lightbox img {
 .switch-wrap {
   margin-left: auto;
 }
+/* a second pill sits right beside the first */
+.switch-wrap.next {
+  margin-left: 0;
+}
 /* Pill split in two: label half with a rounded ")" edge over the value half. */
 .switch {
   display: inline-flex;
@@ -2972,4 +2976,37 @@ dialog.lightbox img {
   border-top: 1px solid color-mix(in srgb, var(--sheet) 25%, transparent);
   font-size: 12px;
   opacity: 0.85;
+}
+
+/* Runway analysis: the runway actually used (radio in the last column) */
+.tbl th.rwy-pick,
+.tbl td.rwy-pick {
+  width: 1%;
+  text-align: center;
+}
+.tbl td.rwy-pick input {
+  accent-color: var(--green);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.tbl tr.actual > * {
+  background: var(--green-bg);
+  color: var(--green);
+  font-weight: 600;
+}
+.act-rwy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--green);
+  background: var(--green-bg);
+}
+.act-rwy-name b {
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 15px;
 }

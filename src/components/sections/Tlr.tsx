@@ -7,7 +7,7 @@ import { Replay } from "../replay";
 import { G } from "@/lib/ofp/glossary";
 import { components } from "@/lib/ofp/metar";
 import { fmtNum, pageOf } from "@/lib/ofp/format";
-import type { KeyedRow, Table } from "@/lib/ofp/types";
+import type { KeyedRow, LandingGrid, Table } from "@/lib/ofp/types";
 import { WindArrow } from "../WindArrow";
 
 const LIMIT: Record<string, string> = {
@@ -31,6 +31,18 @@ function rwyHdg(r?: string | null) {
   return m ? Number(m[1]) * 10 : null;
 }
 
+/** "070/15", "07015", "070 15KT" → wind; anything else → null. */
+function windOf(v?: string | null) {
+  const m = v?.replace(/\s+/g, " ").match(/^(\d{3})\D{0,2}(\d{1,3})/);
+  return m ? { dir: Number(m[1]), spd: Number(m[2]) } : null;
+}
+
+/** Typed runway → TLR form: "rwy 9" → "09", "32 l" → "32L". */
+const normRwy = (v: string) => {
+  const m = v.toUpperCase().replace(/^RWY\s*/, "").replace(/\s+/g, "").match(/^(\d{1,2})([LRC]?)$/);
+  return m ? m[1].padStart(2, "0") + m[2] : v.toUpperCase().trim();
+};
+
 /** TLR prints V-speeds ≥ 100 kt with the hundreds digit dropped in the planned line. */
 function vs(v?: string | null) {
   if (!v) return { shown: null as string | null, full: null as number | null };
@@ -38,13 +50,13 @@ function vs(v?: string | null) {
   return { shown: v, full: n < 100 ? n + 100 : n };
 }
 
-function WindComp({ w, rwy }: { w: { dir: number; spd: number } | null; rwy: string | null | undefined }) {
+function WindComp({ w, rwy, source = "the planned (magnetic) wind" }: { w: { dir: number; spd: number } | null; rwy: string | null | undefined; source?: string }) {
   const h = rwyHdg(rwy);
   if (!w || h == null) return null;
   const c = components(w.dir, w.spd, h);
   return (
     <span className="row" style={{ gap: 6 }}>
-      <Badge tone={c.head >= 0 ? "green" : "red"} tip="Along-runway component from the planned (magnetic) wind">
+      <Badge tone={c.head >= 0 ? "green" : "red"} tip={`Along-runway component from ${source}`}>
         {c.head >= 0 ? `${c.head} kt head` : `${-c.head} kt tail`}
       </Badge>
       <Badge tone={Math.abs(c.cross) > 20 ? "amber" : "ink"} tip="Crosswind component">
@@ -54,7 +66,20 @@ function WindComp({ w, rwy }: { w: { dir: number; spd: number } | null; rwy: str
   );
 }
 
-function PerfTable({ t, planned }: { t: Table; planned?: string | null }) {
+function PerfTable({
+  t,
+  planned,
+  actual,
+  onActual,
+  verb,
+}: {
+  t: Table;
+  planned?: string | null;
+  /** The runway marked as actually used (radio in the last column). */
+  actual?: string | null;
+  onActual?: (rwy: string | null) => void;
+  verb?: string;
+}) {
   return (
     <div className="tbl-wrap">
       <table className="tbl">
@@ -68,17 +93,25 @@ function PerfTable({ t, planned }: { t: Table; planned?: string | null }) {
                 </Tip>
               </th>
             ))}
+            {onActual && (
+              <th scope="col" className="rwy-pick">
+                <Tip tip={`The runway you actually ${verb}. Planned stays blue; your pick is green and fills the actual RWY box. Click it again to clear.`} title="Actual">
+                  ACT
+                </Tip>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {t.rows.map((r, i) => (
-            <tr key={i} className={cx(r[0] === planned && "planned")}>
+            <tr key={i} className={cx(r[0] === planned && "planned", onActual && r[0] === actual && "actual")}>
               {r.map((c, j) => {
                 const col = t.columns[j];
                 if (j === 0)
                   return (
                     <th key={j} scope="row">
                       {c} {r[0] === planned && <span className="sr-only">(planned)</span>}
+                      {onActual && r[0] === actual && <span className="sr-only">(actual)</span>}
                     </th>
                   );
                 if (col === "LIMIT")
@@ -101,10 +134,110 @@ function PerfTable({ t, planned }: { t: Table; planned?: string | null }) {
                   </td>
                 );
               })}
+              {onActual && (
+                <td className="rwy-pick">
+                  <input
+                    type="radio"
+                    name={`act-${verb}-${t.title}`}
+                    checked={r[0] === actual}
+                    aria-label={`${verb} runway ${r[0]}`}
+                    onChange={() => onActual(r[0])}
+                    onClick={() => r[0] === actual && onActual(null)}
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/**
+ * What the TLR says about the runway actually used: how it compares with the plan, wind
+ * components (from the actual wind if typed, else the planned wind), and that runway's
+ * own limits against the planned weight.
+ */
+function ActualRunway({
+  kind,
+  rwy,
+  planned,
+  acars,
+  perf,
+  grid,
+  oat,
+  wind,
+  distRow,
+}: {
+  kind: "to" | "ld";
+  rwy: string;
+  planned: KeyedRow | null;
+  acars?: Table;
+  perf?: Table;
+  grid?: LandingGrid | null;
+  oat?: string;
+  wind?: string;
+  distRow?: string[];
+}) {
+  const same = planned?.PRWY === rwy;
+  const acRow = acars?.rows.find((r) => r[0] === rwy);
+  const col = (t: Table | undefined, row: string[] | undefined, name: string) => (t && row ? row[t.columns.indexOf(name)] : undefined);
+  const length = Number(col(acars, acRow, "LENGTH")) || null;
+  const notes = col(acars, acRow, "NOTES");
+  const actualWind = windOf(wind);
+  const w = actualWind ?? pwind(planned?.PWIND);
+  const weightKey = kind === "to" ? "PTOW" : "PLDW";
+  const plannedW = x10(planned?.[weightKey]);
+  const pfRow = perf?.rows.find((r) => r[0] === rwy);
+  // Take-off: MTOW from the performance table in view, else the ACARS limit. Landing: the ACARS limit.
+  const maxW = kind === "to" ? (x10(col(perf, pfRow, "MTOW")) ?? x10(col(acars, acRow, "PMTOW"))) : x10(col(acars, acRow, "PMRLW"));
+  const margin = maxW != null && plannedW != null ? maxW - plannedW : null;
+  // Landing grid: max landing weight for this runway at the actual OAT (nearest row), else the planned OAT.
+  const gRwy = grid?.runways.find((r) => r.rwy === rwy);
+  const oatN = Number(oat);
+  const cell = gRwy
+    ? oat && !Number.isNaN(oatN)
+      ? [...gRwy.cells].sort((a, b) => Math.abs(Number(a.oat) - oatN) - Math.abs(Number(b.oat) - oatN))[0]
+      : gRwy.cells.find((c) => c.planned)
+    : undefined;
+  const found = !!(acRow || pfRow || gRwy);
+  const verb = kind === "to" ? "Took off from" : "Landed on";
+  return (
+    <div className="act-rwy" role="status">
+      <span className="act-rwy-name">
+        {verb} <b>{rwy}</b>
+      </span>
+      {planned?.PRWY && (
+        <Badge tone={same ? "green" : "amber"} tip={same ? "Same runway as the plan" : `The plan used ${planned.PRWY}; the figures below are for ${rwy}`}>
+          {same ? "as planned" : `planned ${planned.PRWY}`}
+        </Badge>
+      )}
+      {!found && <Badge tone="red" tip="This runway isn't in the TLR, so there are no figures for it: check performance separately">not in the analysis</Badge>}
+      <WindComp w={w} rwy={rwy} source={actualWind ? `the actual wind ${wind}` : "the planned (magnetic) wind"} />
+      {perf && pfRow && (
+        <span className="small">
+          <Tip tip={`From ${perf.title}`}>FLEX {col(perf, pfRow, "MT")}°</Tip> · V1/VR/V2 {col(perf, pfRow, "V1")}/{col(perf, pfRow, "VR")}/{col(perf, pfRow, "V2")}
+        </span>
+      )}
+      {maxW != null && (
+        <span className="small">
+          {kind === "to" ? "MTOW" : "MLW"} {fmtNum(maxW)} kg{" "}
+          {margin != null && (
+            <Badge tone={margin >= 0 ? "green" : "red"} tip={`Against the planned ${weightKey} of ${fmtNum(plannedW!)} kg`}>
+              {margin >= 0 ? `${fmtNum(margin)} kg margin` : `${fmtNum(-margin)} kg over`}
+            </Badge>
+          )}
+        </span>
+      )}
+      {cell && (
+        <span className="small">
+          <Tip tip={`Max landing weight on ${rwy} at ${cell.oat} °C (${oat ? "nearest to the actual OAT" : "planned OAT"}); F = limited`}>MLW @ {cell.oat}°C</Tip> {cell.value}
+        </span>
+      )}
+      {length && <span className="small">{fmtNum(length)} ft</span>}
+      {notes && <span className="small mono">{notes}</span>}
+      {kind === "ld" && !same && distRow && <span className="small muted">Factored landing distance is only given for the planned runway.</span>}
     </div>
   );
 }
@@ -197,6 +330,13 @@ export function TlrSection({ no }: { no: number }) {
   const plannedDistRow = dist?.rows.find((r) => r[0] === "/");
   const ldRwyLen = Number(acarsLd?.rows.find((r) => r[0] === ld?.PRWY)?.[1]);
   const ac = tlr?.header.find((h) => h.startsWith("A/C"))?.match(/BEW\/CG\s+(\d+)\/(\S+)/);
+  // The actual runways live in the "actual" rows' RWY box, so typing there and the radios agree.
+  const toAct = useFieldGroup("tlr.takeoff", "Runway analysis");
+  const ldAct = useFieldGroup("tlr.landing", "Runway analysis");
+  const toRwy = toAct.get("RWY") ? normRwy(toAct.get("RWY")) : null;
+  const ldRwy = ldAct.get("RWY") ? normRwy(ldAct.get("RWY")) : null;
+  const setToRwy = (r: string | null) => toAct.put("RWY", "Takeoff actual RWY", r ?? "");
+  const setLdRwy = (r: string | null) => ldAct.put("RWY", "Landing actual RWY", r ?? "");
 
   return (
     <Section id="tlr" no={no} title="Runway analysis" meta={<span>TLR · PDF p.{pageOf(ofp?.pages, /TAKEOFF AND LANDING REPORT/) ?? 10}</span>}>
@@ -271,9 +411,10 @@ export function TlrSection({ no }: { no: number }) {
         <Planned p={to} kind="to" fallback={["APT", "PRWY", "POAT", "PWIND", "PQNH", "PMRTW", "FLP", "MT", "PTOW", "MFPTW", "LIMIT"]} />
       </div>
       <ActualRow label="Takeoff actual" cols={["RWY", "OAT", "WIND", "QNH", "MRTW", "FLP", "V1", "VR", "V2", "PWR", "CONFIG/CONDITION"]} />
+      {toRwy && <ActualRunway kind="to" rwy={toRwy} planned={to} acars={acarsTo} perf={toPerf[perfIdx]} wind={toAct.get("WIND")} />}
 
       <div className="cols" style={{ ["--min" as string]: "340px", marginTop: 14 }}>
-        {acarsTo ? <PerfTable t={acarsTo} planned={to?.PRWY} /> : <V v={null} w={30} />}
+        {acarsTo ? <PerfTable t={acarsTo} planned={to?.PRWY} actual={toRwy} onActual={setToRwy} verb="took off from" /> : <V v={null} w={30} />}
         <div>
           <div className="row" role="group" aria-label="Performance table" style={{ marginBottom: 8, gap: 6 }}>
             {toPerf.map((t, i) => (
@@ -282,7 +423,7 @@ export function TlrSection({ no }: { no: number }) {
               </button>
             ))}
           </div>
-          {toPerf[perfIdx] ? <PerfTable t={toPerf[perfIdx]} planned={to?.PRWY} /> : <V v={null} w={30} />}
+          {toPerf[perfIdx] ? <PerfTable t={toPerf[perfIdx]} planned={to?.PRWY} actual={toRwy} onActual={setToRwy} verb="took off from" /> : <V v={null} w={30} />}
         </div>
       </div>
 
@@ -310,9 +451,10 @@ export function TlrSection({ no }: { no: number }) {
         </div>
       ) : null}
       <ActualRow label="Landing actual" cols={["RWY", "OAT", "WIND", "QNH", "MRLW", "FLP", "VREF", "PWR", "CONFIG/CONDITION"]} />
+      {ldRwy && <ActualRunway kind="ld" rwy={ldRwy} planned={ld} acars={acarsLd} grid={grid} oat={ldAct.get("OAT")} wind={ldAct.get("WIND")} distRow={plannedDistRow} />}
 
       <div className="cols" style={{ ["--min" as string]: "340px", marginTop: 14 }}>
-        {acarsLd ? <PerfTable t={acarsLd} planned={ld?.PRWY} /> : <V v={null} w={30} />}
+        {acarsLd ? <PerfTable t={acarsLd} planned={ld?.PRWY} actual={ldRwy} onActual={setLdRwy} verb="landed on" /> : <V v={null} w={30} />}
         <div>
           {plannedDistRow && ldRwyLen ? (
             <div>

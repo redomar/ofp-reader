@@ -532,7 +532,7 @@ function parseTlr(lines: Lines): Tlr {
       }
       if (!cur) continue;
       if (/^(RWY|OAT|DRY RWY|\s+ACTUAL)/.test(l) && cur.columns.length === 0 && /^RWY\s/.test(l)) {
-        cur.columns = l.trim().replace("ACARS LENGTH", "LENGTH").split(/\s+/);
+        cur.columns = l.trim().replace(/ACARS\s+LENGTH/, "LENGTH").split(/\s+/);
         continue;
       }
       if (/^(\d{2}[LRC]?|[0-3]\d[LRC]?)\s/.test(l) && cur.columns.length) {
