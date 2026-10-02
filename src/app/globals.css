@@ -3715,3 +3715,39 @@ hr.mcdu-rule {
 .rx-page.zz-top .rx-paper {
   padding-top: 8px;
 }
+
+/* ---------- printing animations ---------- */
+/* the print head: each line wipes in left to right in chunky dot-matrix steps */
+@keyframes pp-print {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes pp-band {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* sheets (MCDU / alternate): really fast, one line every 12 ms */
+.mcdu-dialog .rx-pline {
+  animation: pp-print 90ms steps(10, end) both;
+  animation-delay: calc(250ms + var(--i, 0) * 12ms);
+}
+/* explain route: fast, one band every 45 ms */
+.rx-route-paper .rx-filed,
+.rx-route-paper .rx-node,
+.rx-route-paper .rx-leg {
+  animation: pp-band 260ms steps(8, end) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}

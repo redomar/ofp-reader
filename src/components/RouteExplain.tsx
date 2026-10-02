@@ -49,13 +49,13 @@ export function listing(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, dep:
 }
 
 /** Continuous-form paper: tractor-feed edges and alternating white / pink line bands. */
-export function printout(lines: string[]) {
+export function printout(lines: string[], from = 0) {
   return (
     <figure className="rx-print" aria-label="Route listing, printed">
       <span className="rx-feed left" aria-hidden="true" />
       <pre className="rx-paper">
         {lines.map((l, i) => (
-          <span key={i} className="rx-pline">
+          <span key={i} className="rx-pline" style={{ ["--i" as string]: from + i }}>
             {l || " "}
           </span>
         ))}
@@ -107,12 +107,12 @@ export function RouteExplain() {
   const navaids = log.filter((p) => p.freq);
 
   // Bands: each fix and the leg leaving it share a band, alternating down the paper.
-  const node = (name: string, end?: "dep" | "dest", band = 0) => {
+  const node = (name: string, end?: "dep" | "dest", band = 0, order = 0) => {
     const nav = navOf(name);
     const k = nav?.freq ? navaidKind(nav.freq) : null;
     const t = end === "dep" ? 0 : rows.find((r) => r.leg.to === name)?.m?.t1;
     return (
-      <div className={cx("rx-node", end && "end", end, band % 2 === 1 && "band")}>
+      <div className={cx("rx-node", end && "end", end, band % 2 === 1 && "band")} style={{ ["--i" as string]: order }}>
         <span className="rx-time mono">{t != null && off != null ? clock(off + t) : ""}</span>
         <span className="rx-rail" aria-hidden="true">
           <span className="rx-dot" />
@@ -141,10 +141,10 @@ export function RouteExplain() {
             Filed cruise <Badge tone="mag">{initial.speed}</Badge> <Badge tone="mag">{initial.level}</Badge>
           </p>
         )}
-        {node(dep, "dep", 0)}
+        {node(dep, "dep", 0, 1)}
         {rows.map(({ leg, m }, k) => (
           <div key={k}>
-            <div className={cx("rx-leg", k % 2 === 1 && "band")}>
+            <div className={cx("rx-leg", k % 2 === 1 && "band")} style={{ ["--i" as string]: 2 + 2 * k }}>
               <span className="rx-time" aria-hidden="true" />
               <span className="rx-rail" aria-hidden="true" />
               <div className="rx-leg-body">
@@ -203,7 +203,7 @@ export function RouteExplain() {
                 ))}
               </div>
             </div>
-            {node(leg.to, leg.to === dest ? "dest" : undefined, k + 1)}
+            {node(leg.to, leg.to === dest ? "dest" : undefined, k + 1, 3 + 2 * k)}
           </div>
         ))}
       </div>

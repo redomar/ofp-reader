@@ -308,7 +308,8 @@ function AltSheet() {
     <div className="rx-pages">
       {pages.map((lines, i) => (
         <div key={i} className={`rx-page${i > 0 ? " zz-top" : ""}${i < pages.length - 1 ? " zz-bottom" : ""}`}>
-          {printout(lines)}
+          {/* keep printing on from where the previous page stopped */}
+          {printout(lines, pages.slice(0, i).reduce((n, pg) => n + pg.length, 0))}
         </div>
       ))}
     </div>
