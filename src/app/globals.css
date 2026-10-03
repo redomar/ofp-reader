@@ -4948,8 +4948,18 @@ main[data-skin="dots"] .rmp .rmp-val {
   color: var(--ink-3);
   font: 500 11.5px var(--font-mono);
 }
-.toc-card > .toc-all {
-  margin: 7px 12px 0;
+/* Collapse all: a small box hanging from the card's bottom edge */
+.toc-foot-box {
+  align-self: flex-start;
+  margin: -15px 0 0 10px;
+  padding: 4px 10px 5px;
+  border: 1px solid var(--rule-strong);
+  border-top: 0;
+  background: var(--sheet);
+}
+.toc-foot-box .toc-all {
+  min-width: 82px;
+  min-height: 17px;
   font-size: 12.5px;
 }
 .toc-grp {
@@ -4981,8 +4991,12 @@ main[data-skin="dots"] .rmp .rmp-val {
 .toc-card > div:last-child ol {
   padding-bottom: 6px;
 }
+.toc-card > ol,
+.toc-card > div:nth-child(2) > .toc-grp {
+  padding-top: 0;
+}
 .toc-card > ol {
-  padding-top: 6px;
+  margin-top: 6px;
 }
 .toc-card li > a {
   align-items: center;
@@ -5010,8 +5024,14 @@ main[data-skin="dots"] .rmp .rmp-val {
   color: var(--magenta);
   font-weight: 600;
 }
-.toc-card li > a[aria-current="true"] .n {
+.toc-card li > a[aria-current="true"] .n,
+.toc-card li.closed > a[aria-current="true"] .n {
   background: var(--magenta);
+  color: var(--sheet);
+}
+/* current wins over collapsed, so the highlight keeps its contrast */
+.toc-card li.closed > a[aria-current="true"] {
+  color: var(--magenta);
 }
 .toc-card li.closed > a {
   color: var(--ink-3);
@@ -5042,7 +5062,7 @@ main[data-skin="dots"] .rmp .rmp-val {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: -6px 0 0;
+  margin: -4px 0 0;
   color: var(--ink-3);
   font: 12px var(--font-sans);
 }

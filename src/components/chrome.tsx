@@ -202,7 +202,6 @@ export function Toc({
             {String(at + 1).padStart(2, "0")} / {sections.length}
           </span>
         </div>
-        {ready && <CollapseAllButton ids={sectionIds} className="toc-all" />}
         {groups ? (
           groups.map(([g, ids]) => (
             <div key={g}>
@@ -217,6 +216,8 @@ export function Toc({
           <ol>{sections.map(([id]) => item(id))}</ol>
         )}
       </div>
+      {/* attached under the card; the box is there from the first paint so nothing shifts when the button appears */}
+      <div className="toc-foot-box">{ready ? <CollapseAllButton ids={sectionIds} className="toc-all" /> : <span className="toc-all" aria-hidden="true" />}</div>
       {saved && saved.size > 0 && (
         <p className="toc-legend">
           <span className="toc-dot" aria-hidden="true" />
