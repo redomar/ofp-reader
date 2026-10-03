@@ -225,6 +225,18 @@ textarea {
   font-family: var(--font-mono);
   font-size: 13px;
 }
+.loader select {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
 .loader input::placeholder {
   color: var(--ink-3);
 }

@@ -553,7 +553,20 @@ export function RadioApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Brand sub="· Radio" />
-          <span style={{ flex: 1 }} />
+          {/* same slot as the reader's "Paste a SimBrief PDF link" box */}
+          <div className="loader">
+            <label htmlFor="radio-flight" className="sr-only">
+              Flight
+            </label>
+            <select id="radio-flight" value={flightId ?? ""} onChange={(e) => setId(e.target.value)} disabled={!flights.length}>
+              {!flights.length && <option value="">No saved flights with a PDF</option>}
+              {flights.map((f) => (
+                <option key={f.meta.id} value={f.meta.id}>
+                  {f.meta.flightNo ?? f.meta.id} · {f.meta.dep}→{f.meta.arr} · {f.meta.date}
+                </option>
+              ))}
+            </select>
+          </div>
           <CollapseAllButton ids={sections.map(([s]) => s)} className="btn status-all" />
           <Link href={flightId ? `/?flight=${encodeURIComponent(flightId)}` : "/"} className="btn">
             ← Back to reader
@@ -563,15 +576,6 @@ export function RadioApp() {
         <div className="status">
           <span role="status">{msg ?? (h ? `${h.flightNo} · ${h.dep} → ${h.arr} · typed frequencies are saved with this flight` : flights.length ? "Pick a flight" : "No saved flights with a PDF yet: open a plan in the reader first")}</span>
           <span className="status-tools">
-            {flights.length > 0 && (
-              <select className="wx-select" value={flightId ?? ""} onChange={(e) => setId(e.target.value)} aria-label="Flight">
-                {flights.map((f) => (
-                  <option key={f.meta.id} value={f.meta.id}>
-                    {f.meta.flightNo ?? f.meta.id} · {f.meta.dep}→{f.meta.arr} · {f.meta.date}
-                  </option>
-                ))}
-              </select>
-            )}
             <span className="radio-skins" role="group" aria-label="Display style">
               <span className="status-label" aria-hidden="true">
                 Display

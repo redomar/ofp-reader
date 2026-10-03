@@ -568,33 +568,37 @@ export default function WindLab() {
               <span className="wl-mini">AVG WIND uses its ÷ scaled speed; High follows the Met Office strong-wind warning (20 kt / 28 G); gale (34 / 43 G) and storm (48 kt) follow theirs.</span>
             </div>
 
-            <div className="wl-custom-bar">
+            {/* the inputs stay in place (dimmed and disabled when off) so turning it on doesn't move anything */}
+            <div className={`wl-custom-bar${customOn ? "" : " is-off"}`}>
               <button type="button" aria-pressed={customOn} onClick={() => setCustomOn(!customOn)} title="Add a card at the top built from the values you type">
                 Custom card {customOn ? "· on" : "· off"}
               </button>
-              {customOn && (
-                <>
-                  {(["dir", "spd", "gust"] as const).map((k) => (
-                    <label key={k}>
-                      {k}
-                      <input type="number" value={custom[k]} onChange={(e) => setCustom({ ...custom, [k]: Number(e.target.value) })} />
-                    </label>
-                  ))}
-                  <label>
-                    variable from
-                    <input value={custom.s0} placeholder="—" onChange={(e) => setCustom({ ...custom, s0: e.target.value })} />
-                  </label>
-                  <label>
-                    to
-                    <input value={custom.s1} placeholder="—" onChange={(e) => setCustom({ ...custom, s1: e.target.value })} />
-                  </label>
-                </>
-              )}
+              {(["dir", "spd", "gust"] as const).map((k) => (
+                <label key={k}>
+                  {k}
+                  <input type="number" value={custom[k]} disabled={!customOn} onChange={(e) => setCustom({ ...custom, [k]: Number(e.target.value) })} />
+                </label>
+              ))}
+              <label>
+                variable from
+                <input value={custom.s0} placeholder="—" disabled={!customOn} onChange={(e) => setCustom({ ...custom, s0: e.target.value })} />
+              </label>
+              <label>
+                to
+                <input value={custom.s1} placeholder="—" disabled={!customOn} onChange={(e) => setCustom({ ...custom, s1: e.target.value })} />
+              </label>
             </div>
           </Section>
 
           <Section id="arrows" no={3} title="Arrows" meta={<span>METAR · PWIND · AVG WIND</span>}>
             <div className="wl-grid">
+              {/* holds the custom card's slot while it's off, so the grid doesn't shift */}
+              {!customOn && (
+                <button type="button" className="wl-card wl-slot" onClick={() => setCustomOn(true)}>
+                  Custom card off
+                  <small>turn it on to build a card from your own wind</small>
+                </button>
+              )}
               {list.map((s, i) => (
                 <Card key={s.kind + s.raw + i} s={s} i={i} cfg={cfg} phase={phases[i % phases.length]} />
               ))}
@@ -660,6 +664,10 @@ const CSS = `
 .wl-custom label { display: flex; flex-direction: column; }
 .wl-custom-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin: 0 0 12px; font-size: 12px; color: var(--ink-2); }
 .wl-custom-bar label { display: flex; flex-direction: column; gap: 2px; }
+.wl-custom-bar.is-off label { opacity: .45; }
+.wl .sheet-body button.wl-slot { display: grid; place-content: center; gap: 4px; min-height: 160px; border: 1.5px dashed var(--rule-strong) !important; border-radius: 0; background: transparent; color: var(--ink-3); font-size: 14px; letter-spacing: .1em; }
+.wl .sheet-body button.wl-slot small { font: 400 12px var(--font-sans); letter-spacing: 0; text-transform: none; }
+.wl .sheet-body button.wl-slot:hover { border-color: var(--blue) !important; color: var(--blue); }
 .wl-custom-bar input { width: 80px; background: var(--field); color: var(--ink); border: 1px solid var(--rule-strong); padding: 3px 6px; font-family: var(--font-mono); font-size: 12px; }
 .wl .wl-small { padding: 2px 7px; font-size: 12px; }
 .wl-trace { width: 100%; height: 35px; display: block; background: var(--field); border: 1px solid var(--rule); }
