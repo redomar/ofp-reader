@@ -20,6 +20,8 @@ import {
   type FieldEntry,
 } from "@/lib/storage";
 import { getPdf, putPdf } from "@/lib/pdfCache";
+import { getActiveId, setActive, useActiveFlight } from "@/lib/active";
+import { FlightMenu } from "./FlightMenu";
 import { TooltipLayer } from "./TooltipLayer";
 import { SummarySection } from "./sections/Summary";
 import { FuelSection } from "./sections/Fuel";
@@ -181,6 +183,8 @@ export function OfpApp() {
   const fileRef = useRef<HTMLInputElement>(null);
   const loadId = useRef(0);
   const restorePending = useRef(false);
+  /** The flight this reader has open or is opening, so its own switches don't echo back as a new load. */
+  const mine = useRef<string | null>(null);
 
   const load = useCallback(async (getData: (p: (x: Progress) => void) => Promise<Source>, label: string, sourceUrl: string | null) => {
     const id = ++loadId.current;
@@ -199,6 +203,8 @@ export function OfpApp() {
         return res.doc;
       });
       const rec = openFlight(res.ofp, sourceUrl);
+      mine.current = rec.meta.id;
+      setActive(rec.meta.id);
       if (copy) {
         const fid = rec.meta.id;
         void putPdf(fid, copy).then((ok) => ok && setPdfSize(fid, copy.byteLength));
@@ -250,6 +256,7 @@ export function OfpApp() {
         setStatus({ kind: "error", message: "That saved flight no longer exists — it may have been deleted in Settings." });
         return;
       }
+      mine.current = fid;
       setParam("flight", fid);
       if (rec.meta.sourceUrl) setUrl(rec.meta.sourceUrl);
       void load(
@@ -267,8 +274,9 @@ export function OfpApp() {
   );
 
   /** Back to the blank form: drops the loaded plan (saved data stays in storage). */
-  const reset = useCallback(() => {
+  const clearView = useCallback(() => {
     loadId.current++; // cancels any load still in flight
+    mine.current = null;
     setDoc((old) => {
       void old?.loadingTask.destroy();
       return null;
@@ -281,6 +289,11 @@ export function OfpApp() {
     window.history.replaceState(null, "", window.location.pathname);
     window.scrollTo({ top: 0 });
   }, []);
+  /** "Blank plan": also clears the active flight, so other pages show none either. */
+  const reset = useCallback(() => {
+    clearView();
+    setActive(null);
+  }, [clearView]);
 
   const loadFile = useCallback(
     (f: File) => {
@@ -303,11 +316,30 @@ export function OfpApp() {
     const u = params.get("ofp");
     const fid = params.get("flight");
     // Deferred so the initial render commits before loading starts.
+    // No link: reopen the active flight (the one you were on, here or on another page).
+    const active = u || fid ? null : getActiveId();
     if (u) queueMicrotask(() => loadUrl(u));
     else if (fid) queueMicrotask(() => loadSaved(fid));
-    else requestAnimationFrame(restoreScroll); // blank page: nothing to wait for
-    restorePending.current = Boolean(u || fid);
+    else if (active) {
+      mine.current = active;
+      queueMicrotask(() => loadSaved(active));
+    } else requestAnimationFrame(restoreScroll); // blank page: nothing to wait for
+    restorePending.current = Boolean(u || fid || active);
   }, [loadUrl, loadSaved]);
+
+  // Follow the active flight when it's switched elsewhere: the flight menu, another page or tab.
+  const { id: activeId, ready: activeReady } = useActiveFlight();
+  const seenActive = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!activeReady) return;
+    if (seenActive.current === undefined || seenActive.current === activeId) {
+      seenActive.current = activeId; // first reading after load: the boot effect above handles it
+      return;
+    }
+    seenActive.current = activeId;
+    if (activeId === mine.current) return;
+    queueMicrotask(() => (activeId ? loadSaved(activeId) : clearView()));
+  }, [activeReady, activeId, loadSaved, clearView]);
 
   useEffect(() => {
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
@@ -440,25 +472,7 @@ export function OfpApp() {
             <div className="examples">
               {recent.length > 0 && (
                 <>
-                  <span>Recent:</span>
-                  {recent.map(({ meta: m, fields }) => {
-                    const n = Object.keys(fields).length;
-                    const where = m.dep && m.arr ? `${m.dep}→${m.arr}` : m.source;
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        className="chip-btn chip-recent"
-                        onClick={() => loadSaved(m.id)}
-                        aria-label={`Reopen ${m.flightNo ?? m.source} ${where}${m.ofpNo ? `, OFP ${m.ofpNo}` : ""}${m.date ? `, ${m.date}` : ""}`}
-                        data-tip={[m.date, n ? `${n} saved ${n === 1 ? "entry" : "entries"}` : "no entries yet", m.pdfSize ? "opens without downloading" : "downloads again"].filter(Boolean).join(" · ")}
-                        data-tip-title={`${m.flightNo ?? "Plan"} · OFP ${m.ofpNo ?? "—"}`}
-                      >
-                        <b>{m.flightNo ?? "PLAN"}</b> {where}
-                        {n > 0 && <span className="chip-count">{n}</span>}
-                      </button>
-                    );
-                  })}
+                  <FlightMenu onNew={() => document.getElementById("ofp-url")?.focus()} />
                   <span className="examples-sep" aria-hidden="true" />
                 </>
               )}
@@ -482,6 +496,7 @@ export function OfpApp() {
           {status.kind === "ready" && ofp && (
             <div className="examples">
               <BlankChip onClick={reset} />
+              <FlightMenu onNew={() => document.getElementById("ofp-url")?.focus()} />
               <span className="examples-sep" aria-hidden="true" />
               <span>
                 <span className="mono">{status.label}</span> · {ofp.pageCount} pages

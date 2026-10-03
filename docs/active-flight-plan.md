@@ -24,7 +24,7 @@ The rail's Radio and Plan tabs pass `?flight=` along, which papers over this for
 - Uploading a PDF, loading a SimBrief link, or reopening a saved one in the reader.
 - Picking a flight in the shared flight menu on any page.
 - Opening a link with `?flight=<id>` (bookmarks keep working).
-- Importing a JSON export only adds it; it doesn't switch (you may be importing several).
+- Importing a JSON export in Settings: the imported flight becomes active (the last one, if you import several).
 
 ### The URL
 `?flight=<id>` stays as a reloadable, bookmarkable mirror of the active flight. Each page writes it with `history.replaceState` when the active flight changes, so reload keeps you where you were. A `?flight=` in a link wins on arrival and becomes active.
@@ -32,7 +32,7 @@ The rail's Radio and Plan tabs pass `?flight=` along, which papers over this for
 ### Shared flight menu
 One component, `<FlightMenu>`, used on every page that shows flight data. It lists saved flights newest first as `EZY2192 · LEMD→EHAM · 02OCT2026`, marks ones whose PDF isn't stored in this browser ("PDF needed"), and ends with "Open another plan…" (goes to the reader's paste/upload).
 - **Weather, Radio, Settings:** in the top bar's middle slot, where Radio's menu is now.
-- **Reader:** that slot is the SimBrief paste box, so the menu sits at the start of the status line, replacing the "Recent" chips (which do the same job).
+- **Reader:** that slot is the SimBrief paste box, so a compact menu sits in the status line: next to "Blank plan" when a plan is open, and in place of the "Recent" chips on the blank form (it does the same job, for every saved flight rather than the last few).
 - **Wind lab:** no menu (it doesn't use flight data).
 
 ### Per page

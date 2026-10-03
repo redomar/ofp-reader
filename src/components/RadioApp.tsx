@@ -8,6 +8,8 @@ import { TooltipLayer } from "./TooltipLayer";
 import { Replay } from "./replay";
 import { Section, V } from "./ui";
 import { FlapCode } from "./FlapCode";
+import { FlightMenu } from "./FlightMenu";
+import { adoptFlightParam, mirrorFlightParam, useActiveFlight } from "@/lib/active";
 import { CHANNEL_TYPES, ChannelIcon, NAVAID_TYPES, type ChannelType, type IconKind, type NavaidType } from "./radioIcons";
 import { getServerVersion, getVersion, listFlights, readFlight, subscribe, writeField } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
@@ -234,7 +236,7 @@ function TypePicker<T extends IconKind>({ value, onPick, where, options = CHANNE
 export function RadioApp() {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const flights = useMemo(() => (version >= 0 ? listFlights().filter((f) => f.meta.pdfSize) : []), [version]);
-  const [id, setId] = useState<string | null>(null);
+  const { id: flightId } = useActiveFlight();
   const [ofp, setOfp] = useState<OFP | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [skin, setSkin] = useState<Skin>("scan");
@@ -242,7 +244,7 @@ export function RadioApp() {
 
   useEffect(() => {
     queueMicrotask(() => {
-      setId(new URLSearchParams(window.location.search).get("flight"));
+      adoptFlightParam();
       try {
         const k = window.localStorage.getItem(SKIN_KEY);
         if (SKINS.some(([v]) => v === k)) setSkin(k as Skin);
@@ -251,13 +253,16 @@ export function RadioApp() {
       }
     });
   }, []);
-  const flightId = id ?? flights[0]?.meta.id ?? null;
+  useEffect(() => {
+    if (flightId) mirrorFlightParam(flightId);
+  }, [flightId]);
   const rec = useMemo(() => (version >= 0 && flightId ? readFlight(flightId) : null), [version, flightId]);
 
   useEffect(() => {
     if (!flightId) return;
     let live = true;
     (async () => {
+      setOfp(null); // don't show the previous flight's data under the new one's entries
       setMsg("Reading the saved plan…");
       const data = await getPdf(flightId);
       if (!data) return live && setMsg("This flight has no saved PDF: open it in the reader first.");
@@ -554,19 +559,7 @@ export function RadioApp() {
         <div className="topbar-inner">
           <Brand sub="· Radio" />
           {/* same slot as the reader's "Paste a SimBrief PDF link" box */}
-          <div className="loader">
-            <label htmlFor="radio-flight" className="sr-only">
-              Flight
-            </label>
-            <select id="radio-flight" value={flightId ?? ""} onChange={(e) => setId(e.target.value)} disabled={!flights.length}>
-              {!flights.length && <option value="">No saved flights with a PDF</option>}
-              {flights.map((f) => (
-                <option key={f.meta.id} value={f.meta.id}>
-                  {f.meta.flightNo ?? f.meta.id} · {f.meta.dep}→{f.meta.arr} · {f.meta.date}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FlightMenu slot />
           <CollapseAllButton ids={sections.map(([s]) => s)} className="btn status-all" />
           <Link href={flightId ? `/?flight=${encodeURIComponent(flightId)}` : "/"} className="btn">
             ← Back to reader
