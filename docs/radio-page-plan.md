@@ -25,6 +25,7 @@ Carried-over values are read-only and marked "from OFP", so they're never confus
 ## 4. What you fill in
 - **Per airport:** departure, destination and each alternate get ATIS · DEL · GND · TWR · APP (DEP at the departure).
 - **En route:** one centre frequency per FIR crossing, listed in the order crossed with its ETO.
+- **Added channels:** "+ Add channel" under each airport and en route, for stations ATC hands you to that the plan can't know (e.g. Oxford Approach instead of London). Each has a name and a frequency, stored as `radio.<scope>.x<n>.name` / `.freq`, and can be removed.
 - **Checks as you type:** a dot is inserted after three digits (`118` → `118.`). COMMS must be 118.000–136.990 MHz on 8.33 / 25 kHz channels, otherwise the field is flagged. A NAV frequency typed in a COMMS slot is called out.
 
 ## 5. Design (consistent with the plan page)

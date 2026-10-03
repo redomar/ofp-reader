@@ -3955,32 +3955,100 @@ hr.mcdu-rule {
 }
 .radio-rows {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
-  gap: 8px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 10px 14px;
 }
 .radio-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 10px 8px 14px;
   border: 1px solid var(--rule);
+  border-left: 3px solid var(--rule-strong);
   background: var(--field);
 }
-.radio-svc {
-  font-family: var(--font-cond);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  font-size: 13px;
+.radio-row:focus-within {
+  border-left-color: var(--blue);
+}
+.radio-id {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
-.radio-planned {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--blue);
+.radio-svc {
+  font: 700 18px/1.05 var(--font-cond);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+.radio-sub {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button.radio-sub {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 12.5px;
+}
+.radio-sub.radio-planned {
+  color: var(--blue);
+  font-weight: 600;
+}
+.radio-group {
+  margin: 18px 0 8px;
+  font: 700 13px var(--font-cond);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.radio-apt-head + .radio-group,
+.radio-group:first-child {
+  margin-top: 4px;
+}
+.radio-group .muted {
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.radio-name-in {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dashed var(--rule-strong);
+  background: transparent;
+  color: var(--ink);
+  font: 700 18px/1.05 var(--font-cond);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.radio-name-in::placeholder {
+  color: var(--ink-3);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.radio-name-in:focus {
+  outline: none;
+  border-bottom-color: var(--blue);
+}
+.radio-add {
+  min-height: 58px;
+  border: 1.5px dashed var(--rule-strong);
+  background: transparent;
+  color: var(--ink-3);
+  font: 700 14px var(--font-cond);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.radio-add:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
 }
 .radio-alts {
   display: grid;
@@ -4027,14 +4095,15 @@ hr.mcdu-rule {
   display: inline-grid;
   align-items: center;
   box-sizing: border-box;
-  width: 124px;
-  height: 36px;
+  flex: none;
+  width: 116px;
+  height: 34px;
   padding: 0 10px;
   border-radius: 4px;
   overflow: hidden;
   background: var(--rmp-bg);
   box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 4px var(--rmp-rim), inset 0 2px 6px var(--rmp-inset);
-  font: 600 18px/1 var(--font-mono);
+  font: 600 17px/1 var(--font-mono);
   letter-spacing: 0.04em;
 }
 .rmp > * {
@@ -4111,7 +4180,7 @@ main[data-skin="dots"] .rmp {
 main[data-skin="scan"] .rmp {
   background: radial-gradient(ellipse, #0b1f1c, #030a09);
   border-radius: 8px;
-  font: 400 26px/1 var(--f-pixel), var(--font-mono);
+  font: 400 24px/1 var(--f-pixel), var(--font-mono);
   letter-spacing: 0.06em;
 }
 main[data-skin="scan"] .rmp::after {

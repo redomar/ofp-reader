@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
@@ -22,8 +22,8 @@ const SKINS = [
 ] as const;
 type Skin = (typeof SKINS)[number][0];
 const APT_SERVICES: [string, string][] = [
-  ["ATIS", "Automatic terminal information"],
-  ["DEL", "Clearance delivery"],
+  ["ATIS", "Information"],
+  ["DEL", "Delivery"],
   ["GND", "Ground"],
   ["TWR", "Tower"],
   ["APP", "Approach"],
@@ -82,6 +82,7 @@ export function RadioApp() {
   const [ofp, setOfp] = useState<OFP | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [skin, setSkin] = useState<Skin>("scan");
+  const [pending, setPending] = useState<Record<string, number[]>>({});
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -149,6 +150,60 @@ export function RadioApp() {
 
   const outageNote = (f: string) => outages.get(Number(f).toFixed(2));
 
+  /** Channels you add yourself (e.g. Oxford Approach), stored as radio.<scope>.x<n>.name / .freq. */
+  const added = (scope: string) => {
+    const re = new RegExp(`^radio\\.${scope}\\.x(\\d+)\\.(name|freq)$`);
+    const saved = Object.keys(rec?.fields ?? {}).flatMap((k) => (re.exec(k) ? [Number(re.exec(k)![1])] : []));
+    return [...new Set([...saved, ...(pending[scope] ?? [])])].sort((x, y) => x - y);
+  };
+  const addChannel = (scope: string) => {
+    const next = Math.max(0, ...added(scope)) + 1;
+    setPending((p) => ({ ...p, [scope]: [...(p[scope] ?? []), next] }));
+  };
+  const removeChannel = (scope: string, n: number) => {
+    put(`radio.${scope}.x${n}.name`, "", "");
+    put(`radio.${scope}.x${n}.freq`, "", "");
+    setPending((p) => ({ ...p, [scope]: (p[scope] ?? []).filter((x) => x !== n) }));
+  };
+
+  const channel = (key: string, code: string, sub: ReactNode, label: string, editable = true) => {
+    const v = get(key);
+    return (
+      <label key={key} className="radio-row">
+        <span className="radio-id">
+          <span className="radio-svc">{code}</span>
+          <span className="radio-sub">{sub}</span>
+        </span>
+        <Window value={v} label={label} onChange={editable ? (nv) => put(key, label, nv) : undefined} warn={comCheck(v)} />
+      </label>
+    );
+  };
+
+  const addedRows = (scope: string, where: string) => (
+    <>
+      {added(scope).map((n) => {
+        const nameKey = `radio.${scope}.x${n}.name`;
+        const freqKey = `radio.${scope}.x${n}.freq`;
+        const nm = get(nameKey);
+        const v = get(freqKey);
+        return (
+          <div key={n} className="radio-row added">
+            <span className="radio-id">
+              <input className="radio-name-in" value={nm} placeholder="Station name" aria-label={`${where} added channel name`} onChange={(e) => put(nameKey, `${where} added channel ${n} name`, e.target.value.toUpperCase())} spellCheck={false} />
+              <button type="button" className="radio-sub linkish" onClick={() => removeChannel(scope, n)}>
+                Remove
+              </button>
+            </span>
+            <Window value={v} label={nm || `${where} added channel`} onChange={(nv) => put(freqKey, `${where} ${nm || `added channel ${n}`}`, nv)} warn={comCheck(v)} />
+          </div>
+        );
+      })}
+      <button type="button" className="radio-add" onClick={() => addChannel(scope)} disabled={!flightId}>
+        + Add channel
+      </button>
+    </>
+  );
+
   const airport = (icao: string | null | undefined, role: string, ilsList: { rwy: string; ils: string | null }[], plannedRwy?: string) => (
     <div className="radio-apt">
       <header className="radio-apt-head">
@@ -158,29 +213,32 @@ export function RadioApp() {
           <span className="small muted">{icao ? name(icao) : ""}</span>
         </span>
       </header>
+      <h3 className="radio-group">COMMS</h3>
       <div className="radio-rows">
         {APT_SERVICES.map(([svc, title]) => {
-          const key = `radio.${icao}.${svc}`;
-          const label = `${icao} ${svc}`;
-          const v = get(key);
-          const s = svc === "APP" && role === "Departure" ? "DEP" : svc;
-          return (
-            <label key={svc} className="radio-row" title={title}>
-              <span className="radio-svc">{s}</span>
-              <Window value={v} label={label} onChange={icao ? (nv) => put(key, label, nv) : undefined} warn={comCheck(v)} />
-            </label>
-          );
+          const dep = svc === "APP" && role === "Departure";
+          return channel(`radio.${icao}.${svc}`, dep ? "DEP" : svc, dep ? "Departure" : title, `${icao} ${dep ? "DEP" : svc}`, !!icao);
         })}
-        {ilsList.map((r) => (
-          <div key={r.rwy} className="radio-row">
-            <span className="radio-svc">
-              ILS {r.rwy}
-              {r.rwy === plannedRwy && <span className="radio-planned">planned</span>}
-            </span>
-            <Window value={r.ils!} label={`ILS ${r.rwy}`} from warn={outageNote(r.ils!) ? `NOTAM: ${outageNote(r.ils!)}` : null} />
-          </div>
-        ))}
+        {icao && addedRows(icao, icao)}
       </div>
+      {ilsList.length > 0 && (
+        <>
+          <h3 className="radio-group">
+            ILS <span className="muted">· from the OFP</span>
+          </h3>
+          <div className="radio-rows">
+            {ilsList.map((r) => (
+              <div key={r.rwy} className="radio-row">
+                <span className="radio-id">
+                  <span className="radio-svc">ILS {r.rwy}</span>
+                  <span className={`radio-sub${r.rwy === plannedRwy ? " radio-planned" : ""}`}>{r.rwy === plannedRwy ? "Planned runway" : "Runway"}</span>
+                </span>
+                <Window value={r.ils!} label={`ILS ${r.rwy}`} from warn={outageNote(r.ils!) ? `NOTAM: ${outageNote(r.ils!)}` : null} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -237,24 +295,17 @@ export function RadioApp() {
           </Section>
           <Section id="enroute" no={2} title="En route" meta={<span>{firs.length} FIR / UIR</span>}>
             <Replay>
+            <h3 className="radio-group">
+              Centres <span className="muted">· FIR / UIR crossings from the OFP</span>
+            </h3>
             <div className="radio-rows">
-              {firs.length ? (
-                firs.map((f, i) => {
-                  const key = `radio.fir.${f.name}`;
-                  const v = get(key);
-                  return (
-                    <label key={i} className="radio-row">
-                      <span className="radio-svc wide">
-                        {f.name} <span className="small muted mono">{f.eto}</span>
-                      </span>
-                      <Window value={v} label={`${f.name} centre`} onChange={(nv) => put(key, `${f.name} centre`, nv)} warn={comCheck(v)} />
-                    </label>
-                  );
-                })
-              ) : (
-                <V v={null} w={30} />
-              )}
+              {firs.map((f) => channel(`radio.fir.${f.name}`, f.name, <>Centre{f.eto && ` · ${f.eto}`}</>, `${f.name} centre`))}
+              {!firs.length && <V v={null} w={30} />}
             </div>
+            <h3 className="radio-group">
+              Other stations <span className="muted">· information, approach units, and so on</span>
+            </h3>
+            <div className="radio-rows">{addedRows("enroute", "En route")}</div>
             </Replay>
           </Section>
           <Section id="dest" no={3} title="Destination" meta={<span>COMMS · ILS</span>}>
