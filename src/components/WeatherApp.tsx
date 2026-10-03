@@ -7,6 +7,7 @@ import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
 import { Section } from "./ui";
 import { ObsCard, TafCard } from "./WxCards";
+import { LiveWx } from "./LiveWx";
 import { getServerVersion, getVersion, listFlights, subscribe } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
 import { parseAll, type Report } from "@/lib/wx/reports";
@@ -180,6 +181,13 @@ export function WeatherApp() {
               rows={8}
               aria-label="METAR, TAF and ATIS text"
               placeholder={"METAR EGLL 021250Z 24012KT 9999 FEW040 15/09 Q1013\nTAF EGLL 021100Z 0212/0318 24012KT 9999 SCT030 TEMPO 0212/0218 4000 SHRA\nEGLL ARR ATIS F 1250Z EXP ILS APCH RWY 27L …"}
+            />
+            <LiveWx
+              suggested={[...new Set(reports.map((r) => r.icao).filter((x): x is string => !!x))]}
+              onText={(t, from) => {
+                setText(t);
+                setLoadedFrom(from);
+              }}
             />
             <div className="row" style={{ marginTop: 8 }}>
               <button type="button" className="btn" onClick={() => setText(buildExample())}>

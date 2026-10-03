@@ -2,6 +2,12 @@
 
 All notable changes to OFP Reader. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Live weather from SimBrief** on the weather page: paste your own sign-in token from dispatch.simbrief.com (it lasts about an hour) and a list of airports, and Fetch loads each airport's current METAR, TAF and ATIS as cards. Only the token header is sent, and only to api.simbrief.com; results are cached for one minute; the token stays in the tab unless you tick Remember (with its time left shown, and a Forget button). The airports default to the ones already on the page.
+
 ## [1.7.0] - 2026-10-02
 
 ### Added

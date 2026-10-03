@@ -3898,3 +3898,43 @@ hr.mcdu-rule {
 .fs-reveal {
   animation: fs-reveal 1.6s cubic-bezier(0.3, 0, 0.2, 1) both;
 }
+
+/* Weather page: live data from SimBrief */
+.live-wx {
+  margin-top: 10px;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--rule);
+  background: var(--field);
+}
+.live-wx summary {
+  cursor: pointer;
+  font-family: var(--font-cond);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+.live-wx-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.live-wx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.live-wx-field .field-label {
+  margin: 0;
+}
+.live-wx-field input {
+  font: 13px var(--font-mono);
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  padding: 6px 8px;
+}
