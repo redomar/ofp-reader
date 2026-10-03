@@ -499,6 +499,9 @@ export function OfpApp() {
               <Link href="/weather" className="toc-link">
                 Weather cards →
               </Link>
+              <Link href={`/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}`} className="toc-link">
+                Radio frequencies →
+              </Link>
               <Link href="/settings" className="toc-link">
                 Settings & saved flights →
               </Link>

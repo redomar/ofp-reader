@@ -3938,3 +3938,94 @@ hr.mcdu-rule {
   border-radius: 2px;
   padding: 6px 8px;
 }
+
+/* ---------- Radio page: radio-panel frequency windows ---------- */
+.radio-apt-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.radio-apt-head .flap {
+  font: 700 30px/1 var(--font-mono);
+}
+.radio-apt-name {
+  display: flex;
+  flex-direction: column;
+}
+.radio-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 8px 16px;
+}
+.radio-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  background: var(--field);
+}
+.radio-svc {
+  font-family: var(--font-cond);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+}
+.radio-planned {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--blue);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.radio-alts {
+  display: grid;
+  gap: 18px;
+}
+.rmp {
+  position: relative;
+  display: inline-grid;
+  width: 9.2ch;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: #11161d;
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 6px rgba(0, 0, 0, 0.6);
+  font: 600 17px/1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+}
+.rmp > * {
+  grid-area: 1 / 1;
+}
+.rmp.has .rmp-unlit {
+  visibility: hidden;
+}
+.rmp-unlit {
+  color: rgba(255, 176, 0, 0.1);
+  pointer-events: none;
+}
+.rmp input,
+.rmp-val {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffb000;
+  font: inherit;
+  letter-spacing: inherit;
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.45);
+  outline: none;
+}
+.rmp:focus-within {
+  box-shadow: inset 0 0 0 1px #000, 0 0 0 2px var(--blue);
+}
+.rmp.from .rmp-val {
+  color: #7fd9a0;
+  text-shadow: 0 0 6px rgba(127, 217, 160, 0.4);
+}
+.rmp.warn {
+  box-shadow: inset 0 0 0 1px #000, 0 0 0 2px var(--amber);
+}
