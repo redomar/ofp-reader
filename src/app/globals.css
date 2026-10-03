@@ -3989,7 +3989,8 @@ hr.mcdu-rule {
 /* day: a reflective LCD (olive glass, dark segments); night: dark glass, amber digits */
 :root {
   --rmp-bg: #b4b48a;
-  --rmp-edge: #6f6e4c;
+  --rmp-edge: #1c1d16;
+  --rmp-rim: #5b5a44;
   --rmp-inset: rgba(60, 58, 30, 0.35);
   --rmp-unlit: rgba(38, 40, 20, 0.16);
   --rmp-lit: #22261a;
@@ -4001,6 +4002,7 @@ hr.mcdu-rule {
   :root:not([data-theme="light"]) {
     --rmp-bg: #11161d;
     --rmp-edge: #000;
+    --rmp-rim: #445;
     --rmp-inset: rgba(0, 0, 0, 0.6);
     --rmp-unlit: rgba(255, 176, 0, 0.1);
     --rmp-lit: #ffb000;
@@ -4012,6 +4014,7 @@ hr.mcdu-rule {
 :root[data-theme="dark"] {
   --rmp-bg: #11161d;
   --rmp-edge: #000;
+  --rmp-rim: #445;
   --rmp-inset: rgba(0, 0, 0, 0.6);
   --rmp-unlit: rgba(255, 176, 0, 0.1);
   --rmp-lit: #ffb000;
@@ -4022,12 +4025,16 @@ hr.mcdu-rule {
 .rmp {
   position: relative;
   display: inline-grid;
-  width: 9.2ch;
-  padding: 3px 8px;
-  border-radius: 3px;
+  align-items: center;
+  box-sizing: border-box;
+  width: 124px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 4px;
+  overflow: hidden;
   background: var(--rmp-bg);
-  box-shadow: inset 0 0 0 1px var(--rmp-edge), inset 0 2px 6px var(--rmp-inset);
-  font: 600 17px/1.2 var(--font-mono);
+  box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 4px var(--rmp-rim), inset 0 2px 6px var(--rmp-inset);
+  font: 600 18px/1 var(--font-mono);
   letter-spacing: 0.04em;
 }
 .rmp > * {
@@ -4074,14 +4081,14 @@ hr.mcdu-rule {
   outline: none;
 }
 .rmp:focus-within {
-  box-shadow: inset 0 0 0 1px var(--rmp-edge), 0 0 0 2px var(--blue);
+  box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 5px var(--blue), inset 0 2px 6px var(--rmp-inset);
 }
 .rmp.from .rmp-val {
   color: var(--rmp-from);
   text-shadow: var(--rmp-from-glow);
 }
 .rmp.warn {
-  box-shadow: inset 0 0 0 1px var(--rmp-edge), 0 0 0 2px var(--amber);
+  box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 5px var(--amber), inset 0 2px 6px var(--rmp-inset);
 }
 
 /* VFD skins (Scanlines / Dots): same in both themes. Typed values glow green, OFP values cyan. */
@@ -4104,15 +4111,15 @@ main[data-skin="dots"] .rmp {
 main[data-skin="scan"] .rmp {
   background: radial-gradient(ellipse, #0b1f1c, #030a09);
   border-radius: 8px;
-  width: 9.2ch;
-  padding: 4px 10px;
-  font: 400 24px/1 var(--f-pixel), var(--font-mono);
+  font: 400 26px/1 var(--f-pixel), var(--font-mono);
+  letter-spacing: 0.06em;
 }
 main[data-skin="scan"] .rmp::after {
   background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.38) 0 0.5px, transparent 0.5px 1.25px);
 }
 /* a slow bright band rolling down the glass */
-main[data-skin="scan"] .rmp::before {
+main[data-skin="scan"] .rmp::before,
+main[data-skin="dots"] .rmp::before {
   background: linear-gradient(180deg, transparent, rgba(150, 255, 230, 0.09), transparent) 0 0 / 100% 40% no-repeat;
   animation: rmp-roll 6s linear infinite;
 }
