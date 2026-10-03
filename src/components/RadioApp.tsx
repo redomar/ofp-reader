@@ -299,7 +299,17 @@ export function RadioApp() {
     const t = hhmmToMin(ttlt);
     return offMin == null || t == null ? "" : clock(offMin + t);
   };
-  const firs = (ofp?.log ?? []).filter((p) => p.kind === "fir").map((p) => ({ name: p.firName ?? p.position ?? "FIR", eto: eto(p.ttlt) }));
+  // One row per FIR / UIR (a route can leave one and come back in); every entry time is listed.
+  const firs = [
+    ...(ofp?.log ?? [])
+      .filter((p) => p.kind === "fir")
+      .reduce((m, p) => {
+        const name = p.firName ?? p.position ?? "FIR";
+        const t = eto(p.ttlt);
+        m.set(name, [...(m.get(name) ?? []), ...(t ? [t] : [])]);
+        return m;
+      }, new Map<string, string[]>()),
+  ].map(([name, etos]) => ({ name, eto: etos.join(", ") }));
   const navs = (ofp?.log ?? []).filter((p) => p.freq).map((p) => ({ id: p.ident ?? "", name: p.position ?? "", freq: p.freq!, eto: eto(p.ttlt) }));
   const alts = (ofp?.alternates ?? []).map((a) => a.apt.split("/")[0]);
 
