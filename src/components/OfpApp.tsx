@@ -505,6 +505,12 @@ export function OfpApp() {
               <Link href="/settings" className="toc-link">
                 Settings & saved flights →
               </Link>
+              <div className="toc-exp" role="separator" aria-label="Experimental">
+                <span>Experimental</span>
+              </div>
+              <Link href="/wind-lab" className="toc-link">
+                Wind lab →
+              </Link>
             </>
           }
         />

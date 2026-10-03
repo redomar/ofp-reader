@@ -1,11 +1,15 @@
 "use client";
 
 /*
- * WIND LAB — demonstration page (/wind-lab) for tuning the wind-arrow sway before
- * it goes into the app. Not linked from the reader.
+ * WIND LAB — experimental page (/wind-lab) for tuning the wind-arrow sway. Linked from
+ * the reader's Contents under "Experimental".
  */
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Brand, ThemeToggle, Toc } from "@/components/chrome";
+import { CollapseAllButton, CollapseProvider } from "@/components/collapse";
+import { Section } from "@/components/ui";
 import { createSway, loop, makeEase, subscribe, type ChaosCfg, type ChaosModel, type SwayInput } from "@/lib/wind/engine";
 import { CATS, EASES, PROPOSAL, bpmFor, compute, type Cat, type Cfg, type Kind, type Mapping, type Sample } from "@/lib/wind/model";
 
@@ -265,11 +269,16 @@ function Card({ s, i, cfg, phase }: { s: Sample; i: number; cfg: Cfg; phase: num
 
 const kindLabel: Record<Kind, string> = { METAR: "METAR wind chip", PWIND: "TLR PWIND", AVG: "AVG WIND (cruise)", CUSTOM: "Custom" };
 
+const WL_SECTIONS = [
+  ["controls", "Controls"],
+  ["filters", "Filters & custom card"],
+  ["arrows", "Arrows"],
+] as const;
+
 export default function WindLab() {
   const [cfg, setCfg] = useState<Cfg>(PROPOSAL);
   const [filter, setFilter] = useState<Kind | "ALL">("ALL");
   const [catFilter, setCatFilter] = useState<Cat | "ALL">("ALL");
-  const [panelOpen, setPanelOpen] = useState(true);
   const [custom, setCustom] = useState({ dir: 240, spd: 22, gust: 34, s0: "", s1: "" });
   const set = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
   const setChaos = <K extends keyof ChaosCfg>(k: K, v: ChaosCfg[K]) => setCfg((c) => ({ ...c, chaos: { ...c.chaos, [k]: v } }));
@@ -319,32 +328,39 @@ export default function WindLab() {
   const curve = Array.from({ length: 61 }, (_, kt) => [kt, bpmFor(kt, cfg)] as const);
 
   return (
-    <div className="wl">
+    <CollapseProvider>
       <style>{CSS}</style>
-      <header className="wl-head">
-        <h1>Wind Lab</h1>
-        <div className="wl-row">
-          <button aria-expanded={panelOpen} aria-controls="wl-panel" onClick={() => setPanelOpen(!panelOpen)}>
-            {panelOpen ? "▴ Hide controls" : "▾ Show controls"}
+      <a href="#main" className="skip">
+        Skip to the arrows
+      </a>
+      <header className="topbar">
+        <div className="topbar-inner">
+          <Brand sub="· Wind lab" />
+          <span className="wl-exp">Experimental</span>
+          <span style={{ flex: 1 }} />
+          <button type="button" className="btn" onClick={() => set("paused", !cfg.paused)}>
+            {cfg.paused ? "▶ Play" : "❚❚ Pause"}
           </button>
-          <button onClick={() => set("paused", !cfg.paused)}>{cfg.paused ? "▶ Play" : "❚❚ Pause"}</button>
-          <button onClick={() => setCfg(PROPOSAL)}>Reset to proposal</button>
-          <button
-            onClick={() => {
-              const d = document.documentElement;
-              d.dataset.theme = d.dataset.theme === "dark" ? "light" : "dark";
-            }}
-          >
-            Day / night
+          <button type="button" className="btn" onClick={() => setCfg(PROPOSAL)}>
+            Reset to proposal
           </button>
+          <CollapseAllButton ids={WL_SECTIONS.map(([id]) => id)} className="btn status-all" />
+          <Link href="/" className="btn">
+            ← Back to plan
+          </Link>
+          <ThemeToggle />
+        </div>
+        <div className="status" role="status">
+          <span>
+            Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One beat = {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}.
+          </span>
         </div>
       </header>
-      <p className="wl-intro">
-        Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One <b>beat</b> ={" "}
-        {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}. Only the bar above stays on screen while you scroll.
-      </p>
-
-      <section className="wl-panel" id="wl-panel" hidden={!panelOpen}>
+      <div className="layout wl">
+        <Toc sections={WL_SECTIONS} footer={<Link href="/" className="toc-link">← Back to plan</Link>} />
+        <main id="main" className="is-filled">
+      <Section id="controls" no={1} title="Controls" meta={<span>rhythm · gusts · chaos · motion</span>}>
+      <div className="wl-panel" id="wl-panel">
         <div className="wl-group">
           <h2>Presets</h2>
           <div className="wl-row">
@@ -512,7 +528,10 @@ export default function WindLab() {
           {chk("catColour", "Colour by wind category")}
           {chk("reduced", "Simulate reduced motion")}
         </div>
-      </section>
+      </div>
+      </Section>
+
+      <Section id="filters" no={2} title="Filters & custom card" meta={<span>{list.length} shown</span>}>
 
       <div className="wl-row wl-filter">
         {(["ALL", "METAR", "PWIND", "AVG"] as const).map((k) => (
@@ -555,34 +574,37 @@ export default function WindLab() {
         </label>
       </div>
 
-      <main className="wl-grid">
+      </Section>
+
+      <Section id="arrows" no={3} title="Arrows" meta={<span>METAR · PWIND · AVG WIND</span>}>
+      <div className="wl-grid">
         {list.map((s, i) => (
           <Card key={s.kind + s.raw + i} s={s} i={i} cfg={cfg} phase={phases[i % phases.length]} />
         ))}
-      </main>
-    </div>
+      </div>
+      </Section>
+        </main>
+      </div>
+    </CollapseProvider>
   );
 }
 
 const CSS = `
 @keyframes wl-sway { from { transform: rotate(calc(-1 * var(--amp))); } to { transform: rotate(var(--amp)); } }
-.wl { max-width: 1440px; margin: 0 auto; padding: 20px; font-family: var(--font-sans); color: var(--ink); }
-.wl h1 { margin: 0; font-family: var(--font-cond); letter-spacing: .1em; text-transform: uppercase; font-size: 28px; }
 .wl h2 { margin: 0 0 8px; font-family: var(--font-cond); letter-spacing: .1em; text-transform: uppercase; font-size: 14px; color: var(--ink-2); }
 .wl p { margin: 4px 0 0; color: var(--ink-2); }
-.wl button { border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink); padding: 5px 10px; font-family: var(--font-cond); font-weight: 600; letter-spacing: .04em; cursor: pointer; border-radius: 2px; }
-.wl button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); }
-.wl-head { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0 -20px 10px; padding: 8px 20px; background: var(--paper); border-bottom: 1px solid var(--rule-strong); box-shadow: var(--shadow); }
-.wl-head h1 { font-size: 20px !important; }
+/* buttons inside the lab read as the site's filter pills */
+.wl .sheet-body button { border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink); padding: 3px 10px; font-family: var(--font-cond); font-weight: 600; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; border-radius: 999px; }
+.wl .sheet-body button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.wl-exp { font: 700 11px var(--font-cond); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); padding: 2px 8px; border: 1px solid var(--rule-strong); background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--rule-strong) 22%, transparent) 4px 6px); }
 .wl-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.wl-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; background: var(--sheet); border: 1px solid var(--rule-strong); padding: 12px; }
-.wl-panel[hidden] { display: none; }
-.wl-intro { margin: 0 0 12px !important; }
+.wl-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .wl-group { border-left: 2px solid var(--rule); padding-left: 10px; }
 .wl-ctl { display: flex; flex-direction: column; gap: 2px; font-size: 13px; margin-bottom: 8px; }
 .wl-ctl span { display: flex; justify-content: space-between; color: var(--ink-2); }
 .wl-ctl b { font-family: var(--font-mono); color: var(--magenta); }
 .wl-ctl input, .wl-ctl select { width: 100%; }
+.wl input[type=range], .wl input[type=checkbox] { accent-color: var(--magenta); }
 .wl-ctl input:not([type=range]), .wl-ctl select, .wl-anchors input, .wl-custom input { background: var(--field); color: var(--ink); border: 1px solid var(--rule-strong); padding: 3px 6px; font-family: var(--font-mono); font-size: 12px; }
 .wl-chk { display: block; font-size: 13px; margin: 4px 0; }
 .wl-anchors { border-collapse: collapse; margin-bottom: 6px; }
@@ -591,9 +613,9 @@ const CSS = `
 .wl-curve { width: 100%; max-width: 260px; display: block; }
 .wl-curve text { font-size: 8px; fill: var(--ink-3); font-family: var(--font-mono); }
 .wl-mini { font-size: 11px; color: var(--ink-3); }
-.wl-filter { margin: 14px 0; }
+.wl-filter { margin: 0 0 12px; }
 .wl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-.wl-card { background: var(--sheet); border: 1px solid var(--rule-strong); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.wl-card { background: var(--field); border: 1px solid var(--rule); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
 .wl-card header { display: flex; justify-content: space-between; align-items: center; }
 .wl-kind { font-family: var(--font-cond); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; color: var(--ink-3); }
 .wl-kind[data-k=CUSTOM] { color: var(--magenta); }
