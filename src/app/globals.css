@@ -4725,13 +4725,9 @@ main[data-skin="dots"] .rmp .rmp-val {
 }
 
 /* ---------- Settings: unlock to delete single saved entries ---------- */
-.entries-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
+/* sits at the right end of the flight's action row */
 .lock-toggle {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;

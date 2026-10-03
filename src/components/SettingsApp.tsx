@@ -418,18 +418,16 @@ export function SettingsApp() {
                 >
                   Delete flight
                 </button>
+                {groups.length > 0 && (
+                  <button type="button" className={cx("btn", "lock-toggle", unlocked && "btn-danger is-open")} aria-pressed={unlocked} onClick={() => setUnlocked(!unlocked)} title={unlocked ? "Lock: hide the delete buttons" : "Unlock to delete single saved entries"}>
+                    <LockIcon open={unlocked} />
+                    {unlocked ? "Lock" : "Unlock to delete"}
+                  </button>
+                )}
               </div>
             )}
 
-            <div className="entries-head">
-              <Sub>Saved entries</Sub>
-              {sel && groups.length > 0 && (
-                <button type="button" className={cx("btn", "lock-toggle", unlocked && "btn-danger is-open")} aria-pressed={unlocked} onClick={() => setUnlocked(!unlocked)} title={unlocked ? "Lock: hide the delete buttons" : "Unlock to delete single entries"}>
-                  <LockIcon open={unlocked} />
-                  {unlocked ? "Lock" : "Unlock to delete"}
-                </button>
-              )}
-            </div>
+            <Sub>Saved entries</Sub>
             {!sel ? (
               <V v={null} w={40} />
             ) : groups.length === 0 ? (
