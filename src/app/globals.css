@@ -5107,3 +5107,12 @@ main[data-skin="dots"] .rmp .rmp-val {
 .flight-menu:hover {
   border-color: var(--ink-2);
 }
+
+/* the reader while a plan opens: a solid card with progress instead of the blank form */
+.hello.opening {
+  border-style: solid;
+}
+.hello.opening .status-bar {
+  max-width: 360px;
+  margin-top: 10px;
+}

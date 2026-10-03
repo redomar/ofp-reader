@@ -176,6 +176,8 @@ export function OfpApp() {
   const fileRef = useRef<HTMLInputElement>(null);
   const loadId = useRef(0);
   const restorePending = useRef(false);
+  /** False until the page has decided whether it's opening a plan, so the blank form never flashes first. */
+  const [booted, setBooted] = useState(false);
   /** The flight this reader has open or is opening, so its own switches don't echo back as a new load. */
   const mine = useRef<string | null>(null);
 
@@ -318,10 +320,16 @@ export function OfpApp() {
       queueMicrotask(() => loadSaved(active));
     } else requestAnimationFrame(restoreScroll); // blank page: nothing to wait for
     restorePending.current = Boolean(u || fid || active);
+    // Opening something: show the loading card straight away rather than the blank form.
+    const label = u ? (u.split("/").pop() ?? u) : (readFlight(fid ?? active ?? "")?.meta.source ?? "plan");
+    queueMicrotask(() => {
+      if (u || fid || active) setStatus((s) => (s.kind === "idle" ? { kind: "busy", progress: { stage: "cache" }, label } : s));
+      setBooted(true);
+    });
   }, [loadUrl, loadSaved]);
 
   // Follow the active flight when it's switched elsewhere: the flight menu, another page or tab.
-  const { id: activeId, ready: activeReady } = useActiveFlight();
+  const { id: activeId, record: activeRecord, ready: activeReady } = useActiveFlight();
   const seenActive = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (!activeReady) return;
@@ -518,7 +526,28 @@ export function OfpApp() {
           links={{ radio: `/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}` }}
         />
         <main id="main" className={ofp ? "is-filled" : ""} key={ofp?.source ?? "empty"} aria-busy={busy}>
-          {!ofp && (
+          {!ofp && busy && (
+            <div className="hello opening" role="status">
+              <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+                <rect x="8" y="4" width="40" height="48" fill="none" stroke="currentColor" strokeWidth="2" />
+                <path d="M16 16h24M16 24h24M16 32h14" stroke="currentColor" strokeWidth="2" />
+              </svg>
+              <div>
+                <h1>
+                  Opening{" "}
+                  {activeRecord?.meta.flightNo && activeRecord.meta.source === status.label
+                    ? `${activeRecord.meta.flightNo} · ${activeRecord.meta.dep ?? ""}→${activeRecord.meta.arr ?? ""}`
+                    : status.label}
+                  …
+                </h1>
+                <p>{progressText(status.progress)}</p>
+                <div className="status-bar" aria-hidden="true">
+                  <span style={{ width: `${progressPct(status.progress)}%` }} />
+                </div>
+              </div>
+            </div>
+          )}
+          {!ofp && booted && !busy && (
             <div className="hello">
               <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
                 <rect x="8" y="4" width="40" height="48" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -533,6 +562,8 @@ export function OfpApp() {
               </div>
             </div>
           )}
+          {(ofp || (booted && !busy)) && (
+            <>
           <SummarySection no={1} />
           <FuelSection no={2} />
           <RouteSection no={3} />
@@ -547,6 +578,8 @@ export function OfpApp() {
           <NotamSection no={12} id="company" title="Company NOTAM" which="companyNotams" />
           <ChartsSection no={13} />
           <SourceSection no={14} />
+            </>
+          )}
         </main>
       </div>
       {dragging && (
