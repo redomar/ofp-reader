@@ -21,7 +21,7 @@ import {
 } from "@/lib/storage";
 import { getPdf, putPdf } from "@/lib/pdfCache";
 import { getActiveId, setActive, useActiveFlight } from "@/lib/active";
-import { FlightMenu } from "./FlightMenu";
+import { PlanChips } from "./FlightMenu";
 import { TooltipLayer } from "./TooltipLayer";
 import { SummarySection } from "./sections/Summary";
 import { FuelSection } from "./sections/Fuel";
@@ -106,13 +106,6 @@ type Status =
 type Origin = "network" | "saved" | "upload";
 type Source = { data: ArrayBuffer; origin: Origin };
 
-function BlankChip({ onClick }: { onClick: () => void }) {
-  return (
-    <button type="button" className="chip-btn chip-blank" onClick={onClick} aria-label="Close this plan and go back to the blank form">
-      <span aria-hidden="true">←</span> Blank plan
-    </button>
-  );
-}
 
 /*
  * Scroll restoration is manual: Chrome restores by re-pinning the element that was at
@@ -472,7 +465,7 @@ export function OfpApp() {
             <div className="examples">
               {recent.length > 0 && (
                 <>
-                  <FlightMenu onNew={() => document.getElementById("ofp-url")?.focus()} />
+                  <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
                   <span className="examples-sep" aria-hidden="true" />
                 </>
               )}
@@ -489,14 +482,13 @@ export function OfpApp() {
           )}
           {status.kind === "error" && (
             <div className="examples">
-              <BlankChip onClick={reset} />
+              <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
               <span className="status-err">⚠ {status.message}</span>
             </div>
           )}
           {status.kind === "ready" && ofp && (
             <div className="examples">
-              <BlankChip onClick={reset} />
-              <FlightMenu onNew={() => document.getElementById("ofp-url")?.focus()} />
+              <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
               <span className="examples-sep" aria-hidden="true" />
               <span>
                 <span className="mono">{status.label}</span> · {ofp.pageCount} pages

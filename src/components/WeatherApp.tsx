@@ -11,7 +11,7 @@ import { LiveWx } from "./LiveWx";
 import { getServerVersion, getVersion, listFlights, subscribe } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
 import { adoptFlightParam, mirrorFlightParam, useActiveFlight } from "@/lib/active";
-import { FlightMenu } from "./FlightMenu";
+import { PlanChips } from "./FlightMenu";
 import { parseAll, type Report } from "@/lib/wx/reports";
 
 const INPUT_KEY = "ofp-reader:wx-input";
@@ -171,15 +171,17 @@ export function WeatherApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Brand sub="· Weather" />
-          <FlightMenu slot />
+          <span style={{ flex: 1 }} />
           <CollapseAllButton ids={sections.map(([id]) => id)} className="btn status-all" />
           <Link href="/" className="btn">
             ← Back to reader
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status" role="status">
-          <span>
+        <div className="status">
+          <PlanChips />
+          <span className="examples-sep" aria-hidden="true" />
+          <span role="status">
             {reports.length
               ? `${reports.length} ${reports.length === 1 ? "report" : "reports"} · ${airports.length} ${airports.length === 1 ? "airport" : "airports"}${loadedFrom ? ` · from ${loadedFrom}` : ""}`
               : "Paste METARs, TAFs or ATIS to see them as weather cards"}

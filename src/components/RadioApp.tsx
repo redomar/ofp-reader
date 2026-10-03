@@ -8,7 +8,7 @@ import { TooltipLayer } from "./TooltipLayer";
 import { Replay } from "./replay";
 import { Section, V } from "./ui";
 import { FlapCode } from "./FlapCode";
-import { FlightMenu } from "./FlightMenu";
+import { PlanChips } from "./FlightMenu";
 import { adoptFlightParam, mirrorFlightParam, useActiveFlight } from "@/lib/active";
 import { CHANNEL_TYPES, ChannelIcon, NAVAID_TYPES, type ChannelType, type IconKind, type NavaidType } from "./radioIcons";
 import { getServerVersion, getVersion, listFlights, readFlight, subscribe, writeField } from "@/lib/storage";
@@ -558,8 +558,7 @@ export function RadioApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Brand sub="· Radio" />
-          {/* same slot as the reader's "Paste a SimBrief PDF link" box */}
-          <FlightMenu slot />
+          <span style={{ flex: 1 }} />
           <CollapseAllButton ids={sections.map(([s]) => s)} className="btn status-all" />
           <Link href={flightId ? `/?flight=${encodeURIComponent(flightId)}` : "/"} className="btn">
             ← Back to reader
@@ -567,7 +566,9 @@ export function RadioApp() {
           <ThemeToggle />
         </div>
         <div className="status">
-          <span role="status">{msg ?? (h ? `${h.flightNo} · ${h.dep} → ${h.arr} · typed frequencies are saved with this flight` : flights.length ? "Pick a flight" : "No saved flights with a PDF yet: open a plan in the reader first")}</span>
+          <PlanChips />
+          <span className="examples-sep" aria-hidden="true" />
+          <span role="status">{msg ?? (h ? "Typed frequencies are saved with this flight" : flights.length ? "Pick a flight" : "No saved flights with a PDF yet: open a plan in the reader first")}</span>
           <span className="status-tools">
             <span className="radio-skins" role="group" aria-label="Display style">
               <span className="status-label" aria-hidden="true">

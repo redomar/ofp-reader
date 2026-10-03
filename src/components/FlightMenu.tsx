@@ -14,23 +14,42 @@ const label = (f: FlightRecord) => {
   return `${m.flightNo ?? "Plan"} · ${where}${m.date ? ` · ${m.date}` : ""}${m.ofpNo ? ` · OFP ${m.ofpNo}` : ""}${m.pdfSize ? "" : " · PDF needed"}`;
 };
 
+/** "← Blank plan": closes the plan, so no flight is active on any page. */
+export function BlankChip({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="chip-btn chip-blank" onClick={onClick} aria-label="Close this plan and go back to the blank form">
+      <span aria-hidden="true">←</span> Blank plan
+    </button>
+  );
+}
+
 /**
- * The shared flight menu: picking a flight makes it the active flight on every page.
- * "Open another plan…" goes to the reader's blank form to paste or upload one.
+ * How every page picks its plan, at the start of the status line: the "Blank plan" chip
+ * (while a flight is active) and the flight menu chip.
  *
- * `slot` sizes it for the top bar's middle slot (Weather, Radio, Settings); without it it's
- * the compact version in the reader's status line.
+ * `onBlank` / `onNew` let the reader also clear its view or focus its paste box; elsewhere
+ * Blank just clears the active flight and "Open another plan…" goes to the reader.
  */
-export function FlightMenu({ slot, onNew }: { slot?: boolean; onNew?: () => void }) {
+export function PlanChips({ onBlank, onNew }: { onBlank?: () => void; onNew?: () => void }) {
+  const { id } = useActiveFlight();
+  return (
+    <span className="examples plan-chips">
+      {id && <BlankChip onClick={onBlank ?? (() => setActive(null))} />}
+      <FlightMenu onNew={onNew} />
+    </span>
+  );
+}
+
+/** The flight menu chip: picking a flight makes it the active flight on every page. */
+export function FlightMenu({ onNew }: { onNew?: () => void }) {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const flights = useMemo(() => (version >= 0 ? listFlights() : []), [version]);
   const { id } = useActiveFlight();
   const router = useRouter();
 
-  const select = (
+  return (
     <select
-      id={slot ? "flight-menu" : undefined}
-      className={slot ? undefined : "flight-menu"}
+      className="flight-menu"
       value={id ?? ""}
       aria-label="Active flight"
       disabled={version < 0}
@@ -51,14 +70,5 @@ export function FlightMenu({ slot, onNew }: { slot?: boolean; onNew?: () => void
       ))}
       <option value={NEW}>＋ Open another plan…</option>
     </select>
-  );
-  if (!slot) return select;
-  return (
-    <div className="loader">
-      <label htmlFor="flight-menu" className="sr-only">
-        Active flight
-      </label>
-      {select}
-    </div>
   );
 }

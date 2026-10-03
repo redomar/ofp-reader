@@ -25,7 +25,7 @@ import {
 } from "@/lib/storage";
 import { clearPdfs, deletePdf } from "@/lib/pdfCache";
 import { adoptFlightParam, mirrorFlightParam, setActive, useActiveFlight } from "@/lib/active";
-import { FlightMenu } from "./FlightMenu";
+import { PlanChips } from "./FlightMenu";
 import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
 
 const SECTIONS = [
@@ -177,15 +177,17 @@ export function SettingsApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Brand sub="· Settings" />
-          <FlightMenu slot />
+          <span style={{ flex: 1 }} />
           <CollapseAllButton ids={SECTIONS.map(([id]) => id)} className="btn status-all" />
           <Link href="/" className="btn">
             ← Back to reader
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status" role="status">
-          <span>
+        <div className="status">
+          <PlanChips />
+          <span className="examples-sep" aria-hidden="true" />
+          <span role="status">
             {ready
               ? `${flights.length} saved ${flights.length === 1 ? "flight" : "flights"} · ${fmtBytes(bytes + pdfBytes)} used in this browser`
               : "Reading browser storage…"}

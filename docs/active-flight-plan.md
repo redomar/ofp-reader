@@ -29,11 +29,12 @@ The rail's Radio and Plan tabs pass `?flight=` along, which papers over this for
 ### The URL
 `?flight=<id>` stays as a reloadable, bookmarkable mirror of the active flight. Each page writes it with `history.replaceState` when the active flight changes, so reload keeps you where you were. A `?flight=` in a link wins on arrival and becomes active.
 
-### Shared flight menu
-One component, `<FlightMenu>`, used on every page that shows flight data. It lists saved flights newest first as `EZY2192 · LEMD→EHAM · 02OCT2026`, marks ones whose PDF isn't stored in this browser ("PDF needed"), and ends with "Open another plan…" (goes to the reader's paste/upload).
-- **Weather, Radio, Settings:** in the top bar's middle slot, where Radio's menu is now.
-- **Reader:** that slot is the SimBrief paste box, so a compact menu sits in the status line: next to "Blank plan" when a plan is open, and in place of the "Recent" chips on the blank form (it does the same job, for every saved flight rather than the last few).
-- **Wind lab:** no menu (it doesn't use flight data).
+### Picking a plan: the same on every page
+At the start of the status line (under the top bar), on the reader, Weather, Radio and Settings:
+- **← Blank plan** chip: closes the plan, so no flight is active anywhere. It only shows while a flight is active.
+- **Flight menu** chip: lists saved flights newest first as `EZY2192 · LEMD→EHAM · 02OCT2026 · OFP 2` (the OFP number tells re-releases apart). Flights whose PDF isn't stored in this browser are marked "PDF needed". It ends with "＋ Open another plan…", which goes to the reader's paste box.
+
+One component, `<PlanChips>`, draws both, so they look and behave the same everywhere. Wind lab doesn't show them, because it doesn't use flight data.
 
 ### Per page
 - **Reader:** with no link in the URL, it opens the active flight from the browser's saved PDF. If that PDF isn't stored (e.g. an imported JSON), it shows the existing "Upload <file> to continue" prompt. "Blank plan" clears the active flight.
