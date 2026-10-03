@@ -605,7 +605,7 @@ export default function WindLab() {
 
 const CSS = `
 @keyframes wl-sway { from { transform: rotate(calc(-1 * var(--amp))); } to { transform: rotate(var(--amp)); } }
-.wl h2 { margin: 0 0 8px; font-family: var(--font-cond); letter-spacing: .1em; text-transform: uppercase; font-size: 14px; color: var(--ink-2); }
+.wl-group h2 { margin: 0 0 8px; font-family: var(--font-cond); letter-spacing: .1em; text-transform: uppercase; font-size: 14px; color: var(--ink-2); }
 .wl p { margin: 4px 0 0; color: var(--ink-2); }
 /* buttons inside the lab read as the site's filter pills */
 .wl .sheet-body button { border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink); padding: 3px 10px; font-family: var(--font-cond); font-weight: 600; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; border-radius: 999px; }

@@ -489,8 +489,9 @@ main {
 .sheet-head:focus-visible {
   outline-offset: -2px;
 }
+/* keep the rule's 3px (just not its colour) so the header's contents don't move on collapse */
 .sheet.is-collapsed .sheet-head {
-  border-bottom: 0;
+  border-bottom-color: transparent;
 }
 /* hidden="until-found" keeps the box (content-visibility: hidden), so drop its padding */
 .sheet-body[hidden] {
