@@ -8,6 +8,8 @@ import { TooltipLayer } from "./TooltipLayer";
 import { Replay } from "./replay";
 import { Section, V } from "./ui";
 import { FlapCode } from "./FlapCode";
+import { PlanChips, StatusLine } from "./FlightMenu";
+import { adoptFlightParam, mirrorFlightParam, useActiveFlight } from "@/lib/active";
 import { CHANNEL_TYPES, ChannelIcon, NAVAID_TYPES, type ChannelType, type IconKind, type NavaidType } from "./radioIcons";
 import { getServerVersion, getVersion, listFlights, readFlight, subscribe, writeField } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
@@ -16,6 +18,7 @@ import { navaidKind } from "@/lib/ofp/fplRef";
 import type { OFP } from "@/lib/ofp/types";
 
 const S = "Radio";
+const READING = "Reading the saved plan…";
 const SKIN_KEY = "ofp-reader:radio-skin";
 const SKINS = [
   ["scan", "Scanlines", "VFD glass with fine scanlines and a pixel font"],
@@ -234,7 +237,7 @@ function TypePicker<T extends IconKind>({ value, onPick, where, options = CHANNE
 export function RadioApp() {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const flights = useMemo(() => (version >= 0 ? listFlights().filter((f) => f.meta.pdfSize) : []), [version]);
-  const [id, setId] = useState<string | null>(null);
+  const { id: flightId, ready: activeReady } = useActiveFlight();
   const [ofp, setOfp] = useState<OFP | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [skin, setSkin] = useState<Skin>("scan");
@@ -242,7 +245,7 @@ export function RadioApp() {
 
   useEffect(() => {
     queueMicrotask(() => {
-      setId(new URLSearchParams(window.location.search).get("flight"));
+      adoptFlightParam();
       try {
         const k = window.localStorage.getItem(SKIN_KEY);
         if (SKINS.some(([v]) => v === k)) setSkin(k as Skin);
@@ -251,14 +254,17 @@ export function RadioApp() {
       }
     });
   }, []);
-  const flightId = id ?? flights[0]?.meta.id ?? null;
+  useEffect(() => {
+    if (flightId) mirrorFlightParam(flightId);
+  }, [flightId]);
   const rec = useMemo(() => (version >= 0 && flightId ? readFlight(flightId) : null), [version, flightId]);
 
   useEffect(() => {
     if (!flightId) return;
     let live = true;
     (async () => {
-      setMsg("Reading the saved plan…");
+      setOfp(null); // don't show the previous flight's data under the new one's entries
+      setMsg(READING);
       const data = await getPdf(flightId);
       if (!data) return live && setMsg("This flight has no saved PDF: open it in the reader first.");
       const { readOfp } = await import("@/lib/ofp/pdf");
@@ -288,6 +294,8 @@ export function RadioApp() {
   const put = useCallback((key: string, label: string, v: string) => flightId && writeField(flightId, key, v ? { section: S, label, value: v } : null), [flightId]);
 
   const h = ofp?.header;
+  // the sections appear once the plan is read (or there's no plan / it can't be read), all at once
+  const loading = !activeReady || (!!flightId && !ofp && (msg === null || msg === READING));
   const name = (icao: string) => ofp?.wx.airports.find((a) => a.icao === icao)?.name ?? "";
   const ils = (kind: "takeoff" | "landing") =>
     (ofp?.tlr[kind].tables.find((t) => /ACARS/.test(t.title))?.rows ?? []).map((r) => ({ rwy: r[0], ils: r[3]?.match(/ILS\s+(\d{3}\.\d+)/)?.[1] ?? null })).filter((r) => r.ils);
@@ -553,28 +561,17 @@ export function RadioApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Brand sub="· Radio" />
-          {/* same slot as the reader's "Paste a SimBrief PDF link" box */}
-          <div className="loader">
-            <label htmlFor="radio-flight" className="sr-only">
-              Flight
-            </label>
-            <select id="radio-flight" value={flightId ?? ""} onChange={(e) => setId(e.target.value)} disabled={!flights.length}>
-              {!flights.length && <option value="">No saved flights with a PDF</option>}
-              {flights.map((f) => (
-                <option key={f.meta.id} value={f.meta.id}>
-                  {f.meta.flightNo ?? f.meta.id} · {f.meta.dep}→{f.meta.arr} · {f.meta.date}
-                </option>
-              ))}
-            </select>
-          </div>
+          <span style={{ flex: 1 }} />
           <CollapseAllButton ids={sections.map(([s]) => s)} className="btn status-all" />
           <Link href={flightId ? `/?flight=${encodeURIComponent(flightId)}` : "/"} className="btn">
             ← Back to reader
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status">
-          <span role="status">{msg ?? (h ? `${h.flightNo} · ${h.dep} → ${h.arr} · typed frequencies are saved with this flight` : flights.length ? "Pick a flight" : "No saved flights with a PDF yet: open a plan in the reader first")}</span>
+        <StatusLine>
+          <PlanChips />
+          <span className="examples-sep" aria-hidden="true" />
+          <span role="status">{msg ?? (h ? "Typed frequencies are saved with this flight" : flights.length ? "Pick a flight" : "No saved flights with a PDF yet: open a plan in the reader first")}</span>
           <span className="status-tools">
             <span className="radio-skins" role="group" aria-label="Display style">
               <span className="status-label" aria-hidden="true">
@@ -587,11 +584,13 @@ export function RadioApp() {
               ))}
             </span>
           </span>
-        </div>
+        </StatusLine>
       </header>
       <div className="layout">
-        <Toc sections={sections} links={flightId ? { plan: `/?flight=${encodeURIComponent(flightId)}`, radio: `/radio?flight=${encodeURIComponent(flightId)}` } : undefined} />
+        <Toc sections={sections} pending={loading} links={flightId ? { plan: `/?flight=${encodeURIComponent(flightId)}`, radio: `/radio?flight=${encodeURIComponent(flightId)}` } : undefined} />
         <main id="main" className={ofp ? "is-filled" : ""} data-skin={skin}>
+          {!loading && (
+            <>
           <Section id="dep" no={1} title="Departure" meta={<span>COMMS · ILS</span>}>
             <Replay>
             {airport(h?.dep, "Departure", ils("takeoff"), planned.dep)}
@@ -651,6 +650,8 @@ export function RadioApp() {
               {addedNavaids()}
             </Replay>
           </Section>
+            </>
+          )}
         </main>
       </div>
       <TooltipLayer />

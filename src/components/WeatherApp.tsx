@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
@@ -10,9 +10,13 @@ import { ObsCard, TafCard } from "./WxCards";
 import { LiveWx } from "./LiveWx";
 import { getServerVersion, getVersion, listFlights, subscribe } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
+import { adoptFlightParam, mirrorFlightParam, useActiveFlight } from "@/lib/active";
+import { PlanChips, StatusLine } from "./FlightMenu";
 import { parseAll, type Report } from "@/lib/wx/reports";
 
 const INPUT_KEY = "ofp-reader:wx-input";
+/** Which flight's reports fill the box: a flight id, or "user" once you've pasted, fetched or cleared it yourself. */
+const FROM_KEY = "ofp-reader:wx-from";
 
 /**
  * Illustrative reports for trying the page; not real observations. Times are stamped
@@ -59,34 +63,44 @@ METAR KJFK ${obs.dd}${obs.hh}${obs.mm}Z 31022G35KT 10SM FEW050 SCT250 18/02 A299
 
 /* ---------- page ---------- */
 
-function readInput() {
+function readKey(key: string) {
   try {
-    return window.localStorage.getItem(INPUT_KEY) ?? "";
+    return window.localStorage.getItem(key);
   } catch {
-    return "";
+    return null;
   }
 }
+const readInput = () => readKey(INPUT_KEY) ?? "";
 
 export function WeatherApp() {
   const [text, setText] = useState("");
   const [loadedFrom, setLoadedFrom] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [from, setFrom] = useState<string | null>(null);
   // Restore the last text once, then save on change (not before the restore, or it would be wiped).
-  const restored = useRef(false);
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
     queueMicrotask(() => {
       setText(readInput());
-      restored.current = true;
+      setFrom(readKey(FROM_KEY));
+      setRestored(true);
     });
   }, []);
   useEffect(() => {
-    if (!restored.current) return;
+    if (!restored) return;
     try {
       window.localStorage.setItem(INPUT_KEY, text);
+      if (from) window.localStorage.setItem(FROM_KEY, from);
     } catch {
       /* storage unavailable: the page still works */
     }
-  }, [text]);
+  }, [text, from, restored]);
+  /** Text you typed, fetched or cleared yourself: never replaced automatically. */
+  const setOwnText = (t: string) => {
+    setText(t);
+    setFrom("user");
+    setLoadedFrom(null);
+  };
 
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const saved = useMemo(() => (version >= 0 ? listFlights().filter((f) => f.meta.pdfSize) : []), [version]);
@@ -111,7 +125,7 @@ export function WeatherApp() {
     }));
   }, [reports]);
 
-  const loadPlan = async (id: string) => {
+  const loadPlan = useCallback(async (id: string) => {
     const f = saved.find((s) => s.meta.id === id);
     if (!f) return;
     setBusy(`Reading ${f.meta.flightNo ?? id}…`);
@@ -123,13 +137,31 @@ export function WeatherApp() {
       // The OFP lists reports under an airport heading, without the ICAO code in the report itself.
       const lines = ofp.wx.airports.flatMap((a) => [a.metar ? `METAR ${a.icao} ${a.metar}` : "", a.taf.length ? `TAF ${a.icao} ${a.taf.join("\n  ")}` : "", ""]).filter((l, i, arr) => l || arr[i - 1]);
       setText(lines.join("\n").trim());
+      setFrom(id);
       setLoadedFrom(`${f.meta.flightNo ?? id} ${f.meta.dep ?? ""}→${f.meta.arr ?? ""}`);
       setBusy(null);
     } catch (e) {
       setBusy(e instanceof Error ? e.message : "Couldn't read that plan.");
     }
-  };
+  }, [saved]);
 
+  // Follow the active flight: load its reports when the box holds another flight's (or nothing yet),
+  // but never replace reports you pasted yourself; for those, offer a button instead.
+  const { id: activeId, record: activeRec, ready: activeReady } = useActiveFlight();
+  useEffect(() => {
+    if (activeReady) adoptFlightParam();
+  }, [activeReady]);
+  useEffect(() => {
+    if (activeReady) mirrorFlightParam(activeId);
+  }, [activeReady, activeId]);
+  const own = from === "user" && !!text.trim();
+  const canLoad = !!activeId && !!activeRec?.meta.pdfSize && from !== activeId;
+  const autoLoad = restored && canLoad && (from === null ? !text.trim() : from !== "user");
+  useEffect(() => {
+    if (autoLoad && activeId) queueMicrotask(() => void loadPlan(activeId));
+  }, [autoLoad, activeId, loadPlan]);
+
+  const pending = !restored || !activeReady || autoLoad || (busy?.startsWith("Reading") ?? false);
   const sections = [["reports", "Paste reports"], ...airports.map((a) => [a.id, a.key] as const)] as const;
 
   return (
@@ -147,20 +179,25 @@ export function WeatherApp() {
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status" role="status">
-          <span>
+        <StatusLine>
+          <PlanChips />
+          <span className="examples-sep" aria-hidden="true" />
+          <span role="status">
             {reports.length
               ? `${reports.length} ${reports.length === 1 ? "report" : "reports"} · ${airports.length} ${airports.length === 1 ? "airport" : "airports"}${loadedFrom ? ` · from ${loadedFrom}` : ""}`
               : "Paste METARs, TAFs or ATIS to see them as weather cards"}
           </span>
-        </div>
+        </StatusLine>
       </header>
 
       <div className="layout">
         <Toc
           sections={sections}
+          pending={pending}
         />
         <main id="main" className="is-filled">
+          {!pending && (
+            <>
           <Section id="reports" no={1} title="Paste reports" meta={<span>METAR · SPECI · TAF · ATIS</span>}>
             <p className="small muted" style={{ marginTop: 0 }}>
               Paste any mix of reports, one after another. Coded and plain-language ATIS both work. Nothing leaves your browser; the text is kept here for next time.
@@ -168,10 +205,7 @@ export function WeatherApp() {
             <textarea
               className="wx-input"
               value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                setLoadedFrom(null);
-              }}
+              onChange={(e) => setOwnText(e.target.value)}
               spellCheck={false}
               rows={8}
               aria-label="METAR, TAF and ATIS text"
@@ -179,29 +213,21 @@ export function WeatherApp() {
             />
             <LiveWx
               suggested={[...new Set(reports.map((r) => r.icao).filter((x): x is string => !!x))]}
-              onText={(t, from) => {
-                setText(t);
-                setLoadedFrom(from);
+              onText={(t, src) => {
+                setOwnText(t);
+                setLoadedFrom(src);
               }}
             />
             <div className="row" style={{ marginTop: 8 }}>
-              <button type="button" className="btn" onClick={() => setText(buildExample())}>
+              <button type="button" className="btn" onClick={() => setOwnText(buildExample())}>
                 Load examples
               </button>
-              {saved.length > 0 && (
-                <label className="row small" style={{ gap: 6 }}>
-                  From a saved plan
-                  <select className="wx-select" value="" onChange={(e) => e.target.value && void loadPlan(e.target.value)}>
-                    <option value="">Choose…</option>
-                    {saved.map((f) => (
-                      <option key={f.meta.id} value={f.meta.id}>
-                        {f.meta.flightNo ?? f.meta.id} · {f.meta.dep}→{f.meta.arr} · {f.meta.date}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              {canLoad && !autoLoad && (
+                <button type="button" className="btn" onClick={() => void loadPlan(activeId!)}>
+                  {own ? "Replace with" : "Load"} {activeRec?.meta.flightNo ?? "the active flight"}&apos;s reports
+                </button>
               )}
-              <button type="button" className="btn" disabled={!text} onClick={() => setText("")}>
+              <button type="button" className="btn" disabled={!text} onClick={() => setOwnText("")}>
                 Clear
               </button>
               {busy && <span className="small muted">{busy}</span>}
@@ -235,6 +261,8 @@ export function WeatherApp() {
                 ))}
             </Section>
           ))}
+            </>
+          )}
         </main>
       </div>
       <TooltipLayer />

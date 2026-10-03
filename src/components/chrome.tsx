@@ -125,12 +125,15 @@ export function Toc({
   saved,
   links,
   footer,
+  pending,
 }: {
   sections: readonly (readonly [string, string])[];
   groups?: readonly (readonly [string, readonly string[]])[];
   saved?: ReadonlySet<string>;
   links?: { plan?: string; radio?: string };
   footer?: ReactNode;
+  /** The page's sections aren't known yet: show the tabs only, so the card doesn't grow in later. */
+  pending?: boolean;
 }) {
   const [active, setActive] = useState(sections[0]?.[0] ?? "");
   const ids = sections.map(([id]) => id).join(",");
@@ -195,6 +198,8 @@ export function Toc({
   return (
     <nav className="toc" aria-label="Pages and sections">
       <PageTabs links={links} />
+      {!pending && (
+        <>
       <div className="toc-card">
         <div className="toc-top">
           <p className="toc-title">Contents</p>
@@ -223,6 +228,8 @@ export function Toc({
           <span className="toc-dot" aria-hidden="true" />
           has saved entries
         </p>
+      )}
+        </>
       )}
       {footer && <div className="toc-foot">{footer}</div>}
     </nav>

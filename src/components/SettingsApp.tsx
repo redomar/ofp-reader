@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
@@ -24,6 +24,8 @@ import {
   writeField,
 } from "@/lib/storage";
 import { clearPdfs, deletePdf } from "@/lib/pdfCache";
+import { adoptFlightParam, mirrorFlightParam, setActive, useActiveFlight } from "@/lib/active";
+import { PlanChips, StatusLine } from "./FlightMenu";
 import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
 
 const SECTIONS = [
@@ -137,12 +139,19 @@ export function SettingsApp() {
   const theme = useMemo<ThemePref>(() => (version >= 0 ? readTheme() : "system"), [version]);
   const bytes = useMemo(() => (version >= 0 ? storageBytes() : 0), [version]);
   const pdfBytes = flights.reduce((s, f) => s + (f.meta.pdfSize ?? 0), 0);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The flight shown below is the active flight (shared with every page); choosing a row switches it.
+  const { id: activeId, ready: activeReady } = useActiveFlight();
+  useEffect(() => {
+    if (activeReady) adoptFlightParam();
+  }, [activeReady]);
+  useEffect(() => {
+    if (activeReady) mirrorFlightParam(activeId);
+  }, [activeReady, activeId]);
   const [stripMode, setStripMode] = useStripMode();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importMsgs, setImportMsgs] = useState<ImportMsg[]>([]);
   const [unlocked, setUnlocked] = useState(false);
-  const sel = flights.find((f) => f.meta.id === selectedId) ?? flights[0] ?? null;
+  const sel = flights.find((f) => f.meta.id === activeId) ?? null;
 
   const groups = useMemo(() => {
     if (!sel) return [];
@@ -175,13 +184,15 @@ export function SettingsApp() {
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status" role="status">
-          <span>
+        <StatusLine>
+          <PlanChips />
+          <span className="examples-sep" aria-hidden="true" />
+          <span role="status">
             {ready
               ? `${flights.length} saved ${flights.length === 1 ? "flight" : "flights"} · ${fmtBytes(bytes + pdfBytes)} used in this browser`
               : "Reading browser storage…"}
           </span>
-        </div>
+        </StatusLine>
       </header>
 
       <div className="layout">
@@ -189,6 +200,8 @@ export function SettingsApp() {
           sections={SECTIONS}
         />
         <main id="main" className={ready ? "is-filled" : ""}>
+          {ready && activeReady && (
+            <>
           <Section id="flights" no={1} title="Saved flights" meta={<span>{ready ? `${flights.length} ${flights.length === 1 ? "plan" : "plans"}` : "—"}</span>}>
             <p className="small muted" style={{ marginTop: 0 }}>
               Every plan you open gets its own storage, identified by{" "}
@@ -215,7 +228,7 @@ export function SettingsApp() {
                   const { msgs, lastId } = await importFiles(files);
                   input.value = "";
                   setImportMsgs(msgs);
-                  if (lastId) setSelectedId(lastId);
+                  if (lastId) setActive(lastId);
                 }}
               />
             </div>
@@ -279,9 +292,14 @@ export function SettingsApp() {
                       return (
                         <tr key={m.id} className={cx(on && "active")}>
                           <th scope="row">
-                            <button type="button" className="linkish" aria-pressed={on} onClick={() => setSelectedId(m.id)}>
+                            <button type="button" className="linkish" aria-pressed={on} onClick={() => setActive(m.id)}>
                               {m.flightNo ?? m.id}
                             </button>{" "}
+                            {on && (
+                              <Badge tone="mag" tip="The flight every page shows. Choose another row, or use the flight menu on any page, to switch.">
+                                Active
+                              </Badge>
+                            )}
                             {m.keyBasis === "fallback" && (
                               <Badge tone="amber" tip="This plan had no flight or OFP number, so it is identified by a fingerprint of its first page.">
                                 fingerprint
@@ -305,8 +323,8 @@ export function SettingsApp() {
                           <td className="small">{when(m.updatedAt)}</td>
                           <td>
                             <span className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
-                              <button type="button" className="toggle" onClick={() => setSelectedId(m.id)} aria-label={`View stored data for ${m.flightNo ?? m.id}`}>
-                                View
+                              <button type="button" className="toggle" aria-pressed={on} onClick={() => setActive(m.id)} aria-label={`Make ${m.flightNo ?? m.id} the active flight`}>
+                                {on ? "Active" : "Select"}
                               </button>
                               {href && (
                                 <Link className="toggle" href={href} aria-label={`Open ${m.flightNo ?? m.id} in the reader`}>
@@ -547,6 +565,8 @@ export function SettingsApp() {
               </button>
             </div>
           </Section>
+            </>
+          )}
         </main>
       </div>
       <TooltipLayer />
