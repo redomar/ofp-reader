@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { asReportText, fetchAirport, tokenExpiry, type SbAirport } from "@/lib/wx/simbrief";
 
 const TOKEN_KEY = "ofp-reader:sb-token";
@@ -23,10 +23,32 @@ const write = (store: Storage | undefined, k: string, v: string | null) => {
 };
 
 /**
+ * Whether the page is being served from this machine (`localhost`, `127.0.0.1` or `::1`).
+ *
+ * Live weather is a development-only feature for now: we can't provide this data on the
+ * public site yet, so {@link LiveWx} renders nothing anywhere else. Remove this gate when
+ * the data can be offered publicly.
+ */
+function isLocalHost(): boolean {
+  return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(window.location.hostname);
+}
+
+const noSubscribe = () => () => {};
+
+/**
  * Live METAR / TAF / ATIS from SimBrief with your own Navigraph token. The token stays in
  * this tab (or this browser, if you tick Remember) and is only sent to api.simbrief.com.
+ *
+ * Only shown on localhost: see {@link isLocalHost}. The server render and the first client
+ * render both return nothing, so there's no hydration mismatch on the public build.
  */
-export function LiveWx({ onText, suggested }: { onText: (text: string, from: string) => void; suggested: string[] }) {
+export function LiveWx(props: { onText: (text: string, from: string) => void; suggested: string[] }) {
+  const local = useSyncExternalStore(noSubscribe, isLocalHost, () => false);
+  return local ? <LiveWxPanel {...props} /> : null;
+}
+
+/** The live-weather panel itself; rendered by {@link LiveWx} on localhost only. */
+function LiveWxPanel({ onText, suggested }: { onText: (text: string, from: string) => void; suggested: string[] }) {
   const [token, setToken] = useState("");
   const [remember, setRemember] = useState(false);
   const [icaos, setIcaos] = useState("");
