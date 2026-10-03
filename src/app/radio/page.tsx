@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { VT323 } from "next/font/google";
 import { RadioApp } from "@/components/RadioApp";
+
+const pixel = VT323({ variable: "--f-pixel", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
   title: "Radio · OFP Reader",
@@ -7,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <RadioApp />;
+  return (
+    <div className={pixel.variable} style={{ display: "contents" }}>
+      <RadioApp />
+    </div>
+  );
 }

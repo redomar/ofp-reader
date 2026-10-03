@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
+import { Replay } from "./replay";
 import { Badge, Section, V } from "./ui";
 import { FlapCode } from "./FlapCode";
 import { getServerVersion, getVersion, listFlights, readFlight, subscribe, writeField } from "@/lib/storage";
@@ -13,6 +14,13 @@ import { hhmmToMin } from "@/lib/ofp/format";
 import type { OFP } from "@/lib/ofp/types";
 
 const S = "Radio";
+const SKIN_KEY = "ofp-reader:radio-skin";
+const SKINS = [
+  ["scan", "Scanlines", "VFD glass with fine scanlines and a pixel font"],
+  ["dots", "Dots", "VFD glass behind a fine dot mesh"],
+  ["classic", "Classic", "Olive LCD by day, amber by night"],
+] as const;
+type Skin = (typeof SKINS)[number][0];
 const APT_SERVICES: [string, string][] = [
   ["ATIS", "Automatic terminal information"],
   ["DEL", "Clearance delivery"],
@@ -57,6 +65,7 @@ function Window({ value, onChange, label, from, warn }: { value: string; onChang
       <span className="rmp-unlit" aria-hidden="true">
         888.888
       </span>
+      <span className="rmp-flash" key={value} aria-hidden="true" />
       {onChange ? (
         <input aria-label={label} inputMode="decimal" value={value} placeholder="" onChange={(e) => onChange(tidy(e.target.value))} spellCheck={false} />
       ) : (
@@ -72,9 +81,18 @@ export function RadioApp() {
   const [id, setId] = useState<string | null>(null);
   const [ofp, setOfp] = useState<OFP | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [skin, setSkin] = useState<Skin>("scan");
 
   useEffect(() => {
-    queueMicrotask(() => setId(new URLSearchParams(window.location.search).get("flight")));
+    queueMicrotask(() => {
+      setId(new URLSearchParams(window.location.search).get("flight"));
+      try {
+        const k = window.localStorage.getItem(SKIN_KEY);
+        if (SKINS.some(([v]) => v === k)) setSkin(k as Skin);
+      } catch {
+        /* storage unavailable */
+      }
+    });
   }, []);
   const flightId = id ?? flights[0]?.meta.id ?? null;
   const rec = useMemo(() => (version >= 0 && flightId ? readFlight(flightId) : null), [version, flightId]);
@@ -99,6 +117,15 @@ export function RadioApp() {
     // the PDF only changes with the flight
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flightId]);
+
+  const pickSkin = (v: Skin) => {
+    setSkin(v);
+    try {
+      window.localStorage.setItem(SKIN_KEY, v);
+    } catch {
+      /* storage unavailable */
+    }
+  };
 
   const get = (key: string) => rec?.fields[key]?.value ?? "";
   const put = useCallback((key: string, label: string, v: string) => flightId && writeField(flightId, key, v ? { section: S, label, value: v } : null), [flightId]);
@@ -183,6 +210,13 @@ export function RadioApp() {
               ))}
             </select>
           )}
+          <span className="radio-skins" role="group" aria-label="Display style">
+            {SKINS.map(([v, label, tip]) => (
+              <button key={v} type="button" className="toggle" aria-pressed={skin === v} onClick={() => pickSkin(v)} title={tip}>
+                {label}
+              </button>
+            ))}
+          </span>
           <CollapseAllButton ids={sections.map(([s]) => s)} className="btn status-all" />
           <Link href={flightId ? `/?flight=${encodeURIComponent(flightId)}` : "/"} className="btn">
             ← Back to plan
@@ -195,11 +229,14 @@ export function RadioApp() {
       </header>
       <div className="layout">
         <Toc sections={sections} footer={<Link href="/" className="toc-link">← Back to plan</Link>} />
-        <main id="main" className={ofp ? "is-filled" : ""}>
+        <main id="main" className={ofp ? "is-filled" : ""} data-skin={skin}>
           <Section id="dep" no={1} title="Departure" meta={<span>COMMS · ILS</span>}>
+            <Replay>
             {airport(h?.dep, "Departure", ils("takeoff"), planned.dep)}
+            </Replay>
           </Section>
           <Section id="enroute" no={2} title="En route" meta={<span>{firs.length} FIR / UIR</span>}>
+            <Replay>
             <div className="radio-rows">
               {firs.length ? (
                 firs.map((f, i) => {
@@ -218,12 +255,17 @@ export function RadioApp() {
                 <V v={null} w={30} />
               )}
             </div>
+            </Replay>
           </Section>
           <Section id="dest" no={3} title="Destination" meta={<span>COMMS · ILS</span>}>
+            <Replay>
             {airport(h?.arr, "Destination", ils("landing"), planned.arr)}
+            </Replay>
           </Section>
           <Section id="altn" no={4} title="Alternates" meta={<span>{alts.length} airport{alts.length === 1 ? "" : "s"}</span>}>
+            <Replay>
             <div className="radio-alts">{alts.length ? alts.map((a) => <div key={a}>{airport(a, "Alternate", [])}</div>) : <V v={null} w={30} />}</div>
+            </Replay>
           </Section>
           <Section id="navaids" no={5} title="Navaids & ILS" meta={<span>from the OFP</span>}>
             <div className="tbl-wrap">

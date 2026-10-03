@@ -4033,6 +4033,27 @@ hr.mcdu-rule {
 .rmp > * {
   grid-area: 1 / 1;
 }
+.rmp::before,
+.rmp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.rmp-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 55%, var(--rmp-flash, transparent), transparent 70%);
+  opacity: 0;
+  animation: rmp-flash 420ms ease-out;
+}
+.radio-skins {
+  display: inline-flex;
+  gap: 4px;
+}
 .rmp.has .rmp-unlit {
   visibility: hidden;
 }
@@ -4061,4 +4082,162 @@ hr.mcdu-rule {
 }
 .rmp.warn {
   box-shadow: inset 0 0 0 1px var(--rmp-edge), 0 0 0 2px var(--amber);
+}
+
+/* VFD skins (Scanlines / Dots): same in both themes. Typed values glow green, OFP values cyan. */
+main[data-skin="scan"],
+main[data-skin="dots"] {
+  --rmp-bg: #071413;
+  --rmp-edge: #000;
+  --rmp-inset: #000;
+  --rmp-unlit: rgba(80, 255, 220, 0.09);
+  --rmp-lit: #b6ff7a;
+  --rmp-glow: 0 0 3px rgba(190, 255, 130, 0.9), 0 0 9px rgba(160, 255, 100, 0.75), 0 0 18px rgba(140, 255, 90, 0.45);
+  --rmp-from: #5ff5d6;
+  --rmp-from-glow: 0 0 3px rgba(120, 255, 230, 0.9), 0 0 9px rgba(60, 240, 210, 0.75), 0 0 18px rgba(40, 230, 200, 0.45);
+  --rmp-flash: rgba(170, 255, 140, 0.45);
+}
+main[data-skin="scan"] .rmp,
+main[data-skin="dots"] .rmp {
+  box-shadow: 0 0 0 3px #000, 0 0 0 4px #445, inset 0 0 10px #000, 0 0 14px rgba(60, 240, 210, 0.18);
+}
+main[data-skin="scan"] .rmp {
+  background: radial-gradient(ellipse, #0b1f1c, #030a09);
+  border-radius: 8px;
+  width: 9.2ch;
+  padding: 4px 10px;
+  font: 400 24px/1 var(--f-pixel), var(--font-mono);
+}
+main[data-skin="scan"] .rmp::after {
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.38) 0 0.5px, transparent 0.5px 1.25px);
+}
+/* a slow bright band rolling down the glass */
+main[data-skin="scan"] .rmp::before {
+  background: linear-gradient(180deg, transparent, rgba(150, 255, 230, 0.09), transparent) 0 0 / 100% 40% no-repeat;
+  animation: rmp-roll 6s linear infinite;
+}
+main[data-skin="dots"] .rmp::after {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.45) 0.35px, transparent 0.6px) 0 0 / 1.4px 1.4px;
+}
+main[data-skin="scan"] .rmp:is(:focus-within, .warn),
+main[data-skin="dots"] .rmp:is(:focus-within, .warn) {
+  box-shadow: 0 0 0 3px #000, 0 0 0 5px var(--ring), inset 0 0 10px #000;
+}
+main[data-skin] .rmp:focus-within {
+  --ring: var(--blue);
+}
+main[data-skin] .rmp.warn {
+  --ring: var(--amber);
+}
+main[data-skin="classic"] .rmp {
+  --rmp-flash: rgba(255, 200, 80, 0.35);
+}
+/* the glow breathes and stutters now and then, like an old tube */
+main[data-skin="scan"] .rmp :is(input, .rmp-val),
+main[data-skin="dots"] .rmp :is(input, .rmp-val) {
+  animation: rmp-flicker 9s steps(1) infinite;
+}
+.radio-row:nth-child(3n + 2) .rmp :is(input, .rmp-val) {
+  animation-delay: -3s;
+}
+.radio-row:nth-child(3n + 3) .rmp :is(input, .rmp-val) {
+  animation-delay: -6s;
+}
+.radio-row:nth-child(4n + 2) .rmp::before {
+  animation-delay: -1.5s;
+}
+.radio-row:nth-child(4n + 3) .rmp::before {
+  animation-delay: -3s;
+}
+.radio-row:nth-child(4n + 4) .rmp::before {
+  animation-delay: -4.5s;
+}
+/* power-on when a section scrolls into view, staggered along the rows */
+.play .rmp {
+  animation: rmp-on 900ms ease-out both;
+}
+.play .radio-row:nth-child(2) .rmp {
+  animation-delay: 60ms;
+}
+.play .radio-row:nth-child(3) .rmp {
+  animation-delay: 120ms;
+}
+.play .radio-row:nth-child(4) .rmp {
+  animation-delay: 180ms;
+}
+.play .radio-row:nth-child(5) .rmp {
+  animation-delay: 240ms;
+}
+.play .radio-row:nth-child(6) .rmp {
+  animation-delay: 300ms;
+}
+.play .radio-row:nth-child(7) .rmp {
+  animation-delay: 360ms;
+}
+.play .radio-row:nth-child(n + 8) .rmp {
+  animation-delay: 420ms;
+}
+@keyframes rmp-on {
+  0% {
+    filter: brightness(0.15);
+  }
+  18% {
+    filter: brightness(1.9);
+  }
+  26% {
+    filter: brightness(0.35);
+  }
+  40% {
+    filter: brightness(1.4);
+  }
+  48% {
+    filter: brightness(0.7);
+  }
+  100% {
+    filter: none;
+  }
+}
+@keyframes rmp-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes rmp-roll {
+  from {
+    background-position: 0 -150%;
+  }
+  to {
+    background-position: 0 250%;
+  }
+}
+@keyframes rmp-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  41% {
+    opacity: 0.82;
+  }
+  42% {
+    opacity: 1;
+  }
+  77% {
+    opacity: 0.9;
+  }
+  78% {
+    opacity: 0.75;
+  }
+  79% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rmp,
+  .rmp::before,
+  .rmp-flash,
+  .rmp :is(input, .rmp-val) {
+    animation: none !important;
+  }
 }
