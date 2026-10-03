@@ -4212,8 +4212,24 @@ button.radio-sub {
   opacity: 0;
   animation: rmp-flash 420ms ease-out;
 }
+/* page tools in the status line (right-hand side), so the top bar matches the other pages */
+.status-tools {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-left: auto;
+}
+.status-label {
+  margin-right: 2px;
+  color: var(--ink-3);
+  font: 600 11px var(--font-cond);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 .radio-skins {
   display: inline-flex;
+  align-items: center;
   gap: 4px;
 }
 .rmp.has .rmp-unlit {
