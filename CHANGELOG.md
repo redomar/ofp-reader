@@ -4,9 +4,42 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-03
+
 ### Added
 
-- **Live weather from SimBrief** on the weather page: paste your own sign-in token from dispatch.simbrief.com (it lasts about an hour) and a list of airports, and Fetch loads each airport's current METAR, TAF and ATIS as cards. Only the token header is sent, and only to api.simbrief.com; results are cached for one minute; the token stays in the tab unless you tick Remember (with its time left shown, and a Forget button). The airports default to the ones already on the page.
+- **Radio page** (`/radio`) for planning the flight's frequencies, saved with the flight (so they export and import with it and show in Settings).
+  - Each airport (departure, destination, alternates) has ATIS · DEL · GND · TWR · APP (DEP at the departure), and each FIR / UIR you cross has its centre, with its entry times.
+  - Values go into radio-panel windows with a pictogram per type. Three looks: Scanlines and Dots (VFD glass, typed values green, OFP values cyan) and Classic (olive LCD by day, amber by night), with power-on, flash and flicker animations.
+  - Frequencies are checked as you type: COMMS band and 8.33 / 25 kHz channels; a NAV frequency in a COMMS slot is called out. Out of range turns the digits red with a stop sign. COMMS are completed to three decimals.
+  - **Add channel** for stations the plan can't know (e.g. Oxford Approach), with a name and a type.
+  - The OFP's ILS frequencies per runway are carried over (planned runway marked; a NOTAM outage rings it amber).
+- **NAV tuning** on the Radio page, in flight order: the departure runway's ILS (or "no ILS" and the reciprocal runway's ILS for a quick return), each VOR / NDB on the route with its ETO, which radio to tune it on and its ident in Morse, then the landing runway's ILS. **Add navaid** for anything the OFP doesn't list (VOR, VOR/DME, NDB in kHz, ILS, LOC, DME).
+- **One active flight across every page.** The plan you open is the one the reader, Weather, Radio and Settings all show, and moving between pages keeps it.
+  - Every page picks the plan the same way, at the start of the status line: a **Blank plan** chip and a **flight chip** listing your saved flights (with OFP number), plus "Open another plan…".
+  - Opening the reader without a link reopens the active flight. Weather loads its reports by itself, but never replaces reports you pasted yourself; it offers "Replace with …" instead. Settings preselects it and marks it Active.
+  - Other open tabs follow a switch, and `?flight=` links still work.
+- **New left rail.** The pages are tabs at the top (Plan, Weather, Radio, Settings, and Wind lab under a hatched experimental tab).
+  - Below them is a Contents card with the section you're in highlighted, a "05 / 14" position, sections grouped by phase on the reader (Plan, En route, Airports, Reference), and a dot on sections where you've saved entries.
+  - Collapse all sits in a box under the card.
+- **Delete single saved entries** in Settings: "Unlock to delete" adds a delete button to each row.
+- **Wind lab** (the page for tuning the windsock sway) uses the site's layout and is linked from the rail as experimental.
+
+### Changed
+
+- The reader's "Recent" chips are replaced by the flight chip, which lists every saved flight.
+- In Settings, choosing a flight's row (or its Select button, formerly View) makes it the active flight.
+- The Radio, Weather and Settings top bars match: Brand, Back to reader and the theme toggle.
+- The rail is wider, taking the space from the left margin, so the main column keeps its width.
+
+### Fixed
+
+- Refreshing a plan (or any page) no longer shifts the layout: the status line has a fixed height, and content appears once it's ready instead of growing in.
+- Collapsing a section no longer moves its header, and collapsed Wind lab sections lost a stray gap.
+- The "Blank flight plan" banner no longer appears while a plan is opening.
+- The Contents highlight followed the blank form instead of the loaded plan; it now follows your scroll position.
+- The footer stays at the bottom of the screen when every section is collapsed.
+- The Radio page's FIR rows clashed when a route crossed the same FIR twice; each FIR now has one row with all its entry times.
 
 ## [1.7.0] - 2026-10-02
 
@@ -153,6 +186,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.8.0]: https://github.com/redomar/ofp-reader/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/redomar/ofp-reader/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/redomar/ofp-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/redomar/ofp-reader/compare/v1.4.0...v1.5.0

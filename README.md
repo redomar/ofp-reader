@@ -43,10 +43,12 @@ and every value gets context: derived margins, decoded weather, a vertical profi
   - NOTAMs: search, category filters, "critical" (CLSD, U/S, NOT AVBL…) and "mentions my planned runway" filters.
 - **Hover (or focus) to learn.** Almost every label explains itself: OFP abbreviations, ICAO equipment and PBN codes, METAR groups, TLR columns.
 - **Fill it in as you fly.** Actual times, weights, ATIS, clearance, RVSM check, ATO / AFOB per waypoint, TLR actuals: all saved per flight in your browser.
-- **Reopens instantly, even after SimBrief expires it.** Each PDF is kept locally, so returning to a plan (same link, reload, recent chip or Settings) doesn't download it again. SimBrief only keeps OFP PDFs for a limited time, so the saved copy is often the only one left.
+- **One plan across every page.** The plan you open is the active flight on the reader, Weather, Radio and Settings; switch it from the flight chip on any page (or Blank plan to close it), and other open tabs follow.
+- **Reopens instantly, even after SimBrief expires it.** Each PDF is kept locally, so returning to a plan (same link, reload, the flight chip or Settings) doesn't download it again. SimBrief only keeps OFP PDFs for a limited time, so the saved copy is often the only one left.
 - **Printouts for the flight deck.** An MCDU set-up sheet (INIT A, INIT B, F-PLN, PERF TAKE OFF, RAD NAV, winds) and an alternate sheet (return to departure, then one page per alternate, each starting with FINRES), printed line by line on continuous-form paper, with Copy text.
 - **ATC flight plan, explained.** Decoded into flight, aircraft, route & times and capability cards, and the route drawn leg by leg on printer paper with the VOR / NDB frequencies beside it.
 - **SIGMETs on your route.** Each SIGMET / AIRMET decoded and checked against your route, levels and times, drawn on the route map and profile.
+- **Radio frequencies.** A Radio page (`/radio`) for planning the flight's frequencies: type each airport's ATIS / DEL / GND / TWR / APP and each FIR's centre into radio-panel windows (checked for the COMMS band and 8.33 kHz channels), add your own stations, and get the OFP's ILS per runway plus a NAV tuning sequence in flight order (departure ILS or the reciprocal for a return, each VOR / NDB with its ETO and Morse ident, the landing ILS).
 - **Weather cards.** A separate page (`/weather`) turns pasted METARs, TAFs and ATIS (coded or plain language), or a saved plan's weather, into cards: sky picture, wind, visibility, cloud layers, TAF timeline by flight category, ATIS letter, runways and notices.
 - **Your layout.** Collapse any section (or all of them) from its header or the Contents rail; it stays the way you left it. Pick the flight summary graphic: vertical profile, profile + times, route silhouette, progress timeline or classic arc.
 - **Day and night themes**, both meeting WCAG AA contrast.
@@ -64,6 +66,10 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 | Planned vs actual timeline | Settings & saved flights |
 | --- | --- |
 | ![Times table with planned and actual timeline bars](docs/screenshots/times.png) | ![Saved flights and stored entries](docs/screenshots/settings.png) |
+
+**Radio page**
+
+![COMMS frequencies typed into radio-panel windows, with the OFP's ILS frequencies per runway](docs/screenshots/radio.png)
 
 **Weather cards page**
 
