@@ -489,13 +489,11 @@ main {
 .sheet-head:focus-visible {
   outline-offset: -2px;
 }
+/* closed: no rule, and the header is 3px shorter instead, so its contents keep the same
+   39px row (nothing moves) and the number block still reaches the bottom edge */
 .sheet.is-collapsed .sheet-head {
+  min-height: 39px;
   border-bottom: 0;
-}
-/* the 3px the rule took becomes bottom padding, so the text stays put and the number block
-   still reaches the bottom edge */
-.sheet.is-collapsed :is(.sheet-no, .sheet-title, .sheet-meta) {
-  padding-bottom: 3px;
 }
 /* hidden="until-found" keeps the box (content-visibility: hidden), so drop its padding */
 .sheet-body[hidden] {
