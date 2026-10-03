@@ -3986,14 +3986,47 @@ hr.mcdu-rule {
   display: grid;
   gap: 18px;
 }
+/* day: a reflective LCD (olive glass, dark segments); night: dark glass, amber digits */
+:root {
+  --rmp-bg: #b4b48a;
+  --rmp-edge: #6f6e4c;
+  --rmp-inset: rgba(60, 58, 30, 0.35);
+  --rmp-unlit: rgba(38, 40, 20, 0.16);
+  --rmp-lit: #22261a;
+  --rmp-glow: none;
+  --rmp-from: #1d5230;
+  --rmp-from-glow: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --rmp-bg: #11161d;
+    --rmp-edge: #000;
+    --rmp-inset: rgba(0, 0, 0, 0.6);
+    --rmp-unlit: rgba(255, 176, 0, 0.1);
+    --rmp-lit: #ffb000;
+    --rmp-glow: 0 0 6px rgba(255, 176, 0, 0.45);
+    --rmp-from: #7fd9a0;
+    --rmp-from-glow: 0 0 6px rgba(127, 217, 160, 0.4);
+  }
+}
+:root[data-theme="dark"] {
+  --rmp-bg: #11161d;
+  --rmp-edge: #000;
+  --rmp-inset: rgba(0, 0, 0, 0.6);
+  --rmp-unlit: rgba(255, 176, 0, 0.1);
+  --rmp-lit: #ffb000;
+  --rmp-glow: 0 0 6px rgba(255, 176, 0, 0.45);
+  --rmp-from: #7fd9a0;
+  --rmp-from-glow: 0 0 6px rgba(127, 217, 160, 0.4);
+}
 .rmp {
   position: relative;
   display: inline-grid;
   width: 9.2ch;
   padding: 3px 8px;
   border-radius: 3px;
-  background: #11161d;
-  box-shadow: inset 0 0 0 1px #000, inset 0 2px 6px rgba(0, 0, 0, 0.6);
+  background: var(--rmp-bg);
+  box-shadow: inset 0 0 0 1px var(--rmp-edge), inset 0 2px 6px var(--rmp-inset);
   font: 600 17px/1.2 var(--font-mono);
   letter-spacing: 0.04em;
 }
@@ -4004,7 +4037,7 @@ hr.mcdu-rule {
   visibility: hidden;
 }
 .rmp-unlit {
-  color: rgba(255, 176, 0, 0.1);
+  color: var(--rmp-unlit);
   pointer-events: none;
 }
 .rmp input,
@@ -4013,19 +4046,19 @@ hr.mcdu-rule {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #ffb000;
+  color: var(--rmp-lit);
   font: inherit;
   letter-spacing: inherit;
-  text-shadow: 0 0 6px rgba(255, 176, 0, 0.45);
+  text-shadow: var(--rmp-glow);
   outline: none;
 }
 .rmp:focus-within {
-  box-shadow: inset 0 0 0 1px #000, 0 0 0 2px var(--blue);
+  box-shadow: inset 0 0 0 1px var(--rmp-edge), 0 0 0 2px var(--blue);
 }
 .rmp.from .rmp-val {
-  color: #7fd9a0;
-  text-shadow: 0 0 6px rgba(127, 217, 160, 0.4);
+  color: var(--rmp-from);
+  text-shadow: var(--rmp-from-glow);
 }
 .rmp.warn {
-  box-shadow: inset 0 0 0 1px #000, 0 0 0 2px var(--amber);
+  box-shadow: inset 0 0 0 1px var(--rmp-edge), 0 0 0 2px var(--amber);
 }
