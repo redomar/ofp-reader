@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
 import { Replay } from "./replay";
 import { Badge, Section, V } from "./ui";
 import { FlapCode } from "./FlapCode";
+import { CHANNEL_TYPES, ChannelIcon, type ChannelType, type IconKind } from "./radioIcons";
 import { getServerVersion, getVersion, listFlights, readFlight, subscribe, writeField } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
 import { hhmmToMin } from "@/lib/ofp/format";
@@ -21,12 +22,12 @@ const SKINS = [
   ["classic", "Classic", "Olive LCD by day, amber by night"],
 ] as const;
 type Skin = (typeof SKINS)[number][0];
-const APT_SERVICES: [string, string][] = [
-  ["ATIS", "Information"],
-  ["DEL", "Delivery"],
-  ["GND", "Ground"],
-  ["TWR", "Tower"],
-  ["APP", "Approach"],
+const APT_SERVICES: [string, string, ChannelType][] = [
+  ["ATIS", "Information", "atis"],
+  ["DEL", "Delivery", "del"],
+  ["GND", "Ground", "gnd"],
+  ["TWR", "Tower", "twr"],
+  ["APP", "Approach", "app"],
 ];
 
 /** "11895" → "118.95"; keeps what's typed, inserts the dot after three digits. */
@@ -38,10 +39,11 @@ const tidy = (v: string) => {
 
 /** COMMS band and 8.33 / 25 kHz channel check. */
 function comCheck(v: string): string | null {
-  if (!/^\d{3}\.\d{1,3}$/.test(v)) return v ? "Type the frequency as nnn.nnn" : null;
+  if (/^\d{0,3}\.?$/.test(v)) return null; // still typing
+  if (!/^\d{3}\.\d{1,3}$/.test(v)) return "Type it as nnn.nnn";
   const f = Number(v);
-  if (f >= 108 && f < 118) return "That's a NAV frequency (108–117.95), not COMMS";
-  if (f < 118 || f > 136.99) return "Outside the VHF COMMS band (118.000–136.990)";
+  if (f >= 108 && f < 118) return "NAV frequency, not COMMS";
+  if (f < 118 || f > 136.99) return "Outside the COMMS band";
   const khz = Math.round((f - 118) * 1000);
   const ok = khz % 25 === 0 || [5, 10, 15].includes(khz % 25);
   return ok ? null : "Not a 25 / 8.33 kHz channel";
@@ -58,18 +60,71 @@ function notamOutages(ofp: OFP): Map<string, string> {
   return out;
 }
 
-/** A radio-panel window: dark glass, amber digits, unlit 888.888 when empty. */
-function Window({ value, onChange, label, from, warn }: { value: string; onChange?: (v: string) => void; label: string; from?: boolean; warn?: string | null }) {
+/**
+ * A radio-panel window: a pictogram segment, then the digits over an unlit 888.888.
+ * `error` (a wrong frequency) turns it red with a stop sign; `warn` (a NOTAM) rings it amber.
+ */
+function Window({ value, onChange, label, icon, from, error, warn }: { value: string; onChange?: (v: string) => void; label: string; icon: IconKind; from?: boolean; error?: string | null; warn?: string | null }) {
+  const tip = error ?? warn ?? (from ? "Carried over from the OFP" : undefined);
   return (
-    <span className={`rmp${value ? " has" : ""}${from ? " from" : ""}${warn ? " warn" : ""}`} data-tip={warn ?? (from ? "Carried over from the OFP" : undefined)} data-tip-title={warn ? label : undefined}>
+    <span className={`rmp${value ? " has" : ""}${from ? " from" : ""}${error ? " bad" : warn ? " warn" : ""}`} data-tip={tip} data-tip-title={error || warn ? label : undefined}>
+      <span className="rmp-ic">
+        <ChannelIcon kind={error ? "stop" : icon} />
+      </span>
       <span className="rmp-unlit" aria-hidden="true">
         888.888
       </span>
       <span className="rmp-flash" key={value} aria-hidden="true" />
       {onChange ? (
-        <input aria-label={label} inputMode="decimal" value={value} placeholder="" onChange={(e) => onChange(tidy(e.target.value))} spellCheck={false} />
+        <input aria-label={label} aria-invalid={!!error} inputMode="decimal" value={value} placeholder="" onChange={(e) => onChange(tidy(e.target.value))} spellCheck={false} />
       ) : (
         <span className="rmp-val">{value}</span>
+      )}
+    </span>
+  );
+}
+
+/** The type picker on an added channel: a pill that opens a menu of types with their pictograms. */
+function TypePicker({ value, onPick, where }: { value: ChannelType; onPick: (t: ChannelType) => void; where: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  const code = CHANNEL_TYPES.find(([t]) => t === value)?.[1] ?? "APP";
+  return (
+    <span className="ch-type" ref={ref}>
+      <button type="button" className="ch-type-btn" aria-haspopup="listbox" aria-expanded={open} aria-label={`${where} channel type: ${code}`} onClick={() => setOpen(!open)}>
+        {code} ▾
+      </button>
+      {open && (
+        <span className="ch-menu" role="listbox" aria-label="Channel type">
+          {CHANNEL_TYPES.map(([t, c, name]) => (
+            <button
+              key={t}
+              type="button"
+              role="option"
+              aria-selected={t === value}
+              onClick={() => {
+                onPick(t);
+                setOpen(false);
+              }}
+            >
+              <ChannelIcon kind={t} size={18} />
+              <b>{c}</b>
+              {name}
+            </button>
+          ))}
+        </span>
       )}
     </span>
   );
@@ -152,7 +207,7 @@ export function RadioApp() {
 
   /** Channels you add yourself (e.g. Oxford Approach), stored as radio.<scope>.x<n>.name / .freq. */
   const added = (scope: string) => {
-    const re = new RegExp(`^radio\\.${scope}\\.x(\\d+)\\.(name|freq)$`);
+    const re = new RegExp(`^radio\\.${scope}\\.x(\\d+)\\.(name|freq|type)$`);
     const saved = Object.keys(rec?.fields ?? {}).flatMap((k) => (re.exec(k) ? [Number(re.exec(k)![1])] : []));
     return [...new Set([...saved, ...(pending[scope] ?? [])])].sort((x, y) => x - y);
   };
@@ -163,38 +218,48 @@ export function RadioApp() {
   const removeChannel = (scope: string, n: number) => {
     put(`radio.${scope}.x${n}.name`, "", "");
     put(`radio.${scope}.x${n}.freq`, "", "");
+    put(`radio.${scope}.x${n}.type`, "", "");
     setPending((p) => ({ ...p, [scope]: (p[scope] ?? []).filter((x) => x !== n) }));
   };
 
-  const channel = (key: string, code: string, sub: ReactNode, label: string, editable = true) => {
+  const channel = (key: string, code: string, sub: ReactNode, label: string, icon: IconKind, editable = true) => {
     const v = get(key);
+    const err = comCheck(v);
     return (
-      <label key={key} className="radio-row">
+      <label key={key} className={`radio-row${err ? " bad" : ""}`}>
         <span className="radio-id">
           <span className="radio-svc">{code}</span>
-          <span className="radio-sub">{sub}</span>
+          <span className={`radio-sub${err ? " err" : ""}`}>{err ?? sub}</span>
         </span>
-        <Window value={v} label={label} onChange={editable ? (nv) => put(key, label, nv) : undefined} warn={comCheck(v)} />
+        <Window value={v} label={label} icon={icon} onChange={editable ? (nv) => put(key, label, nv) : undefined} error={err} />
       </label>
     );
   };
 
-  const addedRows = (scope: string, where: string) => (
+  const addedRows = (scope: string, where: string, fallback: ChannelType) => (
     <>
       {added(scope).map((n) => {
-        const nameKey = `radio.${scope}.x${n}.name`;
-        const freqKey = `radio.${scope}.x${n}.freq`;
-        const nm = get(nameKey);
-        const v = get(freqKey);
+        const base = `radio.${scope}.x${n}`;
+        const nm = get(`${base}.name`);
+        const v = get(`${base}.freq`);
+        const type = (CHANNEL_TYPES.find(([t]) => t === get(`${base}.type`))?.[0] ?? fallback) as ChannelType;
+        const err = comCheck(v);
         return (
-          <div key={n} className="radio-row added">
+          <div key={n} className={`radio-row added${err ? " bad" : ""}`}>
             <span className="radio-id">
-              <input className="radio-name-in" value={nm} placeholder="Station name" aria-label={`${where} added channel name`} onChange={(e) => put(nameKey, `${where} added channel ${n} name`, e.target.value.toUpperCase())} spellCheck={false} />
-              <button type="button" className="radio-sub linkish" onClick={() => removeChannel(scope, n)}>
-                Remove
-              </button>
+              <input className="radio-name-in" value={nm} placeholder="Station name" aria-label={`${where} added channel name`} onChange={(e) => put(`${base}.name`, `${where} added channel ${n} name`, e.target.value.toUpperCase())} spellCheck={false} />
+              <span className="radio-added-meta">
+                <TypePicker value={type} where={nm || where} onPick={(t) => put(`${base}.type`, `${where} added channel ${n} type`, t)} />
+                {err ? (
+                  <span className="radio-sub err">{err}</span>
+                ) : (
+                  <button type="button" className="radio-sub linkish" onClick={() => removeChannel(scope, n)}>
+                    Remove
+                  </button>
+                )}
+              </span>
             </span>
-            <Window value={v} label={nm || `${where} added channel`} onChange={(nv) => put(freqKey, `${where} ${nm || `added channel ${n}`}`, nv)} warn={comCheck(v)} />
+            <Window value={v} label={nm || `${where} added channel`} icon={type} onChange={(nv) => put(`${base}.freq`, `${where} ${nm || `added channel ${n}`}`, nv)} error={err} />
           </div>
         );
       })}
@@ -215,11 +280,11 @@ export function RadioApp() {
       </header>
       <h3 className="radio-group">COMMS</h3>
       <div className="radio-rows">
-        {APT_SERVICES.map(([svc, title]) => {
+        {APT_SERVICES.map(([svc, title, icon]) => {
           const dep = svc === "APP" && role === "Departure";
-          return channel(`radio.${icao}.${svc}`, dep ? "DEP" : svc, dep ? "Departure" : title, `${icao} ${dep ? "DEP" : svc}`, !!icao);
+          return channel(`radio.${icao}.${svc}`, dep ? "DEP" : svc, dep ? "Departure" : title, `${icao} ${dep ? "DEP" : svc}`, dep ? "dep" : icon, !!icao);
         })}
-        {icao && addedRows(icao, icao)}
+        {icao && addedRows(icao, icao, role === "Departure" ? "dep" : "app")}
       </div>
       {ilsList.length > 0 && (
         <>
@@ -233,7 +298,7 @@ export function RadioApp() {
                   <span className="radio-svc">ILS {r.rwy}</span>
                   <span className={`radio-sub${r.rwy === plannedRwy ? " radio-planned" : ""}`}>{r.rwy === plannedRwy ? "Planned runway" : "Runway"}</span>
                 </span>
-                <Window value={r.ils!} label={`ILS ${r.rwy}`} from warn={outageNote(r.ils!) ? `NOTAM: ${outageNote(r.ils!)}` : null} />
+                <Window value={r.ils!} label={`ILS ${r.rwy}`} icon="ils" from warn={outageNote(r.ils!) ? `NOTAM: ${outageNote(r.ils!)}` : null} />
               </div>
             ))}
           </div>
@@ -299,13 +364,13 @@ export function RadioApp() {
               Centres <span className="muted">· FIR / UIR crossings from the OFP</span>
             </h3>
             <div className="radio-rows">
-              {firs.map((f) => channel(`radio.fir.${f.name}`, f.name, <>Centre{f.eto && ` · ${f.eto}`}</>, `${f.name} centre`))}
+              {firs.map((f) => channel(`radio.fir.${f.name}`, f.name, <>Centre{f.eto && ` · ${f.eto}`}</>, `${f.name} centre`, "ctr"))}
               {!firs.length && <V v={null} w={30} />}
             </div>
             <h3 className="radio-group">
               Other stations <span className="muted">· information, approach units, and so on</span>
             </h3>
-            <div className="radio-rows">{addedRows("enroute", "En route")}</div>
+            <div className="radio-rows">{addedRows("enroute", "En route", "info")}</div>
             </Replay>
           </Section>
           <Section id="dest" no={3} title="Destination" meta={<span>COMMS · ILS</span>}>
