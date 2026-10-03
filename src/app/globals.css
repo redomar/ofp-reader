@@ -4479,3 +4479,247 @@ main[data-skin="dots"] .rmp .rmp-val {
     animation: none !important;
   }
 }
+
+/* ---------- Radio page: 05 NAV tuning sequence ---------- */
+.nav-lede {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.nav-phase {
+  margin-left: 96px;
+}
+.nav-none {
+  margin: 0 0 0 96px;
+}
+.nav-step {
+  display: grid;
+  grid-template-columns: 62px 34px minmax(0, 1fr);
+  align-items: center;
+  min-height: 72px;
+}
+.nav-eto {
+  padding-right: 10px;
+  text-align: right;
+  font: 600 15px var(--font-mono);
+  color: var(--ink-2);
+}
+.nav-eto small {
+  display: block;
+  font: 500 11px var(--font-sans);
+  color: var(--ink-3);
+}
+.nav-rail {
+  position: relative;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+}
+.nav-rail:has(.nav-dot)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 2px solid var(--rule-strong);
+}
+.nav-step.first .nav-rail::before {
+  top: 50%;
+}
+.nav-step.last .nav-rail::before {
+  bottom: 50%;
+}
+.nav-dot {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 2.5px solid var(--magenta);
+  border-radius: 50%;
+  background: var(--sheet);
+}
+.nav-step.apt .nav-dot {
+  width: 16px;
+  height: 16px;
+  background: var(--magenta);
+}
+.nav-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 5px 0;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--rule-strong);
+  background: var(--field);
+}
+.nav-card.warn {
+  border-left-color: var(--amber);
+}
+.nav-card.bad {
+  border-left-color: var(--red);
+}
+.nav-card:focus-within {
+  border-left-color: var(--blue);
+}
+.nav-step .radio-add {
+  grid-column: 3;
+  margin: 5px 0;
+}
+.nav-who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.nav-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.nav-ident,
+.nav-ident-in {
+  font: 700 22px/1 var(--font-cond);
+  letter-spacing: 0.08em;
+}
+.nav-ident-in {
+  width: 4.2ch;
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px dashed var(--rule-strong);
+  background: transparent;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.nav-ident-in::placeholder,
+.nav-name-in::placeholder {
+  color: var(--ink-3);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.nav-name-in {
+  flex: 1;
+  min-width: 0;
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px dashed var(--rule-strong);
+  background: transparent;
+  color: var(--ink-2);
+  font: 13.5px var(--font-sans);
+}
+.nav-ident-in:focus,
+.nav-name-in:focus {
+  outline: none;
+  border-bottom-color: var(--blue);
+}
+.nav-tag {
+  padding: 1px 7px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font: 700 11px var(--font-cond);
+  letter-spacing: 0.1em;
+}
+.nav-tag.ils {
+  border-color: var(--magenta);
+  color: var(--magenta);
+}
+.nav-tag.ndb {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.nav-name {
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+.nav-note {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.nav-note.warn {
+  color: var(--amber);
+  font-weight: 600;
+}
+.nav-note.bad {
+  color: var(--red);
+  font-weight: 600;
+}
+.nav-radio {
+  flex: none;
+  width: 58px;
+  text-align: right;
+  color: var(--ink-3);
+  font: 500 11px/1.2 var(--font-cond);
+  letter-spacing: 0.1em;
+}
+.nav-radio b {
+  display: block;
+  color: var(--ink);
+  font: 700 15px var(--font-cond);
+  letter-spacing: 0.08em;
+}
+.morse {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.morse-l {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.morse-l i {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 6px;
+}
+.morse-l b {
+  color: var(--ink-3);
+  font: 600 10.5px var(--font-mono);
+}
+.dit,
+.dah {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ink-2);
+}
+.dit {
+  width: 5px;
+}
+.dah {
+  width: 14px;
+}
+.rmp-unit {
+  margin-left: 3px;
+  font: 600 10px var(--font-cond);
+  letter-spacing: 0.08em;
+  vertical-align: 2px;
+  opacity: 0.6;
+  text-shadow: none;
+}
+.ch-menu.wide {
+  width: min(430px, calc(100vw - 48px));
+}
+.ch-menu.wide button b {
+  width: 58px;
+  flex: none;
+}
+@media (max-width: 640px) {
+  .nav-step {
+    grid-template-columns: 48px 24px minmax(0, 1fr);
+  }
+  .nav-phase,
+  .nav-none {
+    margin-left: 72px;
+  }
+  .nav-card {
+    flex-wrap: wrap;
+  }
+  .nav-radio {
+    text-align: left;
+  }
+}

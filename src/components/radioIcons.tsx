@@ -10,7 +10,19 @@ export const CHANNEL_TYPES = [
   ["info", "INFO", "Flight information"],
 ] as const;
 export type ChannelType = (typeof CHANNEL_TYPES)[number][0];
-export type IconKind = ChannelType | "ils" | "stop";
+
+/** Navaid types for ones you add yourself; NDB is tuned in kHz on the ADF, the rest in MHz on a NAV radio. */
+export const NAVAID_TYPES = [
+  ["vor", "VOR", "VHF omni range"],
+  ["vordme", "VOR/DME", "with distance"],
+  ["ndb", "NDB", "ADF · kHz"],
+  ["ils", "ILS", "localiser + glide"],
+  ["loc", "LOC", "localiser only"],
+  ["dme", "DME", "distance only"],
+] as const;
+export type NavaidType = (typeof NAVAID_TYPES)[number][0];
+
+export type IconKind = ChannelType | NavaidType | "stop";
 
 const PATHS: Record<IconKind, React.ReactNode> = {
   atis: (
@@ -46,6 +58,33 @@ const PATHS: Record<IconKind, React.ReactNode> = {
     </>
   ),
   ils: <path d="M12 21l-3.5-9h7zM12 4v3M12 21L4 7M12 21l8-14" />,
+  loc: <path d="M12 21l-3.5-9h7zM12 21L5 9M12 21l7-12" />,
+  vor: (
+    <>
+      <path d="M8.5 4.5h7L19 12l-3.5 7.5h-7L5 12z" />
+      <circle cx="12" cy="12" r="1.6" className="fill" />
+    </>
+  ),
+  vordme: (
+    <>
+      <rect x="4" y="5" width="16" height="14" rx="1.5" />
+      <path d="M9 7h6l3 5-3 5H9l-3-5z" />
+      <circle cx="12" cy="12" r="1.4" className="fill" />
+    </>
+  ),
+  ndb: (
+    <>
+      <circle cx="12" cy="12" r="1.8" className="fill" />
+      <circle cx="12" cy="12" r="5" strokeDasharray="1.2 2.2" />
+      <circle cx="12" cy="12" r="8.5" strokeDasharray="1.2 2.6" />
+    </>
+  ),
+  dme: (
+    <>
+      <rect x="5" y="5" width="14" height="14" rx="1.5" />
+      <circle cx="12" cy="12" r="1.6" className="fill" />
+    </>
+  ),
   stop: (
     <>
       <path d="M8.3 3h7.4L21 8.3v7.4L15.7 21H8.3L3 15.7V8.3z" />

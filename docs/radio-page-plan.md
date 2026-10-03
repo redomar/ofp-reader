@@ -30,7 +30,8 @@ Carried-over values are read-only and marked "from OFP", so they're never confus
 
 ## 5. Design (consistent with the plan page)
 - Same shell: top bar with Brand "· Radio", numbered collapsible Sections, a Contents rail, and day / night themes.
-- Sections: 01 Departure · 02 En route · 03 Destination · 04 Alternates · 05 Navaids & ILS (the OFP's frequencies in one table).
+- Sections: 01 Departure · 02 En route · 03 Destination · 04 Alternates · 05 NAV tuning.
+- **05 NAV tuning** is a timeline in flight order: the planned departure runway's ILS (or "no ILS", plus the reciprocal runway's ILS for a quick return), each VOR / NDB on the route with its ETO, then the planned landing runway's ILS. Each step shows the ident in Morse, which radio to tune it on (ILS on NAV 1, VOR on NAV 2, NDB on the ADF, in kHz) and a NOTAM ring if it's out of service. "+ Add navaid" adds your own (VOR, VOR/DME, NDB, ILS, LOC, DME) with the same checks.
 - **Flair:** each frequency sits in a small radio-panel "window": dark glass, amber monospaced digits, and a dim `888.888` placeholder like an unlit display. Carried-over ones use the same window, dimmer and with a "from OFP" tag. It stays within the existing tokens, rules and fonts.
 - Airport headers reuse the split-flap ICAO tiles and the flags.
 
