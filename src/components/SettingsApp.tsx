@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Brand, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
 import { TooltipLayer } from "./TooltipLayer";
@@ -21,8 +21,11 @@ import {
   subscribe,
   type FlightRecord,
   type ThemePref,
+  writeField,
 } from "@/lib/storage";
 import { clearPdfs, deletePdf } from "@/lib/pdfCache";
+import { adoptFlightParam, mirrorFlightParam, setActive, useActiveFlight } from "@/lib/active";
+import { PlanChips, StatusLine } from "./FlightMenu";
 import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
 
 const SECTIONS = [
@@ -119,6 +122,15 @@ function StripIcon({ mode }: { mode: StripMode }) {
   );
 }
 
+function LockIcon({ open, dim }: { open: boolean; dim?: boolean }) {
+  return (
+    <svg className={cx("lock-ic", dim && "dim")} viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d={open ? "M8 11V7.5a4 4 0 0 1 7.6-1.7" : "M8 11V7.5a4 4 0 0 1 8 0V11"} />
+    </svg>
+  );
+}
+
 export function SettingsApp() {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const ready = version >= 0;
@@ -127,11 +139,19 @@ export function SettingsApp() {
   const theme = useMemo<ThemePref>(() => (version >= 0 ? readTheme() : "system"), [version]);
   const bytes = useMemo(() => (version >= 0 ? storageBytes() : 0), [version]);
   const pdfBytes = flights.reduce((s, f) => s + (f.meta.pdfSize ?? 0), 0);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The flight shown below is the active flight (shared with every page); choosing a row switches it.
+  const { id: activeId, ready: activeReady } = useActiveFlight();
+  useEffect(() => {
+    if (activeReady) adoptFlightParam();
+  }, [activeReady]);
+  useEffect(() => {
+    if (activeReady) mirrorFlightParam(activeId);
+  }, [activeReady, activeId]);
   const [stripMode, setStripMode] = useStripMode();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importMsgs, setImportMsgs] = useState<ImportMsg[]>([]);
-  const sel = flights.find((f) => f.meta.id === selectedId) ?? flights[0] ?? null;
+  const [unlocked, setUnlocked] = useState(false);
+  const sel = flights.find((f) => f.meta.id === activeId) ?? null;
 
   const groups = useMemo(() => {
     if (!sel) return [];
@@ -164,25 +184,24 @@ export function SettingsApp() {
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status" role="status">
-          <span>
+        <StatusLine>
+          <PlanChips />
+          <span className="examples-sep" aria-hidden="true" />
+          <span role="status">
             {ready
               ? `${flights.length} saved ${flights.length === 1 ? "flight" : "flights"} · ${fmtBytes(bytes + pdfBytes)} used in this browser`
               : "Reading browser storage…"}
           </span>
-        </div>
+        </StatusLine>
       </header>
 
       <div className="layout">
         <Toc
           sections={SECTIONS}
-          footer={
-            <Link href="/" className="toc-link">
-              ← Back to reader
-            </Link>
-          }
         />
         <main id="main" className={ready ? "is-filled" : ""}>
+          {ready && activeReady && (
+            <>
           <Section id="flights" no={1} title="Saved flights" meta={<span>{ready ? `${flights.length} ${flights.length === 1 ? "plan" : "plans"}` : "—"}</span>}>
             <p className="small muted" style={{ marginTop: 0 }}>
               Every plan you open gets its own storage, identified by{" "}
@@ -209,7 +228,7 @@ export function SettingsApp() {
                   const { msgs, lastId } = await importFiles(files);
                   input.value = "";
                   setImportMsgs(msgs);
-                  if (lastId) setSelectedId(lastId);
+                  if (lastId) setActive(lastId);
                 }}
               />
             </div>
@@ -273,9 +292,14 @@ export function SettingsApp() {
                       return (
                         <tr key={m.id} className={cx(on && "active")}>
                           <th scope="row">
-                            <button type="button" className="linkish" aria-pressed={on} onClick={() => setSelectedId(m.id)}>
+                            <button type="button" className="linkish" aria-pressed={on} onClick={() => setActive(m.id)}>
                               {m.flightNo ?? m.id}
                             </button>{" "}
+                            {on && (
+                              <Badge tone="mag" tip="The flight every page shows. Choose another row, or use the flight menu on any page, to switch.">
+                                Active
+                              </Badge>
+                            )}
                             {m.keyBasis === "fallback" && (
                               <Badge tone="amber" tip="This plan had no flight or OFP number, so it is identified by a fingerprint of its first page.">
                                 fingerprint
@@ -299,8 +323,8 @@ export function SettingsApp() {
                           <td className="small">{when(m.updatedAt)}</td>
                           <td>
                             <span className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
-                              <button type="button" className="toggle" onClick={() => setSelectedId(m.id)} aria-label={`View stored data for ${m.flightNo ?? m.id}`}>
-                                View
+                              <button type="button" className="toggle" aria-pressed={on} onClick={() => setActive(m.id)} aria-label={`Make ${m.flightNo ?? m.id} the active flight`}>
+                                {on ? "Active" : "Select"}
                               </button>
                               {href && (
                                 <Link className="toggle" href={href} aria-label={`Open ${m.flightNo ?? m.id} in the reader`}>
@@ -407,6 +431,12 @@ export function SettingsApp() {
                 >
                   Delete flight
                 </button>
+                {groups.length > 0 && (
+                  <button type="button" className={cx("btn", "lock-toggle", unlocked && "btn-danger is-open")} aria-pressed={unlocked} onClick={() => setUnlocked(!unlocked)} title={unlocked ? "Lock: hide the delete buttons" : "Unlock to delete single saved entries"}>
+                    <LockIcon open={unlocked} />
+                    {unlocked ? "Lock" : "Unlock to delete"}
+                  </button>
+                )}
               </div>
             )}
 
@@ -421,7 +451,7 @@ export function SettingsApp() {
               <div className="cols" style={{ ["--min" as string]: "320px" }}>
                 {groups.map((g) => (
                   <div className="tbl-wrap" key={g.section}>
-                    <table className="tbl">
+                    <table className={cx("tbl", "entries-tbl", unlocked && "unlocked")}>
                       <caption>
                         {g.section} · {g.items.length}
                       </caption>
@@ -429,6 +459,9 @@ export function SettingsApp() {
                         <tr>
                           <th scope="col">Field</th>
                           <th scope="col">Value</th>
+                          <th scope="col" className="del-col">
+                            <span className="sr-only">Delete</span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -438,6 +471,19 @@ export function SettingsApp() {
                               {it.label}
                             </th>
                             <td style={{ whiteSpace: "pre-wrap", color: "var(--blue)" }}>{it.value}</td>
+                            <td className="del-col">
+                              {unlocked ? (
+                                <button type="button" className="row-del" aria-label={`Delete ${it.label}`} title={`Delete ${it.label}`} onClick={() => writeField(sel.meta.id, it.key, null)}>
+                                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                                    <path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13M10.5 11v5.5M13.5 11v5.5" />
+                                  </svg>
+                                </button>
+                              ) : (
+                                <span className="del-slot">
+                                  <LockIcon open={false} dim />
+                                </span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -519,6 +565,8 @@ export function SettingsApp() {
               </button>
             </div>
           </Section>
+            </>
+          )}
         </main>
       </div>
       <TooltipLayer />

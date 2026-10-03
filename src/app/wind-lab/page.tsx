@@ -1,14 +1,17 @@
 "use client";
 
 /*
- * WIND LAB — demonstration page (/wind-lab) for tuning the wind-arrow sway before
- * it goes into the app. Not linked from the reader.
+ * WIND LAB — experimental page (/wind-lab) for tuning the wind-arrow sway. Linked from
+ * the reader's Contents under "Experimental".
  */
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Brand, ThemeToggle, Toc } from "@/components/chrome";
+import { CollapseAllButton, CollapseProvider } from "@/components/collapse";
+import { Section } from "@/components/ui";
 import { createSway, loop, makeEase, subscribe, type ChaosCfg, type ChaosModel, type SwayInput } from "@/lib/wind/engine";
 import { CATS, EASES, PROPOSAL, bpmFor, compute, type Cat, type Cfg, type Kind, type Mapping, type Sample } from "@/lib/wind/model";
-
 
 const PRESETS: Record<string, Partial<Cfg>> = {
   "Proposal (default)": {},
@@ -35,10 +38,9 @@ const CHAOS_PRESETS: Record<string, Partial<ChaosCfg>> = {
   "Gust kicks": { model: "kicks", kickRate: 0.9, kickStrength: 1.1, kickAttackMs: 60, kickDecayMs: 350 },
   "Spring vane": { model: "spring", stiffness: 60, damping: 6, targetRate: 1.4 },
   "Combo (default)": { model: "combo", freqHz: 0.9, kickRate: 0.8, kickStrength: 1, kickAttackMs: 70, kickDecayMs: 380 },
-  "Nervous": { model: "combo", freqHz: 2.2, kickRate: 2, kickStrength: 0.8, kickAttackMs: 40, kickDecayMs: 200 },
+  Nervous: { model: "combo", freqHz: 2.2, kickRate: 2, kickStrength: 0.8, kickAttackMs: 40, kickDecayMs: 200 },
   "Heavy shoves": { model: "kicks", kickRate: 0.4, kickStrength: 1.4, kickAttackMs: 90, kickDecayMs: 700 },
 };
-
 
 function parseMetarWind(s: string): Pick<Sample, "dir" | "spd" | "gust" | "sector"> {
   const m = s.match(/(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?KT(?:\s+(\d{3})V(\d{3}))?/);
@@ -102,7 +104,6 @@ const SAMPLES: Sample[] = [
   avg("270/085", "Jet-stream route"),
   avg("250/150", "Strong jet core"),
 ];
-
 
 /* ---------------- visuals ---------------- */
 
@@ -265,19 +266,25 @@ function Card({ s, i, cfg, phase }: { s: Sample; i: number; cfg: Cfg; phase: num
 
 const kindLabel: Record<Kind, string> = { METAR: "METAR wind chip", PWIND: "TLR PWIND", AVG: "AVG WIND (cruise)", CUSTOM: "Custom" };
 
+const WL_SECTIONS = [
+  ["controls", "Controls"],
+  ["filters", "Filters & custom card"],
+  ["arrows", "Arrows"],
+] as const;
+
 export default function WindLab() {
   const [cfg, setCfg] = useState<Cfg>(PROPOSAL);
   const [filter, setFilter] = useState<Kind | "ALL">("ALL");
   const [catFilter, setCatFilter] = useState<Cat | "ALL">("ALL");
-  const [panelOpen, setPanelOpen] = useState(true);
   const [custom, setCustom] = useState({ dir: 240, spd: 22, gust: 34, s0: "", s1: "" });
+  const [customOn, setCustomOn] = useState(false);
   const set = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
   const setChaos = <K extends keyof ChaosCfg>(k: K, v: ChaosCfg[K]) => setCfg((c) => ({ ...c, chaos: { ...c.chaos, [k]: v } }));
   useEffect(() => {
     loop.speed = cfg.speedMul;
     loop.paused = cfg.paused;
   }, [cfg.speedMul, cfg.paused]);
-  const phases = useMemo(() => SAMPLES.map((_, i) => ((i * 0.6180339) % 1)), []);
+  const phases = useMemo(() => SAMPLES.map((_, i) => (i * 0.6180339) % 1), []);
 
   const customSample: Sample = {
     kind: "CUSTOM",
@@ -288,15 +295,17 @@ export default function WindLab() {
     gust: custom.gust > custom.spd ? custom.gust : null,
     sector: custom.s0 && custom.s1 ? [Number(custom.s0), Number(custom.s1)] : null,
   };
-  const list = [customSample, ...SAMPLES].filter(
-    (s) => s.kind === "CUSTOM" || ((filter === "ALL" || s.kind === filter) && (catFilter === "ALL" || compute(s, cfg).cat === catFilter)),
-  );
+  const list = [...(customOn ? [customSample] : []), ...SAMPLES].filter((s) => s.kind === "CUSTOM" || ((filter === "ALL" || s.kind === filter) && (catFilter === "ALL" || compute(s, cfg).cat === catFilter)));
   const catCount = (k: Cat) => SAMPLES.filter((s) => (filter === "ALL" || s.kind === filter) && compute(s, cfg).cat === k).length;
 
   const num = (k: keyof Cfg, label: string, min: number, max: number, step: number, unit = "") => (
     <label className="wl-ctl">
       <span>
-        {label} <b>{String(cfg[k])}{unit}</b>
+        {label}{" "}
+        <b>
+          {String(cfg[k])}
+          {unit}
+        </b>
       </span>
       <input type="range" min={min} max={max} step={step} value={cfg[k] as number} onChange={(e) => set(k, Number(e.target.value) as never)} />
     </label>
@@ -304,7 +313,11 @@ export default function WindLab() {
   const chaosNum = (k: keyof ChaosCfg, label: string, min: number, max: number, step: number, unit = "") => (
     <label className="wl-ctl">
       <span>
-        {label} <b>{String(cfg.chaos[k])}{unit}</b>
+        {label}{" "}
+        <b>
+          {String(cfg.chaos[k])}
+          {unit}
+        </b>
       </span>
       <input type="range" min={min} max={max} step={step} value={cfg.chaos[k] as number} onChange={(e) => setChaos(k, Number(e.target.value) as never)} />
     </label>
@@ -319,270 +332,293 @@ export default function WindLab() {
   const curve = Array.from({ length: 61 }, (_, kt) => [kt, bpmFor(kt, cfg)] as const);
 
   return (
-    <div className="wl">
+    <CollapseProvider>
       <style>{CSS}</style>
-      <header className="wl-head">
-        <h1>Wind Lab</h1>
-        <div className="wl-row">
-          <button aria-expanded={panelOpen} aria-controls="wl-panel" onClick={() => setPanelOpen(!panelOpen)}>
-            {panelOpen ? "▴ Hide controls" : "▾ Show controls"}
+      <a href="#main" className="skip">
+        Skip to the arrows
+      </a>
+      <header className="topbar">
+        <div className="topbar-inner">
+          <Brand sub="· Wind lab" />
+          <span className="wl-exp">Experimental</span>
+          <span style={{ flex: 1 }} />
+          <button type="button" className="btn" onClick={() => set("paused", !cfg.paused)}>
+            {cfg.paused ? "▶ Play" : "❚❚ Pause"}
           </button>
-          <button onClick={() => set("paused", !cfg.paused)}>{cfg.paused ? "▶ Play" : "❚❚ Pause"}</button>
-          <button onClick={() => setCfg(PROPOSAL)}>Reset to proposal</button>
-          <button
-            onClick={() => {
-              const d = document.documentElement;
-              d.dataset.theme = d.dataset.theme === "dark" ? "light" : "dark";
-            }}
-          >
-            Day / night
+          <button type="button" className="btn" onClick={() => setCfg(PROPOSAL)}>
+            Reset to proposal
           </button>
+          <CollapseAllButton ids={WL_SECTIONS.map(([id]) => id)} className="btn status-all" />
+          <Link href="/" className="btn">
+            ← Back to reader
+          </Link>
+          <ThemeToggle />
+        </div>
+        <div className="status" role="status">
+          <span>Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One beat = {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}.</span>
         </div>
       </header>
-      <p className="wl-intro">
-        Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One <b>beat</b> ={" "}
-        {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}. Only the bar above stays on screen while you scroll.
-      </p>
+      <div className="layout wl">
+        <Toc sections={WL_SECTIONS} />
+        <main id="main" className="is-filled">
+          <Section id="controls" no={1} title="Controls" meta={<span>rhythm · gusts · chaos · motion</span>}>
+            <div className="wl-panel" id="wl-panel">
+              <div className="wl-group">
+                <h2>Presets</h2>
+                <div className="wl-row">
+                  {Object.entries(PRESETS).map(([n, p]) => (
+                    <button key={n} onClick={() => setCfg({ ...PROPOSAL, ...p })}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-      <section className="wl-panel" id="wl-panel" hidden={!panelOpen}>
-        <div className="wl-group">
-          <h2>Presets</h2>
-          <div className="wl-row">
-            {Object.entries(PRESETS).map(([n, p]) => (
-              <button key={n} onClick={() => setCfg({ ...PROPOSAL, ...p })}>
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
+              <div className="wl-group">
+                <h2>Speed → rhythm</h2>
+                <label className="wl-ctl">
+                  <span>Mapping</span>
+                  <select value={cfg.mapping} onChange={(e) => set("mapping", e.target.value as Mapping)}>
+                    <option value="piecewise">Piecewise (pilot thresholds)</option>
+                    <option value="linear">Linear</option>
+                    <option value="sqrt">Square root (fast early)</option>
+                    <option value="log">Logarithmic</option>
+                  </select>
+                </label>
+                {num("floorBpm", "Floor", 20, 200, 5, " bpm")}
+                {num("capBpm", "Cap", 100, 600, 10, " bpm")}
+                {num("calmKt", "Calm ≤", 0, 10, 1, " kt")}
+                {num("capKt", "Cap reached at", 20, 120, 1, " kt")}
+                <label className="wl-ctl">
+                  <span>Beat =</span>
+                  <select value={cfg.beat} onChange={(e) => set("beat", e.target.value as Cfg["beat"])}>
+                    <option value="swing">one swing (tick→tock)</option>
+                    <option value="cycle">full cycle (L→R→L)</option>
+                  </select>
+                </label>
+                {num("upperDiv", "AVG WIND (upper air) ÷", 1, 8, 0.5)}
+              </div>
 
-        <div className="wl-group">
-          <h2>Speed → rhythm</h2>
-          <label className="wl-ctl">
-            <span>Mapping</span>
-            <select value={cfg.mapping} onChange={(e) => set("mapping", e.target.value as Mapping)}>
-              <option value="piecewise">Piecewise (pilot thresholds)</option>
-              <option value="linear">Linear</option>
-              <option value="sqrt">Square root (fast early)</option>
-              <option value="log">Logarithmic</option>
-            </select>
-          </label>
-          {num("floorBpm", "Floor", 20, 200, 5, " bpm")}
-          {num("capBpm", "Cap", 100, 600, 10, " bpm")}
-          {num("calmKt", "Calm ≤", 0, 10, 1, " kt")}
-          {num("capKt", "Cap reached at", 20, 120, 1, " kt")}
-          <label className="wl-ctl">
-            <span>Beat =</span>
-            <select value={cfg.beat} onChange={(e) => set("beat", e.target.value as Cfg["beat"])}>
-              <option value="swing">one swing (tick→tock)</option>
-              <option value="cycle">full cycle (L→R→L)</option>
-            </select>
-          </label>
-          {num("upperDiv", "AVG WIND (upper air) ÷", 1, 8, 0.5)}
-        </div>
+              <div className="wl-group">
+                <h2>Piecewise anchors</h2>
+                <table className="wl-anchors">
+                  <thead>
+                    <tr>
+                      <th>kt</th>
+                      <th>bpm</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cfg.anchors.map(([k, b], i) => (
+                      <tr key={i}>
+                        <td>
+                          <input type="number" value={k} onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [Number(e.target.value), a[1]] : a)) as Cfg["anchors"])} />
+                        </td>
+                        <td>
+                          <input type="number" value={b} onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [a[0], Number(e.target.value)] : a)) as Cfg["anchors"])} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <svg viewBox="0 0 240 110" className="wl-curve" aria-label="bpm against wind speed">
+                  {[0, 10, 20, 30, 40, 50, 60].map((kt) => (
+                    <g key={kt}>
+                      <line x1={20 + kt * 3.6} x2={20 + kt * 3.6} y1={8} y2={92} stroke="var(--grid)" />
+                      <text x={20 + kt * 3.6} y={104} textAnchor="middle">
+                        {kt}
+                      </text>
+                    </g>
+                  ))}
+                  {[20, 34].map((kt) => (
+                    <line key={kt} x1={20 + kt * 3.6} x2={20 + kt * 3.6} y1={8} y2={92} stroke={kt === 20 ? "var(--amber)" : "var(--red)"} strokeDasharray="3 2" />
+                  ))}
+                  <polyline fill="none" stroke="var(--magenta)" strokeWidth="2" points={curve.map(([kt, b]) => `${20 + kt * 3.6},${92 - (b / 600) * 84}`).join(" ")} />
+                  <text x={4} y={12}>
+                    600
+                  </text>
+                  <text x={4} y={94}>
+                    0
+                  </text>
+                </svg>
+                <p className="wl-mini">amber = strong-wind warning (20 kt) · red = gale (34 kt) · x = kt, y = bpm</p>
+              </div>
 
-        <div className="wl-group">
-          <h2>Piecewise anchors</h2>
-          <table className="wl-anchors">
-            <thead>
-              <tr>
-                <th>kt</th>
-                <th>bpm</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cfg.anchors.map(([k, b], i) => (
-                <tr key={i}>
-                  <td>
-                    <input type="number" value={k} onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [Number(e.target.value), a[1]] : a)) as Cfg["anchors"])} />
-                  </td>
-                  <td>
-                    <input type="number" value={b} onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [a[0], Number(e.target.value)] : a)) as Cfg["anchors"])} />
-                  </td>
-                </tr>
+              <div className="wl-group">
+                <h2>Gusts → swing size</h2>
+                {num("baseAmp", "No-gust sway ±", 0, 15, 0.5, "°")}
+                {num("ampPerKt", "Per kt of gust spread", 0, 5, 0.1, "°")}
+                {num("maxAmp", "Max sway ±", 5, 90, 1, "°")}
+                {num("vrbAmp", "VRB wander ±", 0, 180, 5, "°")}
+                {chk("useSector", "Use METAR variable sector (e.g. 080V160)")}
+              </div>
+
+              <div className="wl-group">
+                <h2>Gust chaos (gusts · VRB · sectors)</h2>
+                <label className="wl-ctl">
+                  <span>Model</span>
+                  <select value={cfg.chaos.model} onChange={(e) => setChaos("model", e.target.value as ChaosModel)}>
+                    <option value="none">None — metronome</option>
+                    <option value="sines">Sine stack (1 : 1.618 : 2.71)</option>
+                    <option value="noise">Smooth noise</option>
+                    <option value="kicks">Gust kicks</option>
+                    <option value="spring">Spring vane</option>
+                    <option value="combo">Combo: sines + kicks</option>
+                  </select>
+                </label>
+                <div className="wl-row" style={{ marginBottom: 8 }}>
+                  {Object.entries(CHAOS_PRESETS).map(([n, p]) => (
+                    <button key={n} className="wl-small" aria-pressed={false} onClick={() => setCfg((c) => ({ ...c, chaos: { ...c.chaos, ...p } }))}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <label className="wl-ctl">
+                  <span>
+                    Share given to chaos <b>{Math.round(cfg.chaosShare * 100)}%</b>
+                  </span>
+                  <input type="range" min={0} max={1} step={0.05} value={cfg.chaosShare} onChange={(e) => set("chaosShare", Number(e.target.value))} />
+                </label>
+                <label className="wl-ctl">
+                  <span>Applies to</span>
+                  <select value={cfg.chaosScope} onChange={(e) => set("chaosScope", e.target.value as Cfg["chaosScope"])}>
+                    <option value="gusty">Gusts, VRB and variable sectors only</option>
+                    <option value="all">Every arrow (steady ones get a little)</option>
+                  </select>
+                </label>
+                {cfg.chaosScope === "all" && num("steadyChaos", "Steady-wind chaos ±", 0, 10, 0.5, "°")}
+                <button className="wl-small" onClick={() => set("seedRound", cfg.seedRound + 1)}>
+                  ↻ Re-roll randomness
+                </button>
+              </div>
+
+              <div className="wl-group">
+                <h2>Chaos tuning</h2>
+                {chaosNum("freqHz", "Wobble frequency", 0.1, 5, 0.1, " Hz")}
+                <label className="wl-chk">
+                  <input type="checkbox" checked={cfg.chaos.freqFromBpm} onChange={(e) => setChaos("freqFromBpm", e.target.checked)} /> Tie wobble to rhythm (× swing rate)
+                </label>
+                {cfg.chaos.freqFromBpm && chaosNum("freqMul", "× swing rate", 0.1, 3, 0.05)}
+                {chaosNum("kickRate", "Kicks / s at 10 kt spread", 0, 4, 0.1)}
+                {chaosNum("kickStrength", "Kick strength", 0.1, 2, 0.05, "×")}
+                {chaosNum("kickAttackMs", "Kick attack", 10, 300, 5, " ms")}
+                {chaosNum("kickDecayMs", "Kick recovery", 50, 1500, 10, " ms")}
+                {chaosNum("stiffness", "Spring stiffness", 5, 300, 5)}
+                {chaosNum("damping", "Spring damping", 0.5, 30, 0.5)}
+                {chaosNum("targetRate", "Spring target changes / s", 0.1, 5, 0.1)}
+              </div>
+
+              <div className="wl-group">
+                <h2>Motion</h2>
+                <label className="wl-ctl">
+                  <span>Easing</span>
+                  <select value={cfg.ease} onChange={(e) => set("ease", e.target.value)}>
+                    {Object.keys(EASES).map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                    <option value="custom">custom…</option>
+                  </select>
+                </label>
+                {cfg.ease === "custom" && (
+                  <label className="wl-ctl">
+                    <span>timing function</span>
+                    <input value={cfg.customEase} onChange={(e) => set("customEase", e.target.value)} />
+                  </label>
+                )}
+                {num("speedMul", "Playback ×", 0.1, 3, 0.05)}
+                {num("size", "Card arrow size", 24, 140, 2, "px")}
+                {chk("randomPhase", "Randomise phase (arrows not in sync)")}
+                {chk("guides", "Show sway sector guides")}
+                {chk("catColour", "Colour by wind category")}
+                {chk("reduced", "Simulate reduced motion")}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="filters" no={2} title="Filters & custom card" meta={<span>{list.length} shown</span>}>
+            <div className="wl-row wl-filter">
+              {(["ALL", "METAR", "PWIND", "AVG"] as const).map((k) => (
+                <button key={k} aria-pressed={filter === k} onClick={() => setFilter(k)}>
+                  {k === "ALL" ? `All (${SAMPLES.length})` : kindLabel[k]}
+                </button>
               ))}
-            </tbody>
-          </table>
-          <svg viewBox="0 0 240 110" className="wl-curve" aria-label="bpm against wind speed">
-            {[0, 10, 20, 30, 40, 50, 60].map((kt) => (
-              <g key={kt}>
-                <line x1={20 + kt * 3.6} x2={20 + kt * 3.6} y1={8} y2={92} stroke="var(--grid)" />
-                <text x={20 + kt * 3.6} y={104} textAnchor="middle">
-                  {kt}
-                </text>
-              </g>
-            ))}
-            {[20, 34].map((kt) => (
-              <line key={kt} x1={20 + kt * 3.6} x2={20 + kt * 3.6} y1={8} y2={92} stroke={kt === 20 ? "var(--amber)" : "var(--red)"} strokeDasharray="3 2" />
-            ))}
-            <polyline fill="none" stroke="var(--magenta)" strokeWidth="2" points={curve.map(([kt, b]) => `${20 + kt * 3.6},${92 - (b / 600) * 84}`).join(" ")} />
-            <text x={4} y={12}>600</text>
-            <text x={4} y={94}>0</text>
-          </svg>
-          <p className="wl-mini">amber = strong-wind warning (20 kt) · red = gale (34 kt) · x = kt, y = bpm</p>
-        </div>
+            </div>
 
-        <div className="wl-group">
-          <h2>Gusts → swing size</h2>
-          {num("baseAmp", "No-gust sway ±", 0, 15, 0.5, "°")}
-          {num("ampPerKt", "Per kt of gust spread", 0, 5, 0.1, "°")}
-          {num("maxAmp", "Max sway ±", 5, 90, 1, "°")}
-          {num("vrbAmp", "VRB wander ±", 0, 180, 5, "°")}
-          {chk("useSector", "Use METAR variable sector (e.g. 080V160)")}
-        </div>
-
-        <div className="wl-group">
-          <h2>Gust chaos (gusts · VRB · sectors)</h2>
-          <label className="wl-ctl">
-            <span>Model</span>
-            <select value={cfg.chaos.model} onChange={(e) => setChaos("model", e.target.value as ChaosModel)}>
-              <option value="none">None — metronome</option>
-              <option value="sines">Sine stack (1 : 1.618 : 2.71)</option>
-              <option value="noise">Smooth noise</option>
-              <option value="kicks">Gust kicks</option>
-              <option value="spring">Spring vane</option>
-              <option value="combo">Combo: sines + kicks</option>
-            </select>
-          </label>
-          <div className="wl-row" style={{ marginBottom: 8 }}>
-            {Object.entries(CHAOS_PRESETS).map(([n, p]) => (
-              <button key={n} className="wl-small" aria-pressed={false} onClick={() => setCfg((c) => ({ ...c, chaos: { ...c.chaos, ...p } }))}>
-                {n}
+            <div className="wl-row wl-cats" role="group" aria-label="Filter by wind category">
+              <button aria-pressed={catFilter === "ALL"} onClick={() => setCatFilter("ALL")}>
+                Any strength
               </button>
-            ))}
-          </div>
-          <label className="wl-ctl">
-            <span>
-              Share given to chaos <b>{Math.round(cfg.chaosShare * 100)}%</b>
-            </span>
-            <input type="range" min={0} max={1} step={0.05} value={cfg.chaosShare} onChange={(e) => set("chaosShare", Number(e.target.value))} />
-          </label>
-          <label className="wl-ctl">
-            <span>Applies to</span>
-            <select value={cfg.chaosScope} onChange={(e) => set("chaosScope", e.target.value as Cfg["chaosScope"])}>
-              <option value="gusty">Gusts, VRB and variable sectors only</option>
-              <option value="all">Every arrow (steady ones get a little)</option>
-            </select>
-          </label>
-          {cfg.chaosScope === "all" && num("steadyChaos", "Steady-wind chaos ±", 0, 10, 0.5, "°")}
-          <button className="wl-small" onClick={() => set("seedRound", cfg.seedRound + 1)}>
-            ↻ Re-roll randomness
-          </button>
-        </div>
+              {(Object.keys(CATS) as Cat[]).map((k) => (
+                <button key={k} className="wl-catbtn" aria-pressed={catFilter === k} onClick={() => setCatFilter(catFilter === k ? "ALL" : k)} style={{ ["--cat" as string]: CATS[k].color, ["--cat-ink" as string]: CATS[k].ink }}>
+                  <i aria-hidden="true" />
+                  {CATS[k].label}
+                  <small>{CATS[k].rule(cfg.calmKt)}</small>
+                  <small>({catCount(k)})</small>
+                </button>
+              ))}
+              <span className="wl-mini">AVG WIND uses its ÷ scaled speed; High follows the Met Office strong-wind warning (20 kt / 28 G); gale (34 / 43 G) and storm (48 kt) follow theirs.</span>
+            </div>
 
-        <div className="wl-group">
-          <h2>Chaos tuning</h2>
-          {chaosNum("freqHz", "Wobble frequency", 0.1, 5, 0.1, " Hz")}
-          <label className="wl-chk">
-            <input type="checkbox" checked={cfg.chaos.freqFromBpm} onChange={(e) => setChaos("freqFromBpm", e.target.checked)} /> Tie wobble to rhythm (× swing rate)
-          </label>
-          {cfg.chaos.freqFromBpm && chaosNum("freqMul", "× swing rate", 0.1, 3, 0.05)}
-          {chaosNum("kickRate", "Kicks / s at 10 kt spread", 0, 4, 0.1)}
-          {chaosNum("kickStrength", "Kick strength", 0.1, 2, 0.05, "×")}
-          {chaosNum("kickAttackMs", "Kick attack", 10, 300, 5, " ms")}
-          {chaosNum("kickDecayMs", "Kick recovery", 50, 1500, 10, " ms")}
-          {chaosNum("stiffness", "Spring stiffness", 5, 300, 5)}
-          {chaosNum("damping", "Spring damping", 0.5, 30, 0.5)}
-          {chaosNum("targetRate", "Spring target changes / s", 0.1, 5, 0.1)}
-        </div>
-
-        <div className="wl-group">
-          <h2>Motion</h2>
-          <label className="wl-ctl">
-            <span>Easing</span>
-            <select value={cfg.ease} onChange={(e) => set("ease", e.target.value)}>
-              {Object.keys(EASES).map((k) => (
-                <option key={k} value={k}>
+            {/* the inputs stay in place (dimmed and disabled when off) so turning it on doesn't move anything */}
+            <div className={`wl-custom-bar${customOn ? "" : " is-off"}`}>
+              <button type="button" aria-pressed={customOn} onClick={() => setCustomOn(!customOn)} title="Add a card at the top built from the values you type">
+                Custom card {customOn ? "· on" : "· off"}
+              </button>
+              {(["dir", "spd", "gust"] as const).map((k) => (
+                <label key={k}>
                   {k}
-                </option>
+                  <input type="number" value={custom[k]} disabled={!customOn} onChange={(e) => setCustom({ ...custom, [k]: Number(e.target.value) })} />
+                </label>
               ))}
-              <option value="custom">custom…</option>
-            </select>
-          </label>
-          {cfg.ease === "custom" && (
-            <label className="wl-ctl">
-              <span>timing function</span>
-              <input value={cfg.customEase} onChange={(e) => set("customEase", e.target.value)} />
-            </label>
-          )}
-          {num("speedMul", "Playback ×", 0.1, 3, 0.05)}
-          {num("size", "Card arrow size", 24, 140, 2, "px")}
-          {chk("randomPhase", "Randomise phase (arrows not in sync)")}
-          {chk("guides", "Show sway sector guides")}
-          {chk("catColour", "Colour by wind category")}
-          {chk("reduced", "Simulate reduced motion")}
-        </div>
-      </section>
+              <label>
+                variable from
+                <input value={custom.s0} placeholder="—" disabled={!customOn} onChange={(e) => setCustom({ ...custom, s0: e.target.value })} />
+              </label>
+              <label>
+                to
+                <input value={custom.s1} placeholder="—" disabled={!customOn} onChange={(e) => setCustom({ ...custom, s1: e.target.value })} />
+              </label>
+            </div>
+          </Section>
 
-      <div className="wl-row wl-filter">
-        {(["ALL", "METAR", "PWIND", "AVG"] as const).map((k) => (
-          <button key={k} aria-pressed={filter === k} onClick={() => setFilter(k)}>
-            {k === "ALL" ? `All (${SAMPLES.length})` : kindLabel[k]}
-          </button>
-        ))}
+          <Section id="arrows" no={3} title="Arrows" meta={<span>METAR · PWIND · AVG WIND</span>}>
+            <div className="wl-grid">
+              {/* holds the custom card's slot while it's off, so the grid doesn't shift */}
+              {!customOn && (
+                <button type="button" className="wl-card wl-slot" onClick={() => setCustomOn(true)}>
+                  Custom card off
+                  <small>turn it on to build a card from your own wind</small>
+                </button>
+              )}
+              {list.map((s, i) => (
+                <Card key={s.kind + s.raw + i} s={s} i={i} cfg={cfg} phase={phases[i % phases.length]} />
+              ))}
+            </div>
+          </Section>
+        </main>
       </div>
-
-      <div className="wl-row wl-cats" role="group" aria-label="Filter by wind category">
-        <button aria-pressed={catFilter === "ALL"} onClick={() => setCatFilter("ALL")}>
-          Any strength
-        </button>
-        {(Object.keys(CATS) as Cat[]).map((k) => (
-          <button key={k} className="wl-catbtn" aria-pressed={catFilter === k} onClick={() => setCatFilter(catFilter === k ? "ALL" : k)} style={{ ["--cat" as string]: CATS[k].color, ["--cat-ink" as string]: CATS[k].ink }}>
-            <i aria-hidden="true" />
-            {CATS[k].label}
-            <small>{CATS[k].rule(cfg.calmKt)}</small>
-            <small>({catCount(k)})</small>
-          </button>
-        ))}
-        <span className="wl-mini">AVG WIND uses its ÷ scaled speed; High follows the Met Office strong-wind warning (20 kt / 28 G); gale (34 / 43 G) and storm (48 kt) follow theirs.</span>
-      </div>
-
-      <div className="wl-custom-bar">
-        <b>Custom card:</b>
-        {(["dir", "spd", "gust"] as const).map((k) => (
-          <label key={k}>
-            {k}
-            <input type="number" value={custom[k]} onChange={(e) => setCustom({ ...custom, [k]: Number(e.target.value) })} />
-          </label>
-        ))}
-        <label>
-          variable from
-          <input value={custom.s0} placeholder="—" onChange={(e) => setCustom({ ...custom, s0: e.target.value })} />
-        </label>
-        <label>
-          to
-          <input value={custom.s1} placeholder="—" onChange={(e) => setCustom({ ...custom, s1: e.target.value })} />
-        </label>
-      </div>
-
-      <main className="wl-grid">
-        {list.map((s, i) => (
-          <Card key={s.kind + s.raw + i} s={s} i={i} cfg={cfg} phase={phases[i % phases.length]} />
-        ))}
-      </main>
-    </div>
+    </CollapseProvider>
   );
 }
 
 const CSS = `
 @keyframes wl-sway { from { transform: rotate(calc(-1 * var(--amp))); } to { transform: rotate(var(--amp)); } }
-.wl { max-width: 1440px; margin: 0 auto; padding: 20px; font-family: var(--font-sans); color: var(--ink); }
-.wl h1 { margin: 0; font-family: var(--font-cond); letter-spacing: .1em; text-transform: uppercase; font-size: 28px; }
-.wl h2 { margin: 0 0 8px; font-family: var(--font-cond); letter-spacing: .1em; text-transform: uppercase; font-size: 14px; color: var(--ink-2); }
+.wl-group h2 { margin: 0 0 8px; font-family: var(--font-cond); letter-spacing: .1em; text-transform: uppercase; font-size: 14px; color: var(--ink-2); }
 .wl p { margin: 4px 0 0; color: var(--ink-2); }
-.wl button { border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink); padding: 5px 10px; font-family: var(--font-cond); font-weight: 600; letter-spacing: .04em; cursor: pointer; border-radius: 2px; }
-.wl button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); }
-.wl-head { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0 -20px 10px; padding: 8px 20px; background: var(--paper); border-bottom: 1px solid var(--rule-strong); box-shadow: var(--shadow); }
-.wl-head h1 { font-size: 20px !important; }
+/* buttons inside the lab read as the site's filter pills */
+.wl .sheet-body button { border: 1px solid var(--rule-strong); background: var(--sheet); color: var(--ink); padding: 3px 10px; font-family: var(--font-cond); font-weight: 600; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; border-radius: 999px; }
+.wl .sheet-body button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.wl-exp { font: 700 11px var(--font-cond); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); padding: 2px 8px; border: 1px solid var(--rule-strong); background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--rule-strong) 22%, transparent) 4px 6px); }
 .wl-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.wl-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; background: var(--sheet); border: 1px solid var(--rule-strong); padding: 12px; }
-.wl-panel[hidden] { display: none; }
-.wl-intro { margin: 0 0 12px !important; }
+.wl-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .wl-group { border-left: 2px solid var(--rule); padding-left: 10px; }
 .wl-ctl { display: flex; flex-direction: column; gap: 2px; font-size: 13px; margin-bottom: 8px; }
 .wl-ctl span { display: flex; justify-content: space-between; color: var(--ink-2); }
 .wl-ctl b { font-family: var(--font-mono); color: var(--magenta); }
 .wl-ctl input, .wl-ctl select { width: 100%; }
+.wl input[type=range], .wl input[type=checkbox] { accent-color: var(--magenta); }
 .wl-ctl input:not([type=range]), .wl-ctl select, .wl-anchors input, .wl-custom input { background: var(--field); color: var(--ink); border: 1px solid var(--rule-strong); padding: 3px 6px; font-family: var(--font-mono); font-size: 12px; }
 .wl-chk { display: block; font-size: 13px; margin: 4px 0; }
 .wl-anchors { border-collapse: collapse; margin-bottom: 6px; }
@@ -591,9 +627,9 @@ const CSS = `
 .wl-curve { width: 100%; max-width: 260px; display: block; }
 .wl-curve text { font-size: 8px; fill: var(--ink-3); font-family: var(--font-mono); }
 .wl-mini { font-size: 11px; color: var(--ink-3); }
-.wl-filter { margin: 14px 0; }
+.wl-filter { margin: 0 0 12px; }
 .wl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-.wl-card { background: var(--sheet); border: 1px solid var(--rule-strong); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.wl-card { background: var(--field); border: 1px solid var(--rule); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
 .wl-card header { display: flex; justify-content: space-between; align-items: center; }
 .wl-kind { font-family: var(--font-cond); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; color: var(--ink-3); }
 .wl-kind[data-k=CUSTOM] { color: var(--magenta); }
@@ -621,6 +657,10 @@ const CSS = `
 .wl-custom label { display: flex; flex-direction: column; }
 .wl-custom-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin: 0 0 12px; font-size: 12px; color: var(--ink-2); }
 .wl-custom-bar label { display: flex; flex-direction: column; gap: 2px; }
+.wl-custom-bar.is-off label { opacity: .45; }
+.wl .sheet-body button.wl-slot { display: grid; place-content: center; gap: 4px; min-height: 160px; border: 1.5px dashed var(--rule-strong) !important; border-radius: 0; background: transparent; color: var(--ink-3); font-size: 14px; letter-spacing: .1em; }
+.wl .sheet-body button.wl-slot small { font: 400 12px var(--font-sans); letter-spacing: 0; text-transform: none; }
+.wl .sheet-body button.wl-slot:hover { border-color: var(--blue) !important; color: var(--blue); }
 .wl-custom-bar input { width: 80px; background: var(--field); color: var(--ink); border: 1px solid var(--rule-strong); padding: 3px 6px; font-family: var(--font-mono); font-size: 12px; }
 .wl .wl-small { padding: 2px 7px; font-size: 12px; }
 .wl-trace { width: 100%; height: 35px; display: block; background: var(--field); border: 1px solid var(--rule); }
