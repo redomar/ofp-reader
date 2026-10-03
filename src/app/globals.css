@@ -103,7 +103,11 @@ html {
   scroll-padding-top: 132px;
 }
 
+/* the page fills at least the screen, so the footer stays at the bottom when sections collapse */
 body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
   margin: 0;
   background-color: var(--paper);
   background-image:
@@ -348,6 +352,7 @@ textarea {
  * narrow screens the rail stays slimmer instead of squeezing the main area.
  */
 .layout {
+  flex: 1 0 auto; /* takes the spare height, pushing the footer to the bottom of the screen */
   /* the empty margin a centred 1440px layout would leave (viewport-based so the padding and
      the column below agree; % means different things in each) */
   --side: max(0px, (100vw - 1440px) / 2);
@@ -4958,9 +4963,23 @@ main[data-skin="dots"] .rmp .rmp-val {
   background: var(--sheet);
 }
 .toc-foot-box .toc-all {
-  min-width: 82px;
+  min-width: 92px;
   min-height: 17px;
-  font-size: 12.5px;
+  /* same voice as the page tabs: ink condensed caps with a blue icon */
+  color: var(--ink);
+  font: 700 12px var(--font-cond);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.toc-foot-box .toc-all svg {
+  color: var(--blue);
+}
+.toc-foot-box .toc-all:hover {
+  color: var(--magenta);
+  text-decoration: none;
+}
+.toc-foot-box .toc-all:hover svg {
+  color: var(--magenta);
 }
 .toc-grp {
   display: flex;
