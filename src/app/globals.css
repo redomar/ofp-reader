@@ -4120,9 +4120,9 @@ button.radio-sub {
   align-items: center;
   box-sizing: border-box;
   flex: none;
-  width: 142px;
+  width: 132px;
   height: 34px;
-  padding: 0 6px 0 8px;
+  padding: 0 8px;
   border-radius: 4px;
   overflow: hidden;
   background: var(--rmp-bg);
@@ -4168,7 +4168,7 @@ button.radio-sub {
   fill: currentColor;
   stroke: none;
 }
-.rmp.bad :is(input, .rmp-val) {
+.rmp.bad .rmp-val {
   color: var(--rmp-bad);
   text-shadow: var(--rmp-bad-glow);
 }
@@ -4196,6 +4196,11 @@ button.radio-sub {
 .rmp.has .rmp-unlit {
   visibility: hidden;
 }
+/* positions the value doesn't use stay as unlit segments */
+.rmp-rest {
+  color: var(--rmp-unlit);
+  text-shadow: none;
+}
 .rmp-unlit {
   color: var(--rmp-unlit);
   pointer-events: none;
@@ -4211,6 +4216,15 @@ button.radio-sub {
   letter-spacing: inherit;
   text-shadow: var(--rmp-glow);
   outline: none;
+  white-space: pre;
+}
+/* the input sits over the drawn digits with invisible text, so the glow isn't clipped to its box */
+.rmp input {
+  position: relative;
+  z-index: 1;
+  color: transparent;
+  caret-color: var(--rmp-lit);
+  text-shadow: none;
 }
 .rmp:focus-within {
   box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 5px var(--blue), inset 0 2px 6px var(--rmp-inset);
@@ -4357,14 +4371,14 @@ main[data-skin="classic"] .rmp {
   --rmp-flash: rgba(255, 200, 80, 0.35);
 }
 /* the glow breathes and stutters now and then, like an old tube */
-main[data-skin="scan"] .rmp :is(input, .rmp-val),
-main[data-skin="dots"] .rmp :is(input, .rmp-val) {
+main[data-skin="scan"] .rmp .rmp-val,
+main[data-skin="dots"] .rmp .rmp-val {
   animation: rmp-flicker 9s steps(1) infinite;
 }
-.radio-row:nth-child(3n + 2) .rmp :is(input, .rmp-val) {
+.radio-row:nth-child(3n + 2) .rmp .rmp-val {
   animation-delay: -3s;
 }
-.radio-row:nth-child(3n + 3) .rmp :is(input, .rmp-val) {
+.radio-row:nth-child(3n + 3) .rmp .rmp-val {
   animation-delay: -6s;
 }
 .radio-row:nth-child(4n + 2) .rmp::before {
@@ -4461,7 +4475,7 @@ main[data-skin="dots"] .rmp :is(input, .rmp-val) {
   .rmp,
   .rmp::before,
   .rmp-flash,
-  .rmp :is(input, .rmp-val) {
+  .rmp .rmp-val {
     animation: none !important;
   }
 }

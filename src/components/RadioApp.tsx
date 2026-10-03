@@ -37,6 +37,10 @@ const tidy = (v: string) => {
   return d.length > 3 ? `${d.slice(0, 3)}.${d.slice(3, 6)}` : d;
 };
 
+const UNLIT = "888.888";
+/** "125.33" → "125.330": COMMS read with three decimals (8.33 kHz style) once you leave the field. */
+const full = (v: string) => (/^\d{3}\.\d{1,2}$/.test(v) ? v.padEnd(7, "0") : v);
+
 /** COMMS band and 8.33 / 25 kHz channel check. */
 function comCheck(v: string): string | null {
   if (/^\d{0,3}\.?$/.test(v)) return null; // still typing
@@ -72,13 +76,23 @@ function Window({ value, onChange, label, icon, from, error, warn }: { value: st
         <ChannelIcon kind={error ? "stop" : icon} />
       </span>
       <span className="rmp-unlit" aria-hidden="true">
-        888.888
+        {UNLIT}
       </span>
       <span className="rmp-flash" key={value} aria-hidden="true" />
-      {onChange ? (
-        <input aria-label={label} aria-invalid={!!error} inputMode="decimal" value={value} placeholder="" onChange={(e) => onChange(tidy(e.target.value))} spellCheck={false} />
-      ) : (
-        <span className="rmp-val">{value}</span>
+      <span className="rmp-val" aria-hidden={onChange ? true : undefined}>
+        {value}
+        {value && <span className="rmp-rest">{UNLIT.slice(value.length)}</span>}
+      </span>
+      {onChange && (
+        <input
+          aria-label={label}
+          aria-invalid={!!error}
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => onChange(tidy(e.target.value))}
+          onBlur={() => value !== full(value) && onChange(full(value))}
+          spellCheck={false}
+        />
       )}
     </span>
   );
