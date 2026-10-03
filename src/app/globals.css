@@ -341,17 +341,26 @@ textarea {
 
 /* ---------- layout ---------- */
 
+/*
+ * The main area keeps the width and position of the original centred 1440px layout
+ * (200px rail + 24px gap). The rail grows up to 236px by borrowing the empty margin on its
+ * left: the left padding shrinks to 8px, and only as much margin as exists is taken, so on
+ * narrow screens the rail stays slimmer instead of squeezing the main area.
+ */
 .layout {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 20px;
+  /* the empty margin a centred 1440px layout would leave (viewport-based so the padding and
+     the column below agree; % means different things in each) */
+  --side: max(0px, (100vw - 1440px) / 2);
+  margin: 0;
+  padding: 20px calc(var(--side) + 20px) 20px max(8px, calc(var(--side) - 16px));
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-columns: calc(200px + min(36px, var(--side) + 12px)) minmax(0, 1fr);
   gap: 24px;
 }
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
+    padding: 20px;
   }
   .toc {
     display: none;
