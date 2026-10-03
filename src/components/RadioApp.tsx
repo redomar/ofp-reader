@@ -590,7 +590,7 @@ export function RadioApp() {
         </div>
       </header>
       <div className="layout">
-        <Toc sections={sections} footer={<Link href="/" className="toc-link">← Back to reader</Link>} />
+        <Toc sections={sections} links={flightId ? { plan: `/?flight=${encodeURIComponent(flightId)}`, radio: `/radio?flight=${encodeURIComponent(flightId)}` } : undefined} />
         <main id="main" className={ofp ? "is-filled" : ""} data-skin={skin}>
           <Section id="dep" no={1} title="Departure" meta={<span>COMMS · ILS</span>}>
             <Replay>

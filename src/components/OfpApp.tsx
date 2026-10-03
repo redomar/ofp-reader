@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { OFP } from "@/lib/ofp/types";
 import { fetchPdf, readOfp, type Progress } from "@/lib/ofp/pdf";
-import Link from "next/link";
 import { FormContext, OfpContext, type FormApi } from "./context";
 import { Brand, SettingsLink, ThemeToggle, Toc } from "./chrome";
 import { CollapseAllButton, CollapseProvider } from "./collapse";
@@ -51,6 +50,14 @@ const SECTIONS = [
   ["company", "Company NOTAM"],
   ["charts", "Charts"],
   ["source", "Source text"],
+] as const;
+
+/** Contents grouped by phase of flight, for the rail. */
+const GROUPS = [
+  ["Plan", ["summary", "fuel", "route", "times"]],
+  ["En route", ["log", "winds", "fpl", "addl"]],
+  ["Airports", ["tlr", "wx", "notam", "company"]],
+  ["Reference", ["charts", "source"]],
 ] as const;
 
 /**
@@ -371,6 +378,11 @@ export function OfpApp() {
     [flightId],
   );
   const form = useMemo<FormApi>(() => ({ values: fields, set: setField }), [fields, setField]);
+  // sections holding entries you've typed (fields record their section's title)
+  const savedSections = useMemo(() => {
+    const titles = new Set(Object.values(fields).map((f) => f.section));
+    return new Set(SECTIONS.filter(([, t]) => titles.has(t)).map(([id]) => id));
+  }, [fields]);
   const busy = status.kind === "busy";
   const h = ofp?.header;
 
@@ -494,25 +506,9 @@ export function OfpApp() {
       <div className="layout">
         <Toc
           sections={SECTIONS}
-          footer={
-            <>
-              <Link href="/weather" className="toc-link">
-                Weather cards →
-              </Link>
-              <Link href={`/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}`} className="toc-link">
-                Radio frequencies →
-              </Link>
-              <Link href="/settings" className="toc-link">
-                Settings & saved flights →
-              </Link>
-              <div className="toc-exp" role="separator" aria-label="Experimental">
-                <span>Experimental</span>
-              </div>
-              <Link href="/wind-lab" className="toc-link">
-                Wind lab →
-              </Link>
-            </>
-          }
+          groups={GROUPS}
+          saved={savedSections}
+          links={{ radio: `/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}` }}
         />
         <main id="main" className={ofp ? "is-filled" : ""} key={ofp?.source ?? "empty"} aria-busy={busy}>
           {!ofp && (

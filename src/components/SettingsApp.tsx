@@ -187,11 +187,6 @@ export function SettingsApp() {
       <div className="layout">
         <Toc
           sections={SECTIONS}
-          footer={
-            <Link href="/" className="toc-link">
-              ← Back to reader
-            </Link>
-          }
         />
         <main id="main" className={ready ? "is-filled" : ""}>
           <Section id="flights" no={1} title="Saved flights" meta={<span>{ready ? `${flights.length} ${flights.length === 1 ? "plan" : "plans"}` : "—"}</span>}>

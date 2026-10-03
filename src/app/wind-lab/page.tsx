@@ -359,14 +359,7 @@ export default function WindLab() {
         </div>
       </header>
       <div className="layout wl">
-        <Toc
-          sections={WL_SECTIONS}
-          footer={
-            <Link href="/" className="toc-link">
-              ← Back to reader
-            </Link>
-          }
-        />
+        <Toc sections={WL_SECTIONS} />
         <main id="main" className="is-filled">
           <Section id="controls" no={1} title="Controls" meta={<span>rhythm · gusts · chaos · motion</span>}>
             <div className="wl-panel" id="wl-panel">

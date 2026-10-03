@@ -159,11 +159,6 @@ export function WeatherApp() {
       <div className="layout">
         <Toc
           sections={sections}
-          footer={
-            <Link href="/" className="toc-link">
-              ← Back to reader
-            </Link>
-          }
         />
         <main id="main" className="is-filled">
           <Section id="reports" no={1} title="Paste reports" meta={<span>METAR · SPECI · TAF · ATIS</span>}>
