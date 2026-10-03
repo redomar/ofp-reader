@@ -428,7 +428,8 @@ export function OfpApp() {
       </a>
       <header className="topbar">
         <div className="topbar-inner">
-          <Brand sub={h?.flightNo ? `· ${h.flightNo} ${h.dep}–${h.arr}` : "· SimBrief"} />
+          {/* fixed-width label, so the paste box beside it doesn't move when the plan's flight appears */}
+          <Brand sub={<span className="brand-flight">{h?.flightNo ? `· ${h.flightNo} ${h.dep}–${h.arr}` : "· SimBrief"}</span>} />
           <form className="loader" onSubmit={onSubmit} aria-label="Load a flight plan">
             <label htmlFor="ofp-url" className="sr-only">
               SimBrief PDF link
@@ -469,7 +470,8 @@ export function OfpApp() {
           <ThemeToggle />
         </div>
         <div className="status" role="status" aria-live="polite">
-          {status.kind === "idle" && (
+          {/* empty until we know whether a plan is opening, so the chips don't flash before the loading bar */}
+          {status.kind === "idle" && booted && (
             <div className="examples">
               {recent.length > 0 && (
                 <>

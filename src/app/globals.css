@@ -210,6 +210,13 @@ textarea {
   letter-spacing: 0.04em;
   font-size: 13px;
 }
+.brand-flight {
+  display: inline-block;
+  width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
 
 .loader {
   display: flex;
@@ -295,6 +302,9 @@ textarea {
 
 .status {
   max-width: 1440px;
+  /* one height whatever it shows (hint, loading bar or the plan chips), so the page never jumps */
+  box-sizing: border-box;
+  min-height: 34px;
   margin: 0 auto;
   padding: 0 20px 8px;
   font-size: 13px;
@@ -353,6 +363,9 @@ textarea {
  */
 .layout {
   flex: 1 0 auto; /* takes the spare height, pushing the footer to the bottom of the screen */
+  /* at least a screen tall below the top bar, so the footer starts just out of view and content
+     arriving after load doesn't visibly push it */
+  min-height: calc(100dvh - 90px);
   /* the empty margin a centred 1440px layout would leave (viewport-based so the padding and
      the column below agree; % means different things in each) */
   --side: max(0px, (100vw - 1440px) / 2);

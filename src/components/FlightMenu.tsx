@@ -40,6 +40,15 @@ export function PlanChips({ onBlank, onNew }: { onBlank?: () => void; onNew?: ()
   );
 }
 
+/**
+ * The status line under the top bar. Its contents appear together once the active flight is
+ * known (after storage is read), so the text isn't pushed along when the chips arrive.
+ */
+export function StatusLine({ children }: { children: React.ReactNode }) {
+  const { ready } = useActiveFlight();
+  return <div className="status">{ready && children}</div>;
+}
+
 /** The flight menu chip: picking a flight makes it the active flight on every page. */
 export function FlightMenu({ onNew }: { onNew?: () => void }) {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);

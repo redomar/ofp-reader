@@ -11,7 +11,7 @@ import { LiveWx } from "./LiveWx";
 import { getServerVersion, getVersion, listFlights, subscribe } from "@/lib/storage";
 import { getPdf } from "@/lib/pdfCache";
 import { adoptFlightParam, mirrorFlightParam, useActiveFlight } from "@/lib/active";
-import { PlanChips } from "./FlightMenu";
+import { PlanChips, StatusLine } from "./FlightMenu";
 import { parseAll, type Report } from "@/lib/wx/reports";
 
 const INPUT_KEY = "ofp-reader:wx-input";
@@ -161,6 +161,7 @@ export function WeatherApp() {
     if (autoLoad && activeId) queueMicrotask(() => void loadPlan(activeId));
   }, [autoLoad, activeId, loadPlan]);
 
+  const pending = !restored || !activeReady || autoLoad || (busy?.startsWith("Reading") ?? false);
   const sections = [["reports", "Paste reports"], ...airports.map((a) => [a.id, a.key] as const)] as const;
 
   return (
@@ -178,7 +179,7 @@ export function WeatherApp() {
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status">
+        <StatusLine>
           <PlanChips />
           <span className="examples-sep" aria-hidden="true" />
           <span role="status">
@@ -186,14 +187,17 @@ export function WeatherApp() {
               ? `${reports.length} ${reports.length === 1 ? "report" : "reports"} · ${airports.length} ${airports.length === 1 ? "airport" : "airports"}${loadedFrom ? ` · from ${loadedFrom}` : ""}`
               : "Paste METARs, TAFs or ATIS to see them as weather cards"}
           </span>
-        </div>
+        </StatusLine>
       </header>
 
       <div className="layout">
         <Toc
           sections={sections}
+          pending={pending}
         />
         <main id="main" className="is-filled">
+          {!pending && (
+            <>
           <Section id="reports" no={1} title="Paste reports" meta={<span>METAR · SPECI · TAF · ATIS</span>}>
             <p className="small muted" style={{ marginTop: 0 }}>
               Paste any mix of reports, one after another. Coded and plain-language ATIS both work. Nothing leaves your browser; the text is kept here for next time.
@@ -257,6 +261,8 @@ export function WeatherApp() {
                 ))}
             </Section>
           ))}
+            </>
+          )}
         </main>
       </div>
       <TooltipLayer />

@@ -25,7 +25,7 @@ import {
 } from "@/lib/storage";
 import { clearPdfs, deletePdf } from "@/lib/pdfCache";
 import { adoptFlightParam, mirrorFlightParam, setActive, useActiveFlight } from "@/lib/active";
-import { PlanChips } from "./FlightMenu";
+import { PlanChips, StatusLine } from "./FlightMenu";
 import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
 
 const SECTIONS = [
@@ -184,7 +184,7 @@ export function SettingsApp() {
           </Link>
           <ThemeToggle />
         </div>
-        <div className="status">
+        <StatusLine>
           <PlanChips />
           <span className="examples-sep" aria-hidden="true" />
           <span role="status">
@@ -192,7 +192,7 @@ export function SettingsApp() {
               ? `${flights.length} saved ${flights.length === 1 ? "flight" : "flights"} · ${fmtBytes(bytes + pdfBytes)} used in this browser`
               : "Reading browser storage…"}
           </span>
-        </div>
+        </StatusLine>
       </header>
 
       <div className="layout">
@@ -200,6 +200,8 @@ export function SettingsApp() {
           sections={SECTIONS}
         />
         <main id="main" className={ready ? "is-filled" : ""}>
+          {ready && activeReady && (
+            <>
           <Section id="flights" no={1} title="Saved flights" meta={<span>{ready ? `${flights.length} ${flights.length === 1 ? "plan" : "plans"}` : "—"}</span>}>
             <p className="small muted" style={{ marginTop: 0 }}>
               Every plan you open gets its own storage, identified by{" "}
@@ -563,6 +565,8 @@ export function SettingsApp() {
               </button>
             </div>
           </Section>
+            </>
+          )}
         </main>
       </div>
       <TooltipLayer />
