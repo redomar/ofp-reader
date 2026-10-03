@@ -4723,3 +4723,78 @@ main[data-skin="dots"] .rmp .rmp-val {
     text-align: left;
   }
 }
+
+/* ---------- Settings: unlock to delete single saved entries ---------- */
+.entries-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lock-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lock-toggle.is-open {
+  background: var(--red);
+  color: #fff;
+}
+.lock-toggle.is-open:hover {
+  background: var(--red);
+  filter: brightness(1.1);
+}
+.lock-ic {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lock-ic.dim {
+  color: var(--ink-3);
+  opacity: 0.35;
+}
+.entries-tbl :is(th, td) {
+  vertical-align: middle;
+}
+.entries-tbl .del-col {
+  width: 40px;
+  padding-block: 3px;
+  padding-left: 0;
+  padding-right: 8px;
+  text-align: center;
+  line-height: 0;
+}
+/* the lock and the delete button take the same 26px square, so rows don't move when unlocking */
+.del-slot,
+.row-del {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+}
+.entries-tbl.unlocked tbody tr:hover > * {
+  background: var(--red-bg);
+}
+.row-del {
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--sheet);
+  color: var(--red);
+  cursor: pointer;
+}
+.row-del svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.row-del:hover,
+.row-del:focus-visible {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}

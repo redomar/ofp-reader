@@ -21,6 +21,7 @@ import {
   subscribe,
   type FlightRecord,
   type ThemePref,
+  writeField,
 } from "@/lib/storage";
 import { clearPdfs, deletePdf } from "@/lib/pdfCache";
 import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
@@ -119,6 +120,15 @@ function StripIcon({ mode }: { mode: StripMode }) {
   );
 }
 
+function LockIcon({ open, dim }: { open: boolean; dim?: boolean }) {
+  return (
+    <svg className={cx("lock-ic", dim && "dim")} viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d={open ? "M8 11V7.5a4 4 0 0 1 7.6-1.7" : "M8 11V7.5a4 4 0 0 1 8 0V11"} />
+    </svg>
+  );
+}
+
 export function SettingsApp() {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const ready = version >= 0;
@@ -131,6 +141,7 @@ export function SettingsApp() {
   const [stripMode, setStripMode] = useStripMode();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importMsgs, setImportMsgs] = useState<ImportMsg[]>([]);
+  const [unlocked, setUnlocked] = useState(false);
   const sel = flights.find((f) => f.meta.id === selectedId) ?? flights[0] ?? null;
 
   const groups = useMemo(() => {
@@ -410,7 +421,15 @@ export function SettingsApp() {
               </div>
             )}
 
-            <Sub>Saved entries</Sub>
+            <div className="entries-head">
+              <Sub>Saved entries</Sub>
+              {sel && groups.length > 0 && (
+                <button type="button" className={cx("btn", "lock-toggle", unlocked && "btn-danger is-open")} aria-pressed={unlocked} onClick={() => setUnlocked(!unlocked)} title={unlocked ? "Lock: hide the delete buttons" : "Unlock to delete single entries"}>
+                  <LockIcon open={unlocked} />
+                  {unlocked ? "Lock" : "Unlock to delete"}
+                </button>
+              )}
+            </div>
             {!sel ? (
               <V v={null} w={40} />
             ) : groups.length === 0 ? (
@@ -421,7 +440,7 @@ export function SettingsApp() {
               <div className="cols" style={{ ["--min" as string]: "320px" }}>
                 {groups.map((g) => (
                   <div className="tbl-wrap" key={g.section}>
-                    <table className="tbl">
+                    <table className={cx("tbl", "entries-tbl", unlocked && "unlocked")}>
                       <caption>
                         {g.section} · {g.items.length}
                       </caption>
@@ -429,6 +448,9 @@ export function SettingsApp() {
                         <tr>
                           <th scope="col">Field</th>
                           <th scope="col">Value</th>
+                          <th scope="col" className="del-col">
+                            <span className="sr-only">Delete</span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -438,6 +460,19 @@ export function SettingsApp() {
                               {it.label}
                             </th>
                             <td style={{ whiteSpace: "pre-wrap", color: "var(--blue)" }}>{it.value}</td>
+                            <td className="del-col">
+                              {unlocked ? (
+                                <button type="button" className="row-del" aria-label={`Delete ${it.label}`} title={`Delete ${it.label}`} onClick={() => writeField(sel.meta.id, it.key, null)}>
+                                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                                    <path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13M10.5 11v5.5M13.5 11v5.5" />
+                                  </svg>
+                                </button>
+                              ) : (
+                                <span className="del-slot">
+                                  <LockIcon open={false} dim />
+                                </span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
