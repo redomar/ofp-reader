@@ -329,7 +329,7 @@ export function OfpApp() {
   }, [loadUrl, loadSaved]);
 
   // Follow the active flight when it's switched elsewhere: the flight menu, another page or tab.
-  const { id: activeId, record: activeRecord, ready: activeReady } = useActiveFlight();
+  const { id: activeId, ready: activeReady } = useActiveFlight();
   const seenActive = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (!activeReady) return;
@@ -526,27 +526,6 @@ export function OfpApp() {
           links={{ radio: `/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}` }}
         />
         <main id="main" className={ofp ? "is-filled" : ""} key={ofp?.source ?? "empty"} aria-busy={busy}>
-          {!ofp && busy && (
-            <div className="hello opening" role="status">
-              <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
-                <rect x="8" y="4" width="40" height="48" fill="none" stroke="currentColor" strokeWidth="2" />
-                <path d="M16 16h24M16 24h24M16 32h14" stroke="currentColor" strokeWidth="2" />
-              </svg>
-              <div>
-                <h1>
-                  Opening{" "}
-                  {activeRecord?.meta.flightNo && activeRecord.meta.source === status.label
-                    ? `${activeRecord.meta.flightNo} · ${activeRecord.meta.dep ?? ""}→${activeRecord.meta.arr ?? ""}`
-                    : status.label}
-                  …
-                </h1>
-                <p>{progressText(status.progress)}</p>
-                <div className="status-bar" aria-hidden="true">
-                  <span style={{ width: `${progressPct(status.progress)}%` }} />
-                </div>
-              </div>
-            </div>
-          )}
           {!ofp && booted && !busy && (
             <div className="hello">
               <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
@@ -562,8 +541,6 @@ export function OfpApp() {
               </div>
             </div>
           )}
-          {(ofp || (booted && !busy)) && (
-            <>
           <SummarySection no={1} />
           <FuelSection no={2} />
           <RouteSection no={3} />
@@ -578,8 +555,6 @@ export function OfpApp() {
           <NotamSection no={12} id="company" title="Company NOTAM" which="companyNotams" />
           <ChartsSection no={13} />
           <SourceSection no={14} />
-            </>
-          )}
         </main>
       </div>
       {dragging && (
