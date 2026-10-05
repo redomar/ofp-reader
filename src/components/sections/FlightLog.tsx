@@ -10,7 +10,7 @@ import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/
 import type { LogPoint } from "@/lib/ofp/types";
 import { picExtraModel, type PicExtraModel } from "@/lib/ofp/picExtra";
 import { outlinePath, ringsPath, useOutlines } from "@/lib/outlines";
-import { useMapStyle } from "@/lib/mapPref";
+import { useFirMode, useMapStyle } from "@/lib/mapPref";
 import { setHighlightedSigmet, useHighlightedSigmet, useSigmets, type SigmetOnRoute } from "../useSigmets";
 import type { Area } from "@/lib/wx/sigmet";
 
@@ -288,6 +288,7 @@ function RouteMap({
   const outlines = useOutlines();
   const hlSig = useHighlightedSigmet();
   const [style] = useMapStyle();
+  const [firMode] = useFirMode();
   // Zoom (1 = whole route) and the centre, [lat, lon] (null = the route's centre).
   const [zoom, setZoom] = useState(1);
   const [centre, setCentre] = useState<[number, number] | null>(null);
@@ -397,15 +398,18 @@ function RouteMap({
     return y == null ? [] : [{ c, x, y }];
   });
   // FIR / UIR stretches: from each crossing to the next, as a dashed line beside the route.
-  const firs: { name: string; pts: [number, number][]; at: [number, number] | null }[] = [];
-  let cur: { name: string; pts: [number, number][]; at: [number, number] | null } = { name: depFir ?? "", pts: [], at: null };
-  for (const p of geo) {
+  type Stretch = { name: string; pts: [number, number][]; at: [number, number] | null; dir: [number, number] | null };
+  const firs: Stretch[] = [];
+  let cur: Stretch = { name: depFir ?? "", pts: [], at: null, dir: null };
+  geo.forEach((p, k) => {
     if (p.kind === "fir") {
       cur.pts.push(xy(p));
       firs.push(cur);
-      cur = { name: p.firName ?? p.name, pts: [xy(p)], at: xy(p) };
+      // the route's direction through the crossing, from the fixes either side
+      const [a, b] = [xy(geo[Math.max(0, k - 1)]), xy(geo[Math.min(geo.length - 1, k + 1)])];
+      cur = { name: p.firName ?? p.name, pts: [xy(p)], at: xy(p), dir: [b[0] - a[0], b[1] - a[1]] };
     } else cur.pts.push(xy(p));
-  }
+  });
   firs.push(cur);
   const firDrawn = firs
     .filter((f) => f.pts.length > 1)
@@ -414,8 +418,21 @@ function RouteMap({
       const mid = midOf(offsetLine(f.pts, 17));
       // a name only where the stretch is long enough on screen for it, and not over a waypoint name
       const nearLabel = wpts.some((p) => labelled.has(p.i) && Math.abs(xy(p)[0] + 30 - mid.x) < 50 && Math.abs(xy(p)[1] - mid.y) < 18);
-      return { ...f, d: polyD(line), mid, named: !!f.name && mid.total > f.name.length * 6.5 + 24 && !nearLabel };
+      // boundary mark: across the route and the dashed line, square to the route where it crosses in
+      let tick: string | null = null;
+      if (f.at && f.dir) {
+        const a = f.at;
+        const l = Math.hypot(...f.dir) || 1;
+        let [nx, ny] = [-f.dir[1] / l, f.dir[0] / l];
+        if (nx > 0) [nx, ny] = [-nx, -ny]; // the side offsetLine draws on
+        tick = polyD([
+          [a[0] - nx * 6, a[1] - ny * 6],
+          [a[0] + nx * 15, a[1] + ny * 15],
+        ]);
+      }
+      return { ...f, d: polyD(line), mid, tick, named: !!f.name && mid.total > f.name.length * 6.5 + 24 && !nearLabel };
     });
+  const firShown = firMode === "off" ? [] : firDrawn;
 
   const zoomTo = (z: number, c?: [number, number] | null) => {
     const nz = Math.max(1, Math.min(MAP_MAX_ZOOM, z));
@@ -533,7 +550,7 @@ function RouteMap({
             </g>
           );
         })}
-        {firDrawn.map((f, i) => (
+        {firShown.map((f, i) => (
           <path key={"fl" + i} d={f.d} className="map-fir" />
         ))}
         <path d={path} className="route-halo" />
@@ -542,9 +559,14 @@ function RouteMap({
         {sigAreas.map(({ s: sg }) => (
           <path key={"r" + sg.id} d={path} className="route-in-sig" clipPath={`url(#sigclip-${sg.id})`} />
         ))}
-        {firDrawn.map((f, i) => (
-          <g key={"fn" + i} data-tip={f.name ? `The route is in ${f.name} along this dashed line${f.at ? ", from the circle where it crosses in" : ""}.` : undefined} data-tip-title={f.name || undefined}>
-            {f.at && <circle cx={f.at[0]} cy={f.at[1]} r={3} className="map-fir-cross" />}
+        {firShown.map((f, i) => (
+          <g
+            key={"fn" + i}
+            data-tip={f.name ? `The route is in ${f.name} along this dashed line${f.at ? `, from the ${firMode === "marks" ? "boundary mark" : "circle"} where it crosses in` : ""}.` : undefined}
+            data-tip-title={f.name || undefined}
+          >
+            {f.tick && firMode === "marks" && <path d={f.tick} className="map-fir-bound" />}
+            {f.at && firMode === "line" && <circle cx={f.at[0]} cy={f.at[1]} r={3} className="map-fir-cross" />}
             {f.named && (
               <text transform={`translate(${f.mid.x.toFixed(1)} ${f.mid.y.toFixed(1)}) rotate(${f.mid.ang.toFixed(1)})`} textAnchor="middle" dominantBaseline="middle" className="map-fir-label">
                 {f.name}

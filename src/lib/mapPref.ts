@@ -14,43 +14,55 @@ export const MAP_STYLES: { value: MapStyle; label: string; desc: string }[] = [
 /** Default for first-time visitors. */
 export const DEFAULT_MAP: MapStyle = "contours";
 
-const KEY = "ofp-reader:map-style";
-const CHANGE = "ofp-reader:map-style-change";
-const valid = (v: string | null): v is MapStyle => MAP_STYLES.some((m) => m.value === v);
+/** How FIR / UIR stretches show on the route map. */
+export type FirMode = "marks" | "line" | "off";
 
-let memory: MapStyle | null = null; // used when storage is unavailable
+export const FIR_MODES: { value: FirMode; label: string; desc: string }[] = [
+  { value: "marks", label: "Lines with boundaries", desc: "Dashed line beside the route, named, with a mark across both lines where one FIR ends and the next begins" },
+  { value: "line", label: "Lines only", desc: "Dashed line beside the route, named, with a circle where the route crosses in" },
+  { value: "off", label: "Hidden", desc: "No FIR / UIR lines, circles or names on the map" },
+];
 
-function read(): MapStyle {
-  if (memory) return memory;
-  try {
-    const v = window.localStorage.getItem(KEY);
-    return valid(v) ? v : DEFAULT_MAP;
-  } catch {
-    return DEFAULT_MAP;
-  }
-}
+export const DEFAULT_FIR: FirMode = "marks";
 
-function subscribe(cb: () => void) {
-  const onStorage = (e: StorageEvent) => e.key === KEY && cb();
-  window.addEventListener("storage", onStorage);
-  window.addEventListener(CHANGE, cb);
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener(CHANGE, cb);
-  };
-}
-
-/** [mode, setMode]; the server render uses the default. */
-export function useMapStyle(): [MapStyle, (m: MapStyle) => void] {
-  const mode = useSyncExternalStore(subscribe, read, () => DEFAULT_MAP);
-  const set = useCallback((m: MapStyle) => {
+/** A preference kept in localStorage, shared by every page and tab. */
+function pref<T extends string>(key: string, values: readonly { value: T }[], fallback: T) {
+  const change = `${key}-change`;
+  const valid = (v: string | null): v is T => values.some((m) => m.value === v);
+  let memory: T | null = null; // used when storage is unavailable
+  const read = (): T => {
+    if (memory) return memory;
     try {
-      window.localStorage.setItem(KEY, m);
+      const v = window.localStorage.getItem(key);
+      return valid(v) ? v : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+  const subscribe = (cb: () => void) => {
+    const onStorage = (e: StorageEvent) => e.key === key && cb();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(change, cb);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(change, cb);
+    };
+  };
+  const set = (m: T) => {
+    try {
+      window.localStorage.setItem(key, m);
       memory = null;
     } catch {
       memory = m; // not persisted; applies until reload
     }
-    window.dispatchEvent(new Event(CHANGE));
-  }, []);
-  return [mode, set];
+    window.dispatchEvent(new Event(change));
+  };
+  /** [value, setValue]; the server render uses the default. */
+  return function usePref(): [T, (m: T) => void] {
+    const v = useSyncExternalStore(subscribe, read, () => fallback);
+    return [v, useCallback(set, [])];
+  };
 }
+
+export const useMapStyle = pref<MapStyle>("ofp-reader:map-style", MAP_STYLES, DEFAULT_MAP);
+export const useFirMode = pref<FirMode>("ofp-reader:map-fir", FIR_MODES, DEFAULT_FIR);
