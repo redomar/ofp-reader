@@ -4,6 +4,26 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-05
+
+### Added
+
+- **A new route map.**
+  - Blue sea and parchment land, with country names where there's room. Names move off the route or are left out rather than covering it.
+  - Every name has a paper-coloured outline so it reads over coastlines and the route.
+- **FIR / UIR stretches** are drawn as a dashed line running beside the route, named along the line, with a small circle where the route crosses into each one.
+  - The departure FIR comes from the NOTAMs (e.g. Vienna FIR), since the nav log only marks crossings.
+- **Zoom.** Route, Region and Close levels, + / − buttons (or the + and − keys), and a fit-the-route button. Zooming centres on the selected waypoint. When zoomed in, drag to move around. More waypoint names appear as you zoom in.
+- **Route map style in Settings.**
+  - **Contours** (the default): coastlines and borders drawn.
+  - **No contours:** no lines, with neighbouring countries in different parchment tones.
+  - **Height map:** shaded relief so mountains and high ground show. It downloads about 1 MB the first time. By night the relief shows as faint light shading.
+
+### Changed
+
+- FIR crossings on the route map are no longer dashed circles with the FIR code beside them.
+- The route has a paper-coloured halo, so it stands out over the land and borders.
+
 ## [1.9.0] - 2026-10-05
 
 ### Added
@@ -204,6 +224,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.10.0]: https://github.com/redomar/ofp-reader/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/redomar/ofp-reader/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/redomar/ofp-reader/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/redomar/ofp-reader/compare/v1.6.0...v1.7.0

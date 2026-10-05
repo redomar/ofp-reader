@@ -9,7 +9,8 @@ import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/ofp/format";
 import type { LogPoint } from "@/lib/ofp/types";
 import { picExtraModel, type PicExtraModel } from "@/lib/ofp/picExtra";
-import { outlinePath, useOutlines } from "@/lib/outlines";
+import { outlinePath, ringsPath, useOutlines } from "@/lib/outlines";
+import { useMapStyle } from "@/lib/mapPref";
 import { setHighlightedSigmet, useHighlightedSigmet, useSigmets, type SigmetOnRoute } from "../useSigmets";
 import type { Area } from "@/lib/wx/sigmet";
 
@@ -218,9 +219,79 @@ function Profile({
 /** The fuel en-route alternate to plot: its position and where the route passes closest. */
 type MapEra = { icao: string; name: string; coord: [number, number]; abeam: { point: [number, number]; nm: number; fix: string } | null; when: string | null };
 
-function RouteMap({ pts, active, setActive, onKey, sigs = [], era }: { pts: P[]; active: number | null; setActive: (i: number | null) => void; onKey: (e: KeyboardEvent) => void; sigs?: SigmetOnRoute[]; era?: MapEra | null }) {
+/** Zoom levels, as multiples of the whole-route view. */
+const MAP_LEVELS = [
+  ["Route", 1],
+  ["Region", 2.5],
+  ["Close", 6],
+] as const;
+const MAP_MAX_ZOOM = 12;
+
+/** A polyline (screen px) moved `d` px sideways, to the left of the screen (away from the waypoint names). */
+function offsetLine(pts: [number, number][], d: number): [number, number][] {
+  return pts.map((p, i) => {
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[Math.min(pts.length - 1, i + 1)];
+    let dx = b[0] - a[0];
+    let dy = b[1] - a[1];
+    const l = Math.hypot(dx, dy) || 1;
+    dx /= l;
+    dy /= l;
+    let nx = -dy;
+    let ny = dx;
+    if (nx > 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    return [p[0] + nx * d, p[1] + ny * d];
+  });
+}
+
+/** The point halfway along a polyline, with the angle there (kept upright) and the total length. */
+function midOf(poly: [number, number][]) {
+  const seg = poly.slice(1).map((p, i) => Math.hypot(p[0] - poly[i][0], p[1] - poly[i][1]));
+  const total = seg.reduce((a, b) => a + b, 0);
+  let h = total / 2;
+  for (let i = 1; i < poly.length; i++) {
+    if (h <= seg[i - 1] || i === poly.length - 1) {
+      const t = seg[i - 1] ? Math.min(1, h / seg[i - 1]) : 0;
+      let ang = (Math.atan2(poly[i][1] - poly[i - 1][1], poly[i][0] - poly[i - 1][0]) * 180) / Math.PI;
+      if (ang > 90) ang -= 180;
+      if (ang < -90) ang += 180;
+      return { x: poly[i - 1][0] + t * (poly[i][0] - poly[i - 1][0]), y: poly[i - 1][1] + t * (poly[i][1] - poly[i - 1][1]), ang, total };
+    }
+    h -= seg[i - 1];
+  }
+  return { x: poly[0][0], y: poly[0][1], ang: 0, total };
+}
+
+const polyD = (pts: [number, number][]) => pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
+
+function RouteMap({
+  pts,
+  active,
+  setActive,
+  onKey,
+  sigs = [],
+  era,
+  depFir,
+}: {
+  pts: P[];
+  active: number | null;
+  setActive: (i: number | null) => void;
+  onKey: (e: KeyboardEvent) => void;
+  sigs?: SigmetOnRoute[];
+  era?: MapEra | null;
+  /** The FIR the route starts in (the log only marks crossings). */
+  depFir?: string | null;
+}) {
   const outlines = useOutlines();
   const hlSig = useHighlightedSigmet();
+  const [style] = useMapStyle();
+  // Zoom (1 = whole route) and the centre, [lat, lon] (null = the route's centre).
+  const [zoom, setZoom] = useState(1);
+  const [centre, setCentre] = useState<[number, number] | null>(null);
+  const drag = useRef<{ x: number; y: number; c: [number, number]; moved: boolean } | null>(null);
   // The frame's width, so the drawing area matches its shape instead of letterboxing.
   const [frameW, setFrameW] = useState<number | null>(null);
   const ro = useRef<ResizeObserver | null>(null);
@@ -233,9 +304,8 @@ function RouteMap({ pts, active, setActive, onKey, sigs = [], era }: { pts: P[];
   }, []);
   const geo = pts.filter((p) => p.latDeg != null && p.lonDeg != null);
   if (!geo.length) return null;
-  // Frame the route, plus any SIGMET area the route passes through so it's seen whole.
+  // Frame the route, plus any SIGMET area the route passes through and the fuel en-route alternate.
   const sigPts = sigs.flatMap((x) => (x.impact.lateral && x.s.area.kind === "polygon" ? x.s.area.points : []));
-  // ...and the fuel en-route alternate, so it's in view too
   const eraPts = era ? [era.coord] : [];
   const lats = [...geo.map((p) => p.latDeg!), ...sigPts.map((q) => q[0]), ...eraPts.map((q) => q[0])];
   const lons = [...geo.map((p) => p.lonDeg!), ...sigPts.map((q) => q[1]), ...eraPts.map((q) => q[1])];
@@ -249,36 +319,32 @@ function RouteMap({ pts, active, setActive, onKey, sigs = [], era }: { pts: P[];
   const spanY = la1 - la0 + pad * 2;
   const H = 520;
   // Shown height: 80% of the width, between 300 and 560 px. The width of the drawing
-  // follows from it, so the whole frame is map; the route is centred in it.
+  // follows from it, so the whole frame is map.
   const shownH = frameW ? Math.min(560, Math.max(300, frameW * 0.8)) : null;
   const MW = frameW && shownH ? Math.round((H * frameW) / shownH) : Math.round(Math.max(560, Math.min(1300, (H * spanX) / spanY)));
-  const s = Math.min(MW / spanX, H / spanY);
-  const offX = (MW - spanX * s) / 2;
-  const offY = (H - spanY * s) / 2;
-  const px = (lon: number) => offX + (lon - lo0 + pad) * k * s;
-  const py = (lat: number) => offY + (la1 + pad - lat) * s;
+  const s = Math.min(MW / spanX, H / spanY) * zoom;
+  const [cLat, cLon] = centre ?? [(la0 + la1) / 2, (lo0 + lo1) / 2];
+  const px = (lon: number) => MW / 2 + (lon - cLon) * k * s;
+  const py = (lat: number) => H / 2 - (lat - cLat) * s;
   // Everything the map shows, in degrees.
-  const view = {
-    lon0: lo0 - pad - offX / (k * s),
-    lon1: lo0 - pad + (MW - offX) / (k * s),
-    lat0: la1 + pad - (H - offY) / s,
-    lat1: la1 + pad + offY / s,
-  };
-  const step = Math.max(lo1 - lo0, la1 - la0) > 8 ? 2 : 1;
+  const view = { lon0: cLon - MW / 2 / (k * s), lon1: cLon + MW / 2 / (k * s), lat0: cLat - H / 2 / s, lat1: cLat + H / 2 / s };
+  const spanDeg = Math.max(view.lon1 - view.lon0, view.lat1 - view.lat0);
+  const step = spanDeg > 30 ? 5 : spanDeg > 14 ? 2 : spanDeg > 5 ? 1 : 0.5;
   const gLon: number[] = [];
-  for (let v = Math.ceil(view.lon0 / step) * step; v <= view.lon1; v += step) gLon.push(v);
+  for (let v = Math.ceil(view.lon0 / step) * step; v <= view.lon1; v += step) gLon.push(Math.round(v * 10) / 10);
   const gLat: number[] = [];
-  for (let v = Math.ceil(view.lat0 / step) * step; v <= view.lat1; v += step) gLat.push(v);
+  for (let v = Math.ceil(view.lat0 / step) * step; v <= view.lat1; v += step) gLat.push(Math.round(v * 10) / 10);
   const wpts = geo.filter((p) => p.kind === "wpt");
-  const path = wpts.map((p, i) => `${i ? "L" : "M"}${px(p.lonDeg!).toFixed(1)} ${py(p.latDeg!).toFixed(1)}`).join(" ");
-  // Declutter labels
+  const xy = (p: { lonDeg: number | null; latDeg: number | null }): [number, number] => [px(p.lonDeg!), py(p.latDeg!)];
+  const path = polyD(wpts.map(xy));
+  // Declutter waypoint names (zooming in makes room for more)
   const labelled = new Set<number>();
   let last: [number, number] | null = null;
   for (const p of wpts) {
-    const xy: [number, number] = [px(p.lonDeg!), py(p.latDeg!)];
-    if (!last || Math.hypot(xy[0] - last[0], xy[1] - last[1]) > 46) {
+    const q = xy(p);
+    if (!last || Math.hypot(q[0] - last[0], q[1] - last[1]) > 46) {
       labelled.add(p.i);
-      last = xy;
+      last = q;
     }
   }
   labelled.add(wpts[0].i);
@@ -289,126 +355,256 @@ function RouteMap({ pts, active, setActive, onKey, sigs = [], era }: { pts: P[];
   const clip = { lon0: view.lon0 - 0.5, lon1: view.lon1 + 0.5, lat0: view.lat0 - 0.5, lat1: view.lat1 + 0.5 };
   // SIGMET / AIRMET areas: polygons as given; lat/long bounds as the part of the view they cover.
   const areaPath = (a: Area) => {
-    if (a.kind === "polygon") return a.points.map(([la, lo], k) => `${k ? "L" : "M"}${px(lo).toFixed(1)} ${py(la).toFixed(1)}`).join(" ") + " Z";
+    if (a.kind === "polygon") return a.points.map(([la, lo], j) => `${j ? "L" : "M"}${px(lo).toFixed(1)} ${py(la).toFixed(1)}`).join(" ") + " Z";
     if (a.kind === "bounds") {
-      let [la0, la1, lo0b, lo1b] = [clip.lat0, clip.lat1, clip.lon0, clip.lon1];
+      let [b0, b1, b2, b3] = [clip.lat0, clip.lat1, clip.lon0, clip.lon1];
       for (const p of a.planes) {
-        if (p.axis === "lat" && p.op === "gt") la0 = Math.max(la0, p.value);
-        else if (p.axis === "lat") la1 = Math.min(la1, p.value);
-        else if (p.op === "gt") lo0b = Math.max(lo0b, p.value);
-        else lo1b = Math.min(lo1b, p.value);
+        if (p.axis === "lat" && p.op === "gt") b0 = Math.max(b0, p.value);
+        else if (p.axis === "lat") b1 = Math.min(b1, p.value);
+        else if (p.op === "gt") b2 = Math.max(b2, p.value);
+        else b3 = Math.min(b3, p.value);
       }
-      if (la0 >= la1 || lo0b >= lo1b) return null;
-      return `M${px(lo0b)} ${py(la0)} L${px(lo1b)} ${py(la0)} L${px(lo1b)} ${py(la1)} L${px(lo0b)} ${py(la1)} Z`;
+      if (b0 >= b1 || b2 >= b3) return null;
+      return `M${px(b2)} ${py(b0)} L${px(b3)} ${py(b0)} L${px(b3)} ${py(b1)} L${px(b2)} ${py(b1)} Z`;
     }
     return null;
   };
   const sigAreas = sigs.map((x) => ({ ...x, d: areaPath(x.s.area), end: x.s.endArea ? areaPath(x.s.endArea) : null })).filter((x) => x.d);
-  const coast = outlines ? outlinePath(outlines.coast, clip, px, py) : "";
-  const borders = outlines ? outlinePath(outlines.borders, clip, px, py) : "";
+  const lines = style !== "plain";
+  const coast = outlines && lines ? outlinePath(outlines.coast, clip, px, py) : "";
+  const borders = outlines && lines ? outlinePath(outlines.borders, clip, px, py) : "";
+  // Countries in view: land fill (one tone, or neighbours in different tones without contours), and names.
+  const inView = (outlines?.countries ?? []).filter((c) => c.bounds[2] >= clip.lon0 && c.bounds[0] <= clip.lon1 && c.bounds[3] >= clip.lat0 && c.bounds[1] <= clip.lat1);
+  const land = inView.map((c) => ({ c, d: ringsPath(c.rings, px, py) }));
+  // Anything a name shouldn't sit on: the route's points and the fuel ERA.
+  // (the route is sampled every few px, so names keep off the line between waypoints too)
+  const busy: [number, number][] = [...(era ? [[px(era.coord[1]), py(era.coord[0])] as [number, number]] : [])];
+  geo.forEach((p, j) => {
+    const [x1, y1] = xy(p);
+    const [x0, y0] = j ? xy(geo[j - 1]) : [x1, y1];
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 8));
+    for (let t = 0; t <= n; t++) busy.push([x0 + ((x1 - x0) * t) / n, y0 + ((y1 - y0) * t) / n]);
+  });
+  const clear = (x: number, y: number, halfW: number) => busy.every(([bx, by]) => Math.abs(bx - x) > halfW + 8 || Math.abs(by - y) > 16);
+  const names = inView.flatMap((c) => {
+    if (!c.label) return [];
+    const [x, y0] = [px(c.label[0]), py(c.label[1])];
+    // only where there's room: on screen, and the country's part big enough on screen
+    if (x < 40 || x > MW - 40 || c.area * k * s * s < 2600) return [];
+    const halfW = c.name.length * 6.5;
+    // nudge it up or down off the route if it would sit on it
+    const y = [y0, y0 + 22, y0 - 22, y0 + 44].find((v) => v > 64 && v < H - 18 && clear(x, v, halfW)); // below the zoom controls
+    return y == null ? [] : [{ c, x, y }];
+  });
+  // FIR / UIR stretches: from each crossing to the next, as a dashed line beside the route.
+  const firs: { name: string; pts: [number, number][]; at: [number, number] | null }[] = [];
+  let cur: { name: string; pts: [number, number][]; at: [number, number] | null } = { name: depFir ?? "", pts: [], at: null };
+  for (const p of geo) {
+    if (p.kind === "fir") {
+      cur.pts.push(xy(p));
+      firs.push(cur);
+      cur = { name: p.firName ?? p.name, pts: [xy(p)], at: xy(p) };
+    } else cur.pts.push(xy(p));
+  }
+  firs.push(cur);
+  const firDrawn = firs
+    .filter((f) => f.pts.length > 1)
+    .map((f) => {
+      const line = offsetLine(f.pts, 9);
+      const mid = midOf(offsetLine(f.pts, 17));
+      // a name only where the stretch is long enough on screen for it, and not over a waypoint name
+      const nearLabel = wpts.some((p) => labelled.has(p.i) && Math.abs(xy(p)[0] + 30 - mid.x) < 50 && Math.abs(xy(p)[1] - mid.y) < 18);
+      return { ...f, d: polyD(line), mid, named: !!f.name && mid.total > f.name.length * 6.5 + 24 && !nearLabel };
+    });
+
+  const zoomTo = (z: number, c?: [number, number] | null) => {
+    const nz = Math.max(1, Math.min(MAP_MAX_ZOOM, z));
+    setZoom(nz);
+    if (nz === 1) setCentre(null);
+    else if (c) setCentre(c);
+  };
+  // zoom on the selected waypoint if there is one, else where the map is centred now
+  const focus = (): [number, number] => {
+    const a = active != null ? geo.find((p) => p.i === active) : null;
+    return a ? [a.latDeg!, a.lonDeg!] : [cLat, cLon];
+  };
+  const levelOn = MAP_LEVELS.reduce((best, l) => (Math.abs(Math.log(l[1] / zoom)) < Math.abs(Math.log(best[1] / zoom)) ? l : best), MAP_LEVELS[0])[0];
 
   return (
-    <svg ref={svgRef} viewBox={`0 0 ${MW} ${H}`} className="chart" style={{ height: shownH ?? undefined, maxHeight: 560 }} role="group" tabIndex={0} onKeyDown={onKey} aria-label="Route map with waypoints and FIR boundaries. Use arrow keys to step through waypoints." onPointerLeave={() => setActive(null)}>
-      <rect x={0} y={0} width={MW} height={H} fill="var(--field)" />
-      {gLon.map((v) => (
-        <g key={"lo" + v}>
-          <line x1={px(v)} x2={px(v)} y1={0} y2={H} className="gridline" />
-          <text x={px(v) + 3} y={H - 4} style={{ fontSize: 10 }}>
-            {v >= 0 ? `E${String(v).padStart(3, "0")}` : `W${String(-v).padStart(3, "0")}`}
-          </text>
-        </g>
-      ))}
-      {gLat.map((v) => (
-        <g key={"la" + v}>
-          <line x1={0} x2={MW} y1={py(v)} y2={py(v)} className="gridline" />
-          <text x={4} y={py(v) - 3} style={{ fontSize: 10 }}>
-            {v >= 0 ? `N${v}` : `S${-v}`}
-          </text>
-        </g>
-      ))}
-      {borders && <path d={borders} className="map-border" />}
-      {coast && <path d={coast} className="map-coast" />}
-      <defs>
-        <pattern id="sig-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="8" className="sig-hatch-line" />
-        </pattern>
-        {sigAreas.map((x) => (
-          <clipPath key={x.s.id} id={`sigclip-${x.s.id}`}>
-            <path d={x.d!} />
+    <div className={cx("map-wrap", `map-${style}`, zoom > 1 && "zoomed")}>
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${MW} ${H}`}
+        className="chart route-map"
+        style={{ height: shownH ?? undefined, maxHeight: 560 }}
+        role="group"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "+" || e.key === "=") zoomTo(zoom * 1.6, focus());
+          else if (e.key === "-") zoomTo(zoom / 1.6, focus());
+          else onKey(e);
+        }}
+        aria-label="Route map with waypoints and FIR boundaries. Arrow keys step through waypoints; + and − zoom; drag to move when zoomed in."
+        onPointerLeave={() => setActive(null)}
+        onPointerDown={(e) => {
+          if (zoom <= 1 || e.button !== 0) return;
+          drag.current = { x: e.clientX, y: e.clientY, c: [cLat, cLon], moved: false };
+          (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d) return;
+          const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+          const f = MW / r.width; // screen px → drawing units
+          const dx = (e.clientX - d.x) * f;
+          const dy = (e.clientY - d.y) * f;
+          if (Math.hypot(dx, dy) > 3) d.moved = true;
+          setCentre([d.c[0] + dy / s, d.c[1] - dx / (k * s)]);
+        }}
+        onPointerUp={() => (drag.current = null)}
+        onPointerCancel={() => (drag.current = null)}
+      >
+        <rect x={0} y={0} width={MW} height={H} className="map-sea" />
+        <defs>
+          <clipPath id="map-land-clip">
+            {land.map(({ c, d }) => (
+              <path key={c.name} d={d} />
+            ))}
           </clipPath>
+          <pattern id="sig-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="8" className="sig-hatch-line" />
+          </pattern>
+          {sigAreas.map((x) => (
+            <clipPath key={x.s.id} id={`sigclip-${x.s.id}`}>
+              <path d={x.d!} />
+            </clipPath>
+          ))}
+        </defs>
+        {land.map(({ c, d }) => (
+          <path key={c.name} d={d} className={`map-land t${style === "plain" ? c.tone : 0}`} />
         ))}
-      </defs>
-      {sigAreas.map(({ s, d, end, impact }) => {
-        const pts2 = s.area.kind === "polygon" ? s.area.points : null;
-        const c = pts2 ? [pts2.reduce((a, p) => a + p[0], 0) / pts2.length, pts2.reduce((a, p) => a + p[1], 0) / pts2.length] : null;
-        return (
-          <g
-            key={s.id}
-            className={cx("sig-area", s.phenomenon?.severity === "mod" || s.kind === "AIRMET" ? "mod" : "sev", hlSig === s.id && "hl", impact.verdict === "affects" && "on-route")}
-            onPointerEnter={() => setHighlightedSigmet(s.id)}
-            onPointerLeave={() => setHighlightedSigmet(null)}
-            data-tip={`${s.phenomenon?.text ?? "Hazard"}${s.levels ? ` · ${s.levels.text}` : ""} · valid ${s.validFrom ? `${String(s.validFrom.hour).padStart(2, "0")}${String(s.validFrom.min).padStart(2, "0")}` : "?"}–${s.validTo ? `${String(s.validTo.hour).padStart(2, "0")}${String(s.validTo.min).padStart(2, "0")}` : "?"}Z`}
-            data-tip-title={`${s.kind} ${s.seq} · ${s.firName ?? s.fir ?? ""}`}
-          >
-            <path d={d!} className="sig-fill" />
-            <path d={d!} className="sig-edge" />
-            {end && <path d={end} className="sig-end" />}
-            {c && (
-              <text x={px(c[1])} y={py(c[0])} textAnchor="middle" className="sig-label">
-                {s.kind} {s.seq} · {s.phenomenon?.code ?? ""}
-              </text>
-            )}
-          </g>
-        );
-      })}
-      <path d={path} className="route" />
-      {/* the stretch of route inside each area */}
-      {sigAreas.map(({ s }) => (
-        <path key={"r" + s.id} d={path} className="route-in-sig" clipPath={`url(#sigclip-${s.id})`} />
-      ))}
-      {era && (
-        <g className="map-era" data-tip={`${era.name}: the fuel en-route alternate.${era.abeam ? ` The route passes ${Math.round(era.abeam.nm)} NM away, abeam ${era.abeam.fix}${era.when ? ` at ${era.when}` : ""}.` : ""}`} data-tip-title={`${era.icao} · fuel ERA`}>
-          {era.abeam && <line x1={px(era.abeam.point[1])} y1={py(era.abeam.point[0])} x2={px(era.coord[1])} y2={py(era.coord[0])} className="map-era-line" />}
-          {era.abeam && <circle cx={px(era.abeam.point[1])} cy={py(era.abeam.point[0])} r={3} className="map-era-abeam" />}
-          <path d={`M${px(era.coord[1])} ${py(era.coord[0]) - 8} l8 8 l-8 8 l-8 -8 Z`} className="map-era-mark" />
-          {/* below the marker: an ERA is usually close to the route, where the waypoint names are */}
-          <text x={px(era.coord[1])} y={py(era.coord[0]) + 26} textAnchor="middle" className="map-era-label">
-            {era.icao} · ERA
-          </text>
-        </g>
-      )}
-      {geo
-        .filter((p) => p.kind === "fir")
-        .map((p) => (
-          <g key={"f" + p.i}>
-            <circle cx={px(p.lonDeg!)} cy={py(p.latDeg!)} r={9} fill="none" stroke="var(--ink-3)" strokeDasharray="3 3" />
-            <text x={px(p.lonDeg!) - 12} y={py(p.latDeg!) + 3} textAnchor="end" style={{ fontSize: 10, fontStyle: "italic" }}>
-              {p.name}
+        {style === "relief" && (
+          // equirectangular raster: lon and lat map linearly to x and y, like this projection
+          <image href="/geo/relief.jpg" x={px(-180)} y={py(90)} width={px(180) - px(-180)} height={py(-90) - py(90)} preserveAspectRatio="none" clipPath="url(#map-land-clip)" className="map-relief" />
+        )}
+        {borders && <path d={borders} className="map-border" />}
+        {coast && <path d={coast} className="map-coast" />}
+        {gLon.map((v) => (
+          <g key={"lo" + v}>
+            <line x1={px(v)} x2={px(v)} y1={0} y2={H} className="gridline map-grid" />
+            <text x={px(v) + 3} y={H - 4} className="map-grid-label">
+              {v >= 0 ? `E${String(v).padStart(3, "0")}` : `W${String(-v).padStart(3, "0")}`}
             </text>
           </g>
         ))}
-      {wpts.map((p) => {
-        const cx0 = px(p.lonDeg!);
-        const cy0 = py(p.latDeg!);
-        const ends = p === first || p === end;
-        const on = active === p.i;
-        return (
-          <g key={p.i} onPointerEnter={() => setActive(p.i)}>
-            {ends ? (
-              <circle cx={cx0} cy={cy0} r={on ? 9 : 7} fill={p === end ? "var(--ink)" : "var(--sheet)"} stroke="var(--ink)" strokeWidth={2} />
-            ) : (
-              <path d={`M${cx0} ${cy0 - 5} L${cx0 + 4.5} ${cy0 + 3.5} L${cx0 - 4.5} ${cy0 + 3.5} Z`} className={cx("wpt", on && "active")} transform={on ? `translate(${cx0} ${cy0}) scale(1.6) translate(${-cx0} ${-cy0})` : undefined} />
-            )}
-            {(labelled.has(p.i) || on) && (
-              <text x={cx0 + 9} y={cy0 + 4} className={ends ? "label-strong" : on ? "label-mag" : undefined} style={ends ? { fontSize: 14 } : undefined}>
-                {p.name}
+        {gLat.map((v) => (
+          <g key={"la" + v}>
+            <line x1={0} x2={MW} y1={py(v)} y2={py(v)} className="gridline map-grid" />
+            <text x={4} y={py(v) - 3} className="map-grid-label">
+              {v >= 0 ? `N${v}` : `S${-v}`}
+            </text>
+          </g>
+        ))}
+        {names.map(({ c, x, y }) => (
+          <text key={"n" + c.name} x={x} y={y} textAnchor="middle" className="map-country">
+            {c.name}
+          </text>
+        ))}
+        {sigAreas.map(({ s: sg, d, end: e2, impact }) => {
+          const pts2 = sg.area.kind === "polygon" ? sg.area.points : null;
+          const c = pts2 ? [pts2.reduce((a, p) => a + p[0], 0) / pts2.length, pts2.reduce((a, p) => a + p[1], 0) / pts2.length] : null;
+          return (
+            <g
+              key={sg.id}
+              className={cx("sig-area", sg.phenomenon?.severity === "mod" || sg.kind === "AIRMET" ? "mod" : "sev", hlSig === sg.id && "hl", impact.verdict === "affects" && "on-route")}
+              onPointerEnter={() => setHighlightedSigmet(sg.id)}
+              onPointerLeave={() => setHighlightedSigmet(null)}
+              data-tip={`${sg.phenomenon?.text ?? "Hazard"}${sg.levels ? ` · ${sg.levels.text}` : ""} · valid ${sg.validFrom ? `${String(sg.validFrom.hour).padStart(2, "0")}${String(sg.validFrom.min).padStart(2, "0")}` : "?"}–${sg.validTo ? `${String(sg.validTo.hour).padStart(2, "0")}${String(sg.validTo.min).padStart(2, "0")}` : "?"}Z`}
+              data-tip-title={`${sg.kind} ${sg.seq} · ${sg.firName ?? sg.fir ?? ""}`}
+            >
+              <path d={d!} className="sig-fill" />
+              <path d={d!} className="sig-edge" />
+              {e2 && <path d={e2} className="sig-end" />}
+              {c && (
+                <text x={px(c[1])} y={py(c[0])} textAnchor="middle" className="sig-label">
+                  {sg.kind} {sg.seq} · {sg.phenomenon?.code ?? ""}
+                </text>
+              )}
+            </g>
+          );
+        })}
+        {firDrawn.map((f, i) => (
+          <path key={"fl" + i} d={f.d} className="map-fir" />
+        ))}
+        <path d={path} className="route-halo" />
+        <path d={path} className="route" />
+        {/* the stretch of route inside each area */}
+        {sigAreas.map(({ s: sg }) => (
+          <path key={"r" + sg.id} d={path} className="route-in-sig" clipPath={`url(#sigclip-${sg.id})`} />
+        ))}
+        {firDrawn.map((f, i) => (
+          <g key={"fn" + i} data-tip={f.name ? `The route is in ${f.name} along this dashed line${f.at ? ", from the circle where it crosses in" : ""}.` : undefined} data-tip-title={f.name || undefined}>
+            {f.at && <circle cx={f.at[0]} cy={f.at[1]} r={3} className="map-fir-cross" />}
+            {f.named && (
+              <text transform={`translate(${f.mid.x.toFixed(1)} ${f.mid.y.toFixed(1)}) rotate(${f.mid.ang.toFixed(1)})`} textAnchor="middle" dominantBaseline="middle" className="map-fir-label">
+                {f.name}
               </text>
             )}
-            <circle cx={cx0} cy={cy0} r={14} className="hit" />
           </g>
-        );
-      })}
-    </svg>
+        ))}
+        {era && (
+          <g className="map-era" data-tip={`${era.name}: the fuel en-route alternate.${era.abeam ? ` The route passes ${Math.round(era.abeam.nm)} NM away, abeam ${era.abeam.fix}${era.when ? ` at ${era.when}` : ""}.` : ""}`} data-tip-title={`${era.icao} · fuel ERA`}>
+            {era.abeam && <line x1={px(era.abeam.point[1])} y1={py(era.abeam.point[0])} x2={px(era.coord[1])} y2={py(era.coord[0])} className="map-era-line" />}
+            {era.abeam && <circle cx={px(era.abeam.point[1])} cy={py(era.abeam.point[0])} r={3} className="map-era-abeam" />}
+            <path d={`M${px(era.coord[1])} ${py(era.coord[0]) - 8} l8 8 l-8 8 l-8 -8 Z`} className="map-era-mark" />
+            {/* below the marker: an ERA is usually close to the route, where the waypoint names are */}
+            <text x={px(era.coord[1])} y={py(era.coord[0]) + 26} textAnchor="middle" className="map-era-label">
+              {era.icao} · ERA
+            </text>
+          </g>
+        )}
+        {wpts.map((p) => {
+          const [cx0, cy0] = xy(p);
+          if (cx0 < -40 || cx0 > MW + 40 || cy0 < -40 || cy0 > H + 40) return null;
+          const ends = p === first || p === end;
+          const on = active === p.i;
+          return (
+            <g key={p.i} onPointerEnter={() => !drag.current && setActive(p.i)}>
+              {ends ? (
+                <circle cx={cx0} cy={cy0} r={on ? 9 : 7} fill={p === end ? "var(--ink)" : "var(--sheet)"} stroke="var(--ink)" strokeWidth={2} />
+              ) : (
+                <path d={`M${cx0} ${cy0 - 5} L${cx0 + 4.5} ${cy0 + 3.5} L${cx0 - 4.5} ${cy0 + 3.5} Z`} className={cx("wpt", on && "active")} transform={on ? `translate(${cx0} ${cy0}) scale(1.6) translate(${-cx0} ${-cy0})` : undefined} />
+              )}
+              {(labelled.has(p.i) || on) && (
+                <text x={cx0 + 9} y={cy0 + 4} className={cx("map-wpt-label", ends && "label-strong", on && !ends && "label-mag")} style={ends ? { fontSize: 14 } : undefined}>
+                  {p.name}
+                </text>
+              )}
+              <circle cx={cx0} cy={cy0} r={14} className="hit" />
+            </g>
+          );
+        })}
+      </svg>
+      <div className="map-levels" role="group" aria-label="Zoom level">
+        {MAP_LEVELS.map(([label, z]) => (
+          <button key={label} type="button" aria-pressed={levelOn === label} onClick={() => zoomTo(z, z === 1 ? null : focus())}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="map-zoom" role="group" aria-label="Zoom">
+        <button type="button" aria-label="Zoom in" title="Zoom in (+)" disabled={zoom >= MAP_MAX_ZOOM} onClick={() => zoomTo(zoom * 1.6, focus())}>
+          +
+        </button>
+        <button type="button" aria-label="Zoom out" title="Zoom out (−)" disabled={zoom <= 1} onClick={() => zoomTo(zoom / 1.6, focus())}>
+          −
+        </button>
+        <button type="button" aria-label="Fit the whole route" title="Fit the whole route" disabled={zoom === 1} onClick={() => zoomTo(1)}>
+          ⤢
+        </button>
+      </div>
+      {zoom > 1 && <span className="map-hint">Drag to move</span>}
+    </div>
   );
 }
 
@@ -442,6 +638,8 @@ const TAIL: { k: keyof LogPoint | "latlon"; label: string; num?: boolean }[] = [
 export function FlightLogSection({ no }: { no: number }) {
   const { ofp } = useOfp();
   const eraInfo = useEra();
+  // The route starts in the FIR listed around the departure in the NOTAMs (the log only marks crossings).
+  const depFir = ofp?.notams.groups.find((g) => /AROUND DEPARTURE/i.test(g.section) && /\b(FIR|UIR)\b/.test(g.locationName ?? ""))?.locationName ?? null;
   const [active, setActive] = useState<number | null>(null);
   const [off, setOff] = useField("log.off", "Flight log", "Actual take-off (OFF, UTC)");
   const lg = useFieldGroup("log", "Flight log");
@@ -584,6 +782,7 @@ export function FlightLogSection({ no }: { no: number }) {
                 onKey={step}
                 sigs={sigsShown}
                 era={eraInfo.era && eraInfo.coord ? { icao: eraInfo.era.icao, name: eraInfo.era.name, coord: eraInfo.coord, abeam: eraInfo.abeam, when: eraInfo.when?.clock ?? null } : null}
+                depFir={depFir}
               />
             ) : (
               <EmptyChart label="Map" />

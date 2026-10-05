@@ -27,6 +27,7 @@ import { clearPdfs, deletePdf } from "@/lib/pdfCache";
 import { adoptFlightParam, mirrorFlightParam, setActive, useActiveFlight } from "@/lib/active";
 import { PlanChips, StatusLine } from "./FlightMenu";
 import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
+import { DEFAULT_MAP, MAP_STYLES, useMapStyle, type MapStyle } from "@/lib/mapPref";
 
 const SECTIONS = [
   ["flights", "Saved flights"],
@@ -131,6 +132,28 @@ function LockIcon({ open, dim }: { open: boolean; dim?: boolean }) {
   );
 }
 
+/** A small sample of each route-map style: sea, two countries, a coast, a ridge and the route. */
+function MapIcon({ style }: { style: MapStyle }) {
+  const lines = style !== "plain";
+  return (
+    <svg className="map-icon" viewBox="0 0 120 44" aria-hidden="true">
+      <rect width="120" height="44" fill="var(--map-sea)" />
+      <path d="M0 14 C18 10 30 18 44 12 L62 8 L62 44 L0 44 Z" fill="var(--map-land)" />
+      <path d="M62 8 L84 6 C98 10 108 4 120 8 L120 44 L62 44 Z" fill={style === "plain" ? "var(--map-land-1)" : "var(--map-land)"} />
+      {style === "relief" && (
+        <g opacity="0.55">
+          <path d="M72 30 l8 -12 l7 9 l6 -8 l9 14 Z" fill="#8f8567" />
+          <path d="M80 18 l7 9 l-4 4 Z M93 19 l9 14 l-5 0 Z" fill="#5a5038" />
+        </g>
+      )}
+      {lines && <path d="M0 14 C18 10 30 18 44 12 L62 8 L84 6 C98 10 108 4 120 8" fill="none" stroke="var(--map-coast)" strokeWidth="1" />}
+      {lines && <path d="M62 8 L62 44" fill="none" stroke="var(--map-border)" strokeWidth="0.9" />}
+      <path d="M10 36 L50 26 L110 30" fill="none" stroke="var(--magenta)" strokeWidth="2" />
+      <path d="M10 32 L50 22 L110 26" fill="none" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="3 2" />
+    </svg>
+  );
+}
+
 export function SettingsApp() {
   const version = useSyncExternalStore(subscribe, getVersion, getServerVersion);
   const ready = version >= 0;
@@ -148,6 +171,7 @@ export function SettingsApp() {
     if (activeReady) mirrorFlightParam(activeId);
   }, [activeReady, activeId]);
   const [stripMode, setStripMode] = useStripMode();
+  const [mapStyle, setMapStyle] = useMapStyle();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importMsgs, setImportMsgs] = useState<ImportMsg[]>([]);
   const [unlocked, setUnlocked] = useState(false);
@@ -525,6 +549,22 @@ export function SettingsApp() {
                     </b>
                     <span className="small muted">{m.desc}</span>
                     <StripIcon mode={m.value} />
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <fieldset className="radios" style={{ marginTop: 18 }}>
+              <legend className="field-label">Route map</legend>
+              {MAP_STYLES.map((m) => (
+                <label key={m.value} className={cx("radio", ready && mapStyle === m.value && "on")}>
+                  <input type="radio" name="map-style" value={m.value} checked={ready && mapStyle === m.value} onChange={() => setMapStyle(m.value)} />
+                  <span>
+                    <b className="radio-title">
+                      {m.label}
+                      {m.value === DEFAULT_MAP && <span className="badge b-ink">Default</span>}
+                    </b>
+                    <span className="small muted">{m.desc}</span>
+                    <MapIcon style={m.value} />
                   </span>
                 </label>
               ))}
