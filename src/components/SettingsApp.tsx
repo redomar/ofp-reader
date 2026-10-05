@@ -27,7 +27,7 @@ import { clearPdfs, deletePdf } from "@/lib/pdfCache";
 import { adoptFlightParam, mirrorFlightParam, setActive, useActiveFlight } from "@/lib/active";
 import { PlanChips, StatusLine } from "./FlightMenu";
 import { DEFAULT_STRIP, STRIP_MODES, useStripMode, type StripMode } from "@/lib/stripPref";
-import { DEFAULT_MAP, MAP_STYLES, useMapStyle, type MapStyle } from "@/lib/mapPref";
+import { DEFAULT_FIR, DEFAULT_MAP, FIR_MODES, MAP_STYLES, useFirMode, useMapStyle, type MapStyle } from "@/lib/mapPref";
 
 const SECTIONS = [
   ["flights", "Saved flights"],
@@ -172,6 +172,7 @@ export function SettingsApp() {
   }, [activeReady, activeId]);
   const [stripMode, setStripMode] = useStripMode();
   const [mapStyle, setMapStyle] = useMapStyle();
+  const [firMode, setFirMode] = useFirMode();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importMsgs, setImportMsgs] = useState<ImportMsg[]>([]);
   const [unlocked, setUnlocked] = useState(false);
@@ -565,6 +566,21 @@ export function SettingsApp() {
                     </b>
                     <span className="small muted">{m.desc}</span>
                     <MapIcon style={m.value} />
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <fieldset className="radios" style={{ marginTop: 18 }}>
+              <legend className="field-label">FIR / UIR on the route map</legend>
+              {FIR_MODES.map((m) => (
+                <label key={m.value} className={cx("radio", ready && firMode === m.value && "on")}>
+                  <input type="radio" name="map-fir" value={m.value} checked={ready && firMode === m.value} onChange={() => setFirMode(m.value)} />
+                  <span>
+                    <b className="radio-title">
+                      {m.label}
+                      {m.value === DEFAULT_FIR && <span className="badge b-ink">Default</span>}
+                    </b>
+                    <span className="small muted">{m.desc}</span>
                   </span>
                 </label>
               ))}
