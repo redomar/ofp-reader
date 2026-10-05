@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useField, useFieldGroup, useOfp } from "../context";
+import { useEra } from "../EraLine";
 import { Replay } from "../replay";
 import { Act, Badge, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
@@ -214,7 +215,10 @@ function Profile({
   );
 }
 
-function RouteMap({ pts, active, setActive, onKey, sigs = [] }: { pts: P[]; active: number | null; setActive: (i: number | null) => void; onKey: (e: KeyboardEvent) => void; sigs?: SigmetOnRoute[] }) {
+/** The fuel en-route alternate to plot: its position and where the route passes closest. */
+type MapEra = { icao: string; name: string; coord: [number, number]; abeam: { point: [number, number]; nm: number; fix: string } | null; when: string | null };
+
+function RouteMap({ pts, active, setActive, onKey, sigs = [], era }: { pts: P[]; active: number | null; setActive: (i: number | null) => void; onKey: (e: KeyboardEvent) => void; sigs?: SigmetOnRoute[]; era?: MapEra | null }) {
   const outlines = useOutlines();
   const hlSig = useHighlightedSigmet();
   // The frame's width, so the drawing area matches its shape instead of letterboxing.
@@ -231,8 +235,10 @@ function RouteMap({ pts, active, setActive, onKey, sigs = [] }: { pts: P[]; acti
   if (!geo.length) return null;
   // Frame the route, plus any SIGMET area the route passes through so it's seen whole.
   const sigPts = sigs.flatMap((x) => (x.impact.lateral && x.s.area.kind === "polygon" ? x.s.area.points : []));
-  const lats = [...geo.map((p) => p.latDeg!), ...sigPts.map((q) => q[0])];
-  const lons = [...geo.map((p) => p.lonDeg!), ...sigPts.map((q) => q[1])];
+  // ...and the fuel en-route alternate, so it's in view too
+  const eraPts = era ? [era.coord] : [];
+  const lats = [...geo.map((p) => p.latDeg!), ...sigPts.map((q) => q[0]), ...eraPts.map((q) => q[0])];
+  const lons = [...geo.map((p) => p.lonDeg!), ...sigPts.map((q) => q[1]), ...eraPts.map((q) => q[1])];
   const la0 = Math.min(...lats);
   const la1 = Math.max(...lats);
   const lo0 = Math.min(...lons);
@@ -360,6 +366,17 @@ function RouteMap({ pts, active, setActive, onKey, sigs = [] }: { pts: P[]; acti
       {sigAreas.map(({ s }) => (
         <path key={"r" + s.id} d={path} className="route-in-sig" clipPath={`url(#sigclip-${s.id})`} />
       ))}
+      {era && (
+        <g className="map-era" data-tip={`${era.name}: the fuel en-route alternate.${era.abeam ? ` The route passes ${Math.round(era.abeam.nm)} NM away, abeam ${era.abeam.fix}${era.when ? ` at ${era.when}` : ""}.` : ""}`} data-tip-title={`${era.icao} · fuel ERA`}>
+          {era.abeam && <line x1={px(era.abeam.point[1])} y1={py(era.abeam.point[0])} x2={px(era.coord[1])} y2={py(era.coord[0])} className="map-era-line" />}
+          {era.abeam && <circle cx={px(era.abeam.point[1])} cy={py(era.abeam.point[0])} r={3} className="map-era-abeam" />}
+          <path d={`M${px(era.coord[1])} ${py(era.coord[0]) - 8} l8 8 l-8 8 l-8 -8 Z`} className="map-era-mark" />
+          {/* below the marker: an ERA is usually close to the route, where the waypoint names are */}
+          <text x={px(era.coord[1])} y={py(era.coord[0]) + 26} textAnchor="middle" className="map-era-label">
+            {era.icao} · ERA
+          </text>
+        </g>
+      )}
       {geo
         .filter((p) => p.kind === "fir")
         .map((p) => (
@@ -424,6 +441,7 @@ const TAIL: { k: keyof LogPoint | "latlon"; label: string; num?: boolean }[] = [
 
 export function FlightLogSection({ no }: { no: number }) {
   const { ofp } = useOfp();
+  const eraInfo = useEra();
   const [active, setActive] = useState<number | null>(null);
   const [off, setOff] = useField("log.off", "Flight log", "Actual take-off (OFF, UTC)");
   const lg = useFieldGroup("log", "Flight log");
@@ -558,7 +576,18 @@ export function FlightLogSection({ no }: { no: number }) {
             </label>
           )}
           <div className="chart-frame" style={{ padding: 0 }}>
-            {pts.length ? <RouteMap pts={pts} active={active} setActive={setActive} onKey={step} sigs={sigsShown} /> : <EmptyChart label="Map" />}
+            {pts.length ? (
+              <RouteMap
+                pts={pts}
+                active={active}
+                setActive={setActive}
+                onKey={step}
+                sigs={sigsShown}
+                era={eraInfo.era && eraInfo.coord ? { icao: eraInfo.era.icao, name: eraInfo.era.name, coord: eraInfo.coord, abeam: eraInfo.abeam, when: eraInfo.when?.clock ?? null } : null}
+              />
+            ) : (
+              <EmptyChart label="Map" />
+            )}
           </div>
         </div>
         <div>

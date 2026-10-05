@@ -5124,3 +5124,52 @@ main[data-skin="dots"] .rmp .rmp-val {
   border-color: var(--ink-2);
 }
 
+
+/* fuel en-route alternate: where the route passes it, on its weather card */
+.wx-era-note {
+  flex-basis: 100%;
+  order: 8;
+  color: var(--amber);
+  font-weight: 600;
+}
+.era-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--amber);
+  background: var(--field);
+  font-size: 13.5px;
+}
+/* the fuel en-route alternate on the route map */
+.map-era-mark {
+  fill: var(--amber-bg);
+  stroke: var(--amber);
+  stroke-width: 2;
+}
+.map-era-line {
+  stroke: var(--amber);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.map-era-abeam {
+  fill: var(--amber);
+}
+.map-era-label {
+  fill: var(--amber);
+  font: 700 12px var(--font-mono);
+  /* a halo of the map's paper so it reads over the route and outlines */
+  paint-order: stroke;
+  stroke: var(--field);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+/* the fuel en-route alternate's COMMS on the Radio page */
+.radio-era {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--rule-strong);
+}

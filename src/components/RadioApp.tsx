@@ -15,6 +15,7 @@ import { getServerVersion, getVersion, listFlights, readFlight, subscribe, write
 import { getPdf } from "@/lib/pdfCache";
 import { hhmmToMin } from "@/lib/ofp/format";
 import { navaidKind } from "@/lib/ofp/fplRef";
+import { fuelEra } from "@/lib/ofp/era";
 import type { OFP } from "@/lib/ofp/types";
 
 const S = "Radio";
@@ -320,6 +321,7 @@ export function RadioApp() {
   ].map(([name, etos]) => ({ name, eto: etos.join(", ") }));
   const navs = (ofp?.log ?? []).filter((p) => p.freq).map((p) => ({ id: p.ident ?? "", name: p.position ?? "", freq: p.freq!, eto: eto(p.ttlt) }));
   const alts = (ofp?.alternates ?? []).map((a) => a.apt.split("/")[0]);
+  const era = fuelEra(ofp);
 
   const outageNote = (f: string) => outages.get(Number(f).toFixed(2));
 
@@ -596,7 +598,7 @@ export function RadioApp() {
             {airport(h?.dep, "Departure", ils("takeoff"), planned.dep)}
             </Replay>
           </Section>
-          <Section id="enroute" no={2} title="En route" meta={<span>{firs.length} FIR / UIR</span>}>
+          <Section id="enroute" no={2} title="En route" meta={<span>{firs.length} FIR / UIR{era ? " · fuel ERA" : ""}</span>}>
             <Replay>
             <h3 className="radio-group">
               Centres <span className="muted">· FIR / UIR crossings from the OFP</span>
@@ -609,6 +611,7 @@ export function RadioApp() {
               Other stations <span className="muted">· information, approach units, and so on</span>
             </h3>
             <div className="radio-rows">{addedRows("enroute", "En route", "info")}</div>
+            {era && <div className="radio-era">{airport(era.icao, "Fuel en-route alternate", [])}</div>}
             </Replay>
           </Section>
           <Section id="dest" no={3} title="Destination" meta={<span>COMMS · ILS</span>}>

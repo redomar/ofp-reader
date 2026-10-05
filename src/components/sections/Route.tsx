@@ -1,6 +1,7 @@
 "use client";
 
 import { AltPrint, McduPrint } from "../McduSheet";
+import { EraLine } from "../EraLine";
 import { useField, useOfp } from "../context";
 import { Replay } from "../replay";
 import { Section, Sub, Tip, V } from "../ui";
@@ -143,6 +144,7 @@ export function RouteSection({ no }: { no: number }) {
           </tbody>
         </table>
       </div>
+      <EraLine unit={ofp?.header.unit === "LBS" ? "lb" : "kg"} />
 
       <div className="cols" style={{ ["--min" as string]: "280px", marginTop: 16 }}>
         <div>
