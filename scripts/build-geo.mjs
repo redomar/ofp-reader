@@ -4,7 +4,7 @@
 // a running sum and no topology library.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { mesh } from "topojson-client";
+import { feature, mesh, neighbors } from "topojson-client";
 
 const require = createRequire(import.meta.url);
 const Q = 100;
@@ -34,5 +34,51 @@ export function buildGeo(res = "50m") {
   mkdirSync("public/geo", { recursive: true });
   const file = `public/geo/outlines-${res}.json`;
   writeFileSync(file, JSON.stringify({ q: Q, coast: encode(coast), borders: encode(borders) }));
+  return file;
+}
+
+/**
+ * Builds public/geo/countries-<res>.json: each country's polygons (outer rings, delta-encoded
+ * like the outlines), a fill tone 0-2 that differs from its neighbours' (greedy colouring, used
+ * by the map's "no contours" style), its bounds, and a label point with the area of its largest
+ * part (the label goes there, and small countries go unnamed until zoomed in).
+ */
+export function buildCountries(res = "50m") {
+  const topo = JSON.parse(readFileSync(require.resolve(`world-atlas/countries-${res}.json`), "utf8"));
+  const geoms = topo.objects.countries.geometries;
+  const nb = neighbors(geoms);
+  const tone = [];
+  geoms.forEach((_, i) => {
+    const used = new Set(nb[i].map((j) => tone[j]).filter((t) => t != null));
+    let t = 0;
+    while (used.has(t) && t < 2) t++;
+    tone[i] = t;
+  });
+  const out = feature(topo, topo.objects.countries).features.map((f, i) => {
+    const polys = f.geometry ? (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates) : [];
+    const rings = polys.map((p) => p[0]);
+    let best = null;
+    let b = [180, 90, -180, -90];
+    for (const r of rings) {
+      let a = 0;
+      let cx = 0;
+      let cy = 0;
+      for (let k = 0; k < r.length - 1; k++) {
+        const [x1, y1] = r[k];
+        const [x2, y2] = r[k + 1];
+        const c = x1 * y2 - x2 * y1;
+        a += c;
+        cx += (x1 + x2) * c;
+        cy += (y1 + y2) * c;
+        b = [Math.min(b[0], x1), Math.min(b[1], y1), Math.max(b[2], x1), Math.max(b[3], y1)];
+      }
+      a /= 2;
+      if (a && (!best || Math.abs(a) > best.a)) best = { a: Math.abs(a), pt: [cx / (6 * a), cy / (6 * a)] };
+    }
+    const r2 = (v) => Math.round(v * 100) / 100;
+    return { n: f.properties.name, t: tone[i], b: b.map(r2), l: best ? best.pt.map(r2) : null, a: best ? r2(best.a) : 0, r: encode(rings) };
+  }).filter((c) => c.r.length);
+  const file = `public/geo/countries-${res}.json`;
+  writeFileSync(file, JSON.stringify({ q: Q, countries: out }));
   return file;
 }

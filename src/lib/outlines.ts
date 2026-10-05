@@ -11,6 +11,20 @@ export interface Outlines {
   /** Each line as [lon0, lat0, lon1, lat1, …] in degrees. */
   coast: Float32Array[];
   borders: Float32Array[];
+  /** Country polygons for land fills and names; empty until (or unless) they load. */
+  countries: Country[];
+}
+
+export interface Country {
+  name: string;
+  /** Fill tone 0-2, different from its neighbours'. */
+  tone: number;
+  /** [lon0, lat0, lon1, lat1] */
+  bounds: [number, number, number, number];
+  /** Where its name goes ([lon, lat]) and the area of that part, in square degrees. */
+  label: [number, number] | null;
+  area: number;
+  rings: Float32Array[];
 }
 
 let pending: Promise<Outlines | null> | null = null;
@@ -31,14 +45,26 @@ function decode(lines: number[][], q: number): Float32Array[] {
   });
 }
 
-function load(): Promise<Outlines | null> {
-  pending ??= fetch("/geo/outlines-50m.json")
-    .then((r) => (r.ok ? r.json() : null))
-    .then((j: { q: number; coast: number[][]; borders: number[][] } | null) => {
-      loaded = j ? { coast: decode(j.coast, j.q), borders: decode(j.borders, j.q) } : null;
-      return loaded;
-    })
+type CountryJson = { n: string; t: number; b: [number, number, number, number]; l: [number, number] | null; a: number; r: number[][] };
+const json = <T,>(url: string) =>
+  fetch(url)
+    .then((r) => (r.ok ? (r.json() as Promise<T>) : null))
     .catch(() => null);
+
+function load(): Promise<Outlines | null> {
+  pending ??= Promise.all([
+    json<{ q: number; coast: number[][]; borders: number[][] }>("/geo/outlines-50m.json"),
+    json<{ q: number; countries: CountryJson[] }>("/geo/countries-50m.json"),
+  ]).then(([o, c]) => {
+    loaded = o
+      ? {
+          coast: decode(o.coast, o.q),
+          borders: decode(o.borders, o.q),
+          countries: c ? c.countries.map((x) => ({ name: x.n, tone: x.t, bounds: x.b, label: x.l, area: x.a, rings: decode(x.r, c.q) })) : [],
+        }
+      : null;
+    return loaded;
+  });
   return pending;
 }
 
@@ -86,6 +112,16 @@ export function outlinePath(
       }
       prevIn = now;
     }
+  }
+  return parts.join("");
+}
+
+/** SVG path data for closed rings (each ring an M…Z), projected with `px`/`py`. */
+export function ringsPath(rings: Float32Array[], px: (lon: number) => number, py: (lat: number) => number): string {
+  const parts: string[] = [];
+  for (const r of rings) {
+    for (let i = 0; i < r.length; i += 2) parts.push(`${i ? "L" : "M"}${px(r[i]).toFixed(1)} ${py(r[i + 1]).toFixed(1)}`);
+    parts.push("Z");
   }
   return parts.join("");
 }
