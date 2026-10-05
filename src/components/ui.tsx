@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { useCollapse } from "./collapse";
 import { Replay } from "./replay";
 import { isBlank } from "@/lib/ofp/format";
@@ -225,6 +225,92 @@ export function Act({
   inputMode?: "numeric" | "decimal" | "text";
 }) {
   return (
+    <ActInput label={label} value={value} onChange={onChange} w={w} placeholder={placeholder} inputMode={inputMode} />
+  );
+}
+
+/**
+ * Act with quick fill, for the nav log. `offer` shows a suggested value in the empty box with a
+ * button (or Enter) that accepts it; `nudge` adds ▲▼ that step the value by that amount (the arrow
+ * keys do the same).
+ */
+export function ActQuick({
+  offer,
+  offerIcon,
+  offerLabel,
+  nudge,
+  ...p
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  w?: number;
+  inputMode?: "numeric" | "decimal" | "text";
+  offer?: string | null;
+  offerIcon?: ReactNode;
+  offerLabel?: string;
+  nudge?: number;
+}) {
+  const offering = !p.value && !!offer;
+  const step = (dir: 1 | -1) => {
+    const n = Number(p.value || offer);
+    if (!nudge || Number.isNaN(n)) return;
+    p.onChange(Math.max(0, n + dir * nudge).toFixed(1));
+  };
+  return (
+    <span className={cx("act-box", offering && "offer")}>
+      <ActInput
+        {...p}
+        placeholder={offering ? offer : undefined}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && offering) {
+            e.preventDefault();
+            p.onChange(offer);
+          } else if (nudge && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            e.preventDefault();
+            step(e.key === "ArrowUp" ? 1 : -1);
+          }
+        }}
+      />
+      {offering ? (
+        <button type="button" className="act-btn" aria-label={`${offerLabel ?? "Use"} ${offer}`} data-tip={`${offerLabel ?? "Use"} ${offer}`} onClick={() => p.onChange(offer)}>
+          {offerIcon ?? "✓"}
+        </button>
+      ) : (
+        nudge &&
+        p.value && (
+          <span className="act-nudge">
+            <button type="button" aria-label={`Add ${nudge}`} tabIndex={-1} onClick={() => step(1)}>
+              ▲
+            </button>
+            <button type="button" aria-label={`Subtract ${nudge}`} tabIndex={-1} onClick={() => step(-1)}>
+              ▼
+            </button>
+          </span>
+        )
+      )}
+    </span>
+  );
+}
+
+function ActInput({
+  label,
+  value,
+  onChange,
+  w = 6,
+  placeholder,
+  inputMode = "numeric",
+  onKeyDown,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  w?: number;
+  placeholder?: string;
+  inputMode?: "numeric" | "decimal" | "text";
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+}) {
+  return (
     <input
       className="act"
       aria-label={label}
@@ -232,6 +318,7 @@ export function Act({
       placeholder={placeholder ?? "·".repeat(Math.min(w, 6))}
       inputMode={inputMode}
       onChange={(e) => onChange(e.target.value.toUpperCase())}
+      onKeyDown={onKeyDown}
       style={{ ["--w" as string]: w }}
       spellCheck={false}
       autoComplete="off"
