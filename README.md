@@ -33,6 +33,7 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 - **A blank form first.** On load you see the whole plan as an unfilled template; values ink in as the PDF is decoded, the airport codes flip in on split-flap tiles, and the flight graphic draws in from left to right.
 - **Smart, not just pretty.**
   - Fuel: block composition bar, landing fuel, margin above ALTN + FINRES, endurance, burn per NM, PIC extra → total fuel.
+  - Fuel en-route alternate: when the plan nominates one for its contingency fuel, it's named with the fuel it covers, where the route passes closest and when, the forecast then, a marker on the route map and its own alternate-sheet page.
   - Weights: max vs estimated gauges, and whether the take-off weight is actually landing-weight limited.
   - Times: taxi / airborne / block durations, local UTC offsets, and a **planned vs actual timeline** on a shared clock.
   - Flight log: vertical profile with MORA terrain, fuel on board and minimum-fuel line, a route map from the waypoint coordinates over coastlines and country borders, FIR crossings, and a navigation log where ETOs follow your actual take-off time (or a RETO column from the Actual OFF in Times & weights).
@@ -206,7 +207,7 @@ src/
     └── pdfCache.ts           per-flight PDF copies in IndexedDB
 ```
 
-**Stack:** Next.js 16 (static export) · React 19 · TypeScript · pdf.js 6 · [flag-icons](https://github.com/lipis/flag-icons) (MIT) for country flags · [Natural Earth](https://www.naturalearthdata.com/) (public domain, via [world-atlas](https://github.com/topojson/world-atlas)) for map outlines. No UI framework; styles are plain CSS with design tokens.
+**Stack:** Next.js 16 (static export) · React 19 · TypeScript · pdf.js 6 · [flag-icons](https://github.com/lipis/flag-icons) (MIT) for country flags · [Natural Earth](https://www.naturalearthdata.com/) (public domain, via [world-atlas](https://github.com/topojson/world-atlas)) for map outlines. [OurAirports](https://ourairports.com/data/) (public domain) for airport positions. No UI framework; styles are plain CSS with design tokens.
 
 ## Accessibility
 

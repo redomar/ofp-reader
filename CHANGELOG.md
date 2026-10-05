@@ -4,6 +4,24 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-05
+
+### Added
+
+- **Fuel en-route alternate (fuel ERA).** Plans that nominate an en-route airport for their contingency fuel now show it throughout the reader, for example Oostende (EBOS/OST) on Innsbruck → Birmingham.
+  - Such plans list it as "Fuel Enroute Airport", with `CONT 15 MIN  OST` in the fuel table.
+  - **Planned fuel** and **Alternate, routing & impacts** get a line naming the airport and the contingency fuel it's for. It also says where the route passes closest ("8 NM off track, abeam BULAM at 1558Z") and the forecast category for that time. The airport code on the CONT line explains itself on hover.
+  - **Route map:** the airport is marked in amber, with a dashed line from the closest point of the route, and is kept in view.
+  - **Airport weather:** its card is labelled "Fuel en-route alternate", with the abeam time and the forecast then. It folds on its own, like an alternate.
+  - **Alternate sheet:** a new page after the return to departure, covering FINRES, the contingency fuel, the abeam fix and time, the distance off track, the forecast at that time, the METAR and its NOTAM count. Destination alternate pages follow, renumbered.
+  - **Radio page:** the airport gets its own COMMS block in En route.
+  - The airport positions come from OurAirports (public domain): large and medium airports, loaded only when a plan has a fuel ERA.
+
+### Fixed
+
+- On the Weather page, the "from <flight>" label next to the report count disappeared after a reload.
+- The fuel en-route alternate's weather card shared the destination's fold setting, so folding one folded the other.
+
 ## [1.8.0] - 2026-10-03
 
 ### Added
@@ -186,6 +204,7 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 - Settings page for saved flights, stored entries, export, deletion and theme.
 - Recent-plan chips, Blank plan, a planned vs actual timeline and day/night themes meeting WCAG AA.
 
+[1.9.0]: https://github.com/redomar/ofp-reader/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/redomar/ofp-reader/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/redomar/ofp-reader/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/redomar/ofp-reader/compare/v1.5.0...v1.6.0

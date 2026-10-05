@@ -161,6 +161,9 @@ export function WeatherApp() {
     if (autoLoad && activeId) queueMicrotask(() => void loadPlan(activeId));
   }, [autoLoad, activeId, loadPlan]);
 
+  // "from …": the source just loaded, or, after a reload, the saved flight whose reports fill the box
+  const fromRec = from && from !== "user" ? saved.find((f) => f.meta.id === from) : null;
+  const fromLabel = loadedFrom ?? (fromRec ? `${fromRec.meta.flightNo ?? fromRec.meta.id} ${fromRec.meta.dep ?? ""}→${fromRec.meta.arr ?? ""}` : null);
   const pending = !restored || !activeReady || autoLoad || (busy?.startsWith("Reading") ?? false);
   const sections = [["reports", "Paste reports"], ...airports.map((a) => [a.id, a.key] as const)] as const;
 
@@ -184,7 +187,7 @@ export function WeatherApp() {
           <span className="examples-sep" aria-hidden="true" />
           <span role="status">
             {reports.length
-              ? `${reports.length} ${reports.length === 1 ? "report" : "reports"} · ${airports.length} ${airports.length === 1 ? "airport" : "airports"}${loadedFrom ? ` · from ${loadedFrom}` : ""}`
+              ? `${reports.length} ${reports.length === 1 ? "report" : "reports"} · ${airports.length} ${airports.length === 1 ? "airport" : "airports"}${fromLabel ? ` · from ${fromLabel}` : ""}`
               : "Paste METARs, TAFs or ATIS to see them as weather cards"}
           </span>
         </StatusLine>

@@ -2,6 +2,8 @@
 //  - the pdf.js worker, served at /pdf.worker.min.mjs
 //  - flag-icons 4x3 SVGs, served at /flags/<iso2>.svg (only the flags a plan needs are fetched)
 //  - coastline and border outlines for the route map, at /geo/outlines-50m.json (see build-geo.mjs)
+//  - airport coordinates (OurAirports, public domain: large and medium airports, ICAO → [lat, lon]),
+//    at /geo/airports.json, from data/airports.json; used to place a fuel en-route alternate
 // public/ may not exist in a fresh checkout because everything in it is generated.
 import { copyFileSync, cpSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -14,3 +16,5 @@ copyFileSync(require.resolve("pdfjs-dist/build/pdf.worker.min.mjs"), "public/pdf
 const flags = join(dirname(require.resolve("flag-icons/package.json")), "flags", "4x3");
 cpSync(flags, "public/flags", { recursive: true });
 buildGeo("50m");
+mkdirSync("public/geo", { recursive: true });
+copyFileSync("data/airports.json", "public/geo/airports.json");
