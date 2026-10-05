@@ -393,7 +393,7 @@ function RouteMap({
     if (x < 40 || x > MW - 40 || c.area * k * s * s < 2600) return [];
     const halfW = c.name.length * 6.5;
     // nudge it up or down off the route if it would sit on it
-    const y = [y0, y0 + 22, y0 - 22, y0 + 44].find((v) => v > 24 && v < H - 18 && clear(x, v, halfW));
+    const y = [y0, y0 + 22, y0 - 22, y0 + 44].find((v) => v > 64 && v < H - 18 && clear(x, v, halfW)); // below the zoom controls
     return y == null ? [] : [{ c, x, y }];
   });
   // FIR / UIR stretches: from each crossing to the next, as a dashed line beside the route.
