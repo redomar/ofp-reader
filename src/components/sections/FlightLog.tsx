@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useField, useFieldGroup, useOfp } from "../context";
 import { useEra } from "../EraLine";
 import { Replay } from "../replay";
-import { Act, Badge, Section, Sub, Tip, V, cx } from "../ui";
+import { Act, ActQuick, Badge, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/ofp/format";
 import type { LogPoint } from "@/lib/ofp/types";
@@ -694,6 +694,19 @@ export function FlightLogSection({ no }: { no: number }) {
   };
 
   const rows: (P | null)[] = pts.length ? pts : Array.from({ length: 8 }, () => null);
+
+  // Quick fill: the fix after the last one filled in offers the time now (UTC) for ATO and, for AFOB,
+  // its planned fuel shifted by the last fuel Δ. The latest AFOB gets ▲▼ to adjust by 0.1 t.
+  const nowZ = useUtcNow();
+  const fixes = pts.filter((p) => p.kind !== "fir");
+  const lastFilled = (k: string) => fixes.findLastIndex((p) => !!lg.get(`${wkey(p)}.${k}`));
+  const fuelRef = (p: P) => pic?.tfob(p.efob, p.pbrn) ?? (p.efob ? Number(p.efob) : null);
+  const atoNext = fixes[lastFilled("ato") + 1]?.i ?? null;
+  const afLatest = fixes[lastFilled("afob")] ?? null;
+  const afNextP = fixes[lastFilled("afob") + 1] ?? null;
+  const lastDF = afLatest && fuelRef(afLatest) != null ? Number(lg.get(`${wkey(afLatest)}.afob`)) - fuelRef(afLatest)! : 0;
+  const afNextRef = afNextP ? fuelRef(afNextP) : null;
+  const afOffer = afNextRef != null && !Number.isNaN(lastDF) ? Math.max(0, afNextRef + lastDF).toFixed(1) : null;
   const toc = pts.find((p) => /T O C/.test(p.position ?? ""));
   const tod = pts.find((p) => /T O D/.test(p.position ?? ""));
   const maxFl = Math.max(0, ...pts.map((p) => p.alt));
@@ -1007,7 +1020,17 @@ export function FlightLogSection({ no }: { no: number }) {
                     </td>
                   )}
                   <td className="num">
-                    {!isFir && <Act label={`Actual time over ${p.name}`} value={atoV ?? ""} onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))} w={4} />}
+                    {!isFir && (
+                      <ActQuick
+                        label={`Actual time over ${p.name}`}
+                        value={atoV ?? ""}
+                        onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))}
+                        w={4}
+                        offer={p.i === atoNext ? nowZ : null}
+                        offerIcon={<ClockIcon />}
+                        offerLabel="Time now (UTC)"
+                      />
+                    )}
                   </td>
                   <td className="num delta" style={{ color: dAto ? (dAto > 0 ? "var(--red)" : "var(--green)") : undefined }}>
                     {dAto != null ? `${dAto > 0 ? "+" : dAto < 0 ? "−" : "±"}${Math.abs(dAto)}′` : ""}
@@ -1027,7 +1050,18 @@ export function FlightLogSection({ no }: { no: number }) {
                     </td>
                   )}
                   <td className="num">
-                    {!isFir && <Act label={`Actual fuel on board at ${p.name}, tonnes`} value={af ?? ""} onChange={(v) => lg.put(`${wkey(p)}.afob`, `AFOB ${p.name} (t)`, v.replace(/[^\d.]/g, ""))} w={4} inputMode="decimal" />}
+                    {!isFir && (
+                      <ActQuick
+                        label={`Actual fuel on board at ${p.name}, tonnes`}
+                        value={af ?? ""}
+                        onChange={(v) => lg.put(`${wkey(p)}.afob`, `AFOB ${p.name} (t)`, v.replace(/[^\d.]/g, ""))}
+                        w={4}
+                        inputMode="decimal"
+                        offer={p.i === afNextP?.i ? afOffer : null}
+                        offerLabel="Predicted fuel"
+                        nudge={p.i === afLatest?.i ? 0.1 : undefined}
+                      />
+                    )}
                   </td>
                   <td className="num delta" style={{ color: dF != null && !Number.isNaN(dF) && Math.abs(dF) >= 0.05 ? (dF < 0 ? "var(--red)" : "var(--green)") : undefined }}>
                     {dF != null && !Number.isNaN(dF) ? `${dF >= 0.05 ? "+" : dF <= -0.05 ? "−" : "±"}${Math.abs(dF).toFixed(1)}` : ""}
@@ -1122,3 +1156,28 @@ function EmptyChart({ label }: { label: string }) {
     </svg>
   );
 }
+
+/** The time now as HHMM UTC, updated every 10 s; null until mounted, so the server render matches. */
+function useUtcNow() {
+  const [now, setNow] = useState<string | null>(null);
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setNow(`${String(d.getUTCHours()).padStart(2, "0")}${String(d.getUTCMinutes()).padStart(2, "0")}`);
+    };
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 10_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, []);
+  return now;
+}
+
+const ClockIcon = () => (
+  <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+    <circle cx="6" cy="6" r="4.8" />
+    <path d="M6 3.4V6l1.8 1.2" />
+  </svg>
+);
