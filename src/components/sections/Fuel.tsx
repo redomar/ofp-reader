@@ -5,6 +5,8 @@ import { Replay } from "../replay";
 import { Act, Badge, Field, Section, Sub, Tip, V, cx } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { fmtDur, fmtHhmm, fmtNum, hhmmToMin } from "@/lib/ofp/format";
+import { fuelEra } from "@/lib/ofp/era";
+import { EraLine } from "../EraLine";
 
 const SEGMENTS: { key: string; match: RegExp; color: string; ink: string; tip: string }[] = [
   { key: "TRIP", match: /^TRIP$/, color: "var(--magenta)", ink: "var(--sheet)", tip: G.TRIP },
@@ -24,6 +26,7 @@ export function FuelSection({ no }: { no: number }) {
   const [reason, setReason] = useField("fuel.picReason", S, "Reason for PIC extra");
   const [sig, setSig] = useField("fuel.picSignature", S, "PIC signature");
   const f = ofp?.fuel;
+  const era = fuelEra(ofp);
   const unit = ofp?.header.unit ?? "KGS";
   const rows = f?.rows.length ? f.rows : PLACEHOLDER_ROWS.map((label) => ({ label, arpt: null, fuel: null, time: null }));
   const get = (re: RegExp) => f?.rows.find((r) => re.test(r.label));
@@ -76,7 +79,13 @@ export function FuelSection({ no }: { no: number }) {
                         </Tip>
                       </th>
                       <td>
-                        <V v={r.arpt} w={3} />
+                        {era?.cont === r ? (
+                          <Tip tip={`${era.name} (${era.icao}): the fuel en-route alternate this contingency fuel is worked out with.`} title={`${era.icao} · fuel ERA`}>
+                            <V v={r.arpt} w={3} />
+                          </Tip>
+                        ) : (
+                          <V v={r.arpt} w={3} />
+                        )}
                       </td>
                       <td className="num">
                         <V v={fmtNum(r.fuel)} w={5} />
@@ -114,6 +123,7 @@ export function FuelSection({ no }: { no: number }) {
               </tbody>
             </table>
           </div>
+          <EraLine unit={unit === "KGS" ? "kg" : "lb"} />
           <div className="row" style={{ marginTop: 8 }}>
             <label htmlFor="pic-reason" className="field-label" style={{ margin: 0 }}>
               Reason for PIC extra

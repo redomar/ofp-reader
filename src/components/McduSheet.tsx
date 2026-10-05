@@ -6,6 +6,8 @@ import { legMetrics, ident, listing, printout } from "./RouteExplain";
 import { hhmmToMin } from "@/lib/ofp/format";
 import { routeLegs } from "@/lib/ofp/fplRef";
 import { forecastAt, headline, parseReport } from "@/lib/wx/reports";
+import { fuelEra } from "@/lib/ofp/era";
+import { useEra } from "./EraLine";
 
 const col = (v: string | number | null | undefined, w: number, right = false) => {
   const t = v == null ? "" : String(v);
@@ -211,7 +213,10 @@ function wrap(text: string, first: string, width = 52, indent = 14): string[] {
 }
 
 /** One page per destination alternate, each starting with FINRES. */
-function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][] {
+/** The fuel en-route alternate's page needs where the route passes it (from the airport's coordinates). */
+type EraForSheet = ReturnType<typeof useEra>;
+
+function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, eraInfo?: EraForSheet): string[][] {
   const h = ofp.header;
   const alts = ofp.alternates;
   const u = h.unit === "LBS" ? "LBS" : "KG";
@@ -224,6 +229,9 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][
     return `${String(Math.floor(v / 60)).padStart(2, "0")}${String(v % 60).padStart(2, "0")}Z`;
   };
   const pageNo = (n: number) => `PAGE ${String(n).padStart(3, "0")}`;
+  const era = eraInfo?.era ?? null;
+  // destination alternates follow the return page (001) and, if there is one, the en-route alternate (002)
+  const firstAlt = era ? 3 : 2;
   const altPagesOut = alts.map((a, i) => {
     const [icao, aptRwy] = a.apt.split("/");
     const rwy = a.rwy ?? aptRwy;
@@ -232,7 +240,7 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][
     const eta = onMin != null ? onMin + altMin : null;
     const nav = ofp.log.find((p) => p.freq && ident(p) === icao);
     const lines = [
-      `${col("OFP READER  ALTERNATE SHEET", 40)}${col(pageNo(i + 2), 12, true)}`,
+      `${col("OFP READER  ALTERNATE SHEET", 40)}${col(pageNo(i + firstAlt), 12, true)}`,
       `${col(h.flightNo, 9)}${col(`${h.dep}-${h.arr}`, 11)}${col(h.date, 11)}${col(`ALTN ${i + 1} OF ${alts.length}`, 21)}`,
       RULE,
       `[ FINRES ]    ${finres != null ? `${finres.toLocaleString("en-GB")} ${u}` : "....."}${finresTime ? `  ${finresTime.slice(0, 2)}:${finresTime.slice(2)}` : ""}`,
@@ -257,7 +265,7 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][
       } else lines.push("ETA OUTSIDE THE TAF VALIDITY");
     }
     if (wx?.metar) lines.push(...head("METAR"), ...wrap(`${icao} ${wx.metar}`, "", 52, 0));
-    lines.push(RULE, "", `${col("", 10)}*** END OF PAGE ${String(i + 2).padStart(3, "0")} ***`);
+    lines.push(RULE, "", `${col("", 10)}*** END OF PAGE ${String(i + firstAlt).padStart(3, "0")} ***`);
     return lines;
   });
 
@@ -319,13 +327,45 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>): string[][
     if (tkWx?.metar) ret.push(...wrap(`${tk} ${tkWx.metar}`, "", 52, 0));
   } else ret.push("NONE FILED");
   ret.push(RULE, "", `${col("", 10)}*** END OF PAGE 001 ***`);
-  return [ret, ...altPagesOut];
+
+  // Page 002: the fuel en-route alternate (where the route passes it, its weather then).
+  const eraPage: string[] = [];
+  if (era) {
+    const ab = eraInfo?.abeam ?? null;
+    const when = eraInfo?.when ?? null;
+    eraPage.push(
+      `${col("OFP READER  ALTERNATE SHEET", 40)}${col(pageNo(2), 12, true)}`,
+      `${col(h.flightNo, 9)}${col(`${h.dep}-${h.arr}`, 11)}${col(h.date, 11)}${col("EN-ROUTE ALTN", 21)}`,
+      RULE,
+      `[ FINRES ]    ${finres != null ? `${finres.toLocaleString("en-GB")} ${u}` : "....."}${finresTime ? `  ${finresTime.slice(0, 2)}:${finresTime.slice(2)}` : ""}`,
+      ...head(`FUEL EN-ROUTE ALTN  ${era.icao}${era.iata ? `/${era.iata}` : ""}`),
+      ...wrap(era.name, "", 52, 0),
+    );
+    if (era.cont) eraPage.push(`${col("CONTINGENCY", 14)}${era.cont.label}  ${era.cont.fuel != null ? `${era.cont.fuel.toLocaleString("en-GB")} ${u}` : ""}`);
+    if (ab) {
+      eraPage.push(`${col("ABEAM", 14)}${ab.fix}${when ? `  AT ${when.clock}` : ""}`);
+      eraPage.push(`${col("OFF TRACK", 14)}${Math.round(ab.nm)} NM (CLOSEST POINT OF THE ROUTE)`);
+    } else eraPage.push(...wrap("POSITION NOT KNOWN: NO COORDINATES FOR THIS AIRPORT, SO THE CLOSEST POINT ISN'T SHOWN.", "", 52, 0));
+    if (eraInfo?.forecast && when) {
+      const f = eraInfo.forecast;
+      eraPage.push(...head(`FCST AT ${when.clock} (ABEAM)`));
+      eraPage.push(...wrap(`${headline(f.prevailing)}${f.prevailing.category ? ` · ${f.prevailing.category}` : ""}`.toUpperCase(), col("PREVAILING", 14)));
+      for (const g of f.temporary) eraPage.push(...wrap(`${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(), col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14)));
+    }
+    if (era.wx.metar) eraPage.push(...head("METAR"), ...wrap(`${era.icao} ${era.wx.metar}`, "", 52, 0));
+    const nGroups = ofp.notams.groups.filter((g) => /ENROUTE AIRPORT/i.test(g.section) && g.location?.startsWith(era.icao));
+    const nCount = nGroups.reduce((n, g) => n + g.notams.length, 0);
+    if (nCount) eraPage.push(...head("NOTAM"), `${nCount} NOTAM${nCount > 1 ? "S" : ""} IN THE OFP: SEE FUEL ENROUTE AIRPORT`);
+    eraPage.push(RULE, "", `${col("", 10)}*** END OF PAGE 002 ***`);
+  }
+  return [ret, ...(era ? [eraPage] : []), ...altPagesOut];
 }
 
 function AltSheet() {
   const { ofp } = useOfp();
+  const eraInfo = useEra();
   if (!ofp) return null;
-  const pages = altPages(ofp);
+  const pages = altPages(ofp, eraInfo);
   // Pages torn apart with a zigzag gap between them.
   return (
     <div className="rx-pages">
@@ -342,11 +382,12 @@ function AltSheet() {
 export function AltPrint() {
   const { ofp } = useOfp();
   const alts = ofp?.alternates ?? [];
+  const era = fuelEra(ofp);
   return (
     <PrintButton
       title="Print alternate sheet"
-      chips={[`${ofp?.header.dep ?? "DEP"} RTN`, ...alts.map((a) => a.apt.split("/")[0])]}
-      sub={`Return to departure, then one page per alternate (${alts.length}); each page starts with FINRES.`}
+      chips={[`${ofp?.header.dep ?? "DEP"} RTN`, ...(era ? [`${era.icao} ERA`] : []), ...alts.map((a) => a.apt.split("/")[0])]}
+      sub={`Return to departure, ${era ? "the en-route alternate, " : ""}then one page per alternate (${alts.length}); each page starts with FINRES.`}
       label="Alternate sheet"
       disabled={!ofp}
     >

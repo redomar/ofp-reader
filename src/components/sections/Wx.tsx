@@ -6,11 +6,12 @@ import { CATEGORY_TIP, decodeMetar, decodeToken, type Category } from "@/lib/ofp
 import { pageOf } from "@/lib/ofp/format";
 import { WindArrow, parseSector } from "../WindArrow";
 import { ObsCard, TafCard } from "../WxCards";
-import { headline, parseReport } from "@/lib/wx/reports";
+import { forecastAt, headline, parseReport } from "@/lib/wx/reports";
 import { BoxToggleIcon, useCollapse } from "../collapse";
 import { SigmetCard } from "../SigmetCard";
 import { useSigmets } from "../useSigmets";
 import { parseSigmets } from "@/lib/wx/sigmet";
+import { ERA_TIP, abeamOf, afterOff, fuelEra, isEraRole, useAirportCoord } from "@/lib/ofp/era";
 
 const CAT_TONE: Record<Category, "green" | "blue" | "red" | "mag"> = { VFR: "green", MVFR: "blue", IFR: "red", LIFR: "mag" };
 
@@ -55,6 +56,15 @@ export function WxSection({ no }: { no: number }) {
   const sigmets = useSigmets();
   const wx = ofp?.wx;
   const airports = wx?.airports.length ? wx.airports : (["Departure", "Destination", "Destination Alternates"].map((role) => ({ role, icao: "", iata: null, name: "", metar: null, taf: [], other: [] })) as NonNullable<typeof wx>["airports"]);
+  // Fuel en-route alternate: where the route passes closest, and the forecast for then.
+  const era = fuelEra(ofp);
+  const eraC = useAirportCoord(era?.icao);
+  const ab = ofp && eraC ? abeamOf(ofp.log, eraC) : null;
+  const abT = ofp && ab ? afterOff(ofp, ab.min) : null;
+  const eraFc = era?.wx.taf.length && abT ? forecastAt(parseReport(`TAF ${era.icao} ${era.wx.taf.join(" ")}`), abT.at) : null;
+  const eraNote = ab
+    ? `${Math.round(ab.nm)} NM off track, abeam ${ab.fix}${abT ? ` at ${abT.clock}` : ""}${eraFc?.prevailing.category ? ` · forecast then ${eraFc.prevailing.category}` : ""}`
+    : null;
 
   return (
     <Section id="wx" no={no} title="Airport weather" meta={<span>PDF p.{pageOf(ofp?.pages, /\[ Airport WX List \]/) ?? 12}</span>}>
@@ -107,7 +117,9 @@ export function WxSection({ no }: { no: number }) {
           const tafR = a.taf.length ? parseReport(`TAF ${a.icao} ${a.taf.join(" ")}`) : null;
           // Each airport folds. Departure / destination remember "collapsed" per role (every plan);
           // alternates start collapsed, so theirs remembers "opened", per airport.
-          const isAlt = /alt/i.test(a.role);
+          // the fuel en-route alternate folds like an alternate (its own setting, not the destination's)
+          const isEra = isEraRole(a.role);
+          const isAlt = /alt/i.test(a.role) || isEra;
           const key = isAlt ? `wxapt:open:${a.icao || i}` : `wxapt:${a.role.startsWith("Dep") ? "dep" : "dest"}`;
           const collapsed = isAlt ? !isCollapsed(key) : isCollapsed(key);
           const bodyId = `wxapt-${a.icao || i}-body`;
@@ -126,12 +138,19 @@ export function WxSection({ no }: { no: number }) {
           return (
             <article className={`wx-card${collapsed ? " is-folded" : ""}`} key={a.icao + i} aria-label={`${a.role} ${a.icao} weather`}>
               <header className="wx-fold" onClick={(e) => !(e.target as Element).closest("button") && toggle(key)}>
-                <Badge tone={a.role.startsWith("Dest") && !a.role.includes("Alt") ? "mag" : a.role === "Departure" ? "blue" : "ink"}>{a.role}</Badge>
+                {isEra ? (
+                  <Badge tone="amber" tip={ERA_TIP}>
+                    Fuel en-route alternate
+                  </Badge>
+                ) : (
+                  <Badge tone={a.role.startsWith("Dest") && !a.role.includes("Alt") ? "mag" : a.role === "Departure" ? "blue" : "ink"}>{a.role}</Badge>
+                )}
                 <h3>
                   <V v={a.icao} w={4} />
                   {a.iata && <span className="small muted">/{a.iata}</span>}
                 </h3>
                 <span className="small muted">{a.name}</span>
+                {isEra && eraNote && <span className="small wx-era-note">{eraNote}</span>}
                 {d?.category && (
                   <span style={{ marginLeft: "auto" }}>
                     <Badge tone={CAT_TONE[d.category]} tip={CATEGORY_TIP[d.category]}>
