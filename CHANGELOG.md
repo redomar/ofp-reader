@@ -4,6 +4,16 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-05
+
+### Added
+
+- **FIR boundary marks on the route map.** A short line across both the route and the dashed FIR / UIR line shows where one FIR ends and the next begins.
+- **Settings → FIR / UIR on the route map:**
+  - **Lines with boundaries** (the default): the new marks.
+  - **Lines only:** the previous look, with a circle where the route crosses in.
+  - **Hidden:** no FIR / UIR lines, marks or names on the map.
+
 ## [1.11.0] - 2026-10-05
 
 ### Added
