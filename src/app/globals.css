@@ -5352,6 +5352,13 @@ main[data-skin="dots"] .rmp .rmp-val {
   stroke: var(--ink-2);
   stroke-width: 1.4;
 }
+.chart .map-fir-bound {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  paint-order: stroke;
+}
 .chart .map-fir-label {
   fill: var(--ink-2);
   font: 700 11px var(--font-cond);
