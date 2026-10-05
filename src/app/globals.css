@@ -27,6 +27,14 @@
   --green-bg: #ddefe2;
   --terrain: #d9cfb4;
   --water: #d6e6ef;
+  --map-sea: #d6e6ef;
+  --map-land: #ece2c6;
+  --map-land-1: #e4d7b5;
+  --map-land-2: #efe8d2;
+  --map-coast: #7f8e9c;
+  --map-border: #a2967a;
+  --map-name: #9a8a62;
+  --map-halo: #fbf9f3;
   --shadow: 0 1px 0 rgba(21, 34, 56, 0.04), 0 6px 20px -12px rgba(21, 34, 56, 0.25);
   --focus: #0f5aa6;
 
@@ -61,6 +69,22 @@
     --green-bg: #10301d;
     --terrain: #2a3140;
     --water: #13263a;
+  --map-sea: #102133;
+  --map-land: #262c35;
+  --map-land-1: #2e353f;
+  --map-land-2: #20262e;
+  --map-coast: #6e7f93;
+  --map-border: #5b6575;
+  --map-name: #8d96a4;
+  --map-halo: #121a27;
+    --map-sea: #102133;
+    --map-land: #262c35;
+    --map-land-1: #2e353f;
+    --map-land-2: #20262e;
+    --map-coast: #6e7f93;
+    --map-border: #5b6575;
+    --map-name: #8d96a4;
+    --map-halo: #121a27;
     --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
     --focus: #7db8f0;
   }
@@ -1050,19 +1074,17 @@ table.tbl {
 .chart .map-coast,
 .chart .map-border {
   fill: none;
-  stroke: var(--ink-3);
+  stroke: var(--map-coast);
   stroke-linejoin: round;
   stroke-linecap: round;
   pointer-events: none;
 }
 .chart .map-coast {
-  stroke-width: 0.9;
-  opacity: 0.55;
+  stroke-width: 1;
 }
 .chart .map-border {
-  stroke-width: 0.7;
-  stroke-dasharray: 4 2.5;
-  opacity: 0.45;
+  stroke: var(--map-border);
+  stroke-width: 0.9;
 }
 .chart .route {
   stroke: var(--magenta);
@@ -5172,4 +5194,183 @@ main[data-skin="dots"] .rmp .rmp-val {
   margin-top: 22px;
   padding-top: 16px;
   border-top: 1px dashed var(--rule-strong);
+}
+
+/* ---------- route map: sea, land, names, FIR lines, zoom ---------- */
+.map-wrap {
+  position: relative;
+}
+.chart .map-sea {
+  fill: var(--map-sea);
+}
+.chart .map-land {
+  fill: var(--map-land);
+  stroke: var(--map-land);
+  stroke-width: 0.6;
+}
+/* no contours: neighbouring countries in different tones */
+.chart .map-land.t1 {
+  fill: var(--map-land-1);
+  stroke: var(--map-land-1);
+}
+.chart .map-land.t2 {
+  fill: var(--map-land-2);
+  stroke: var(--map-land-2);
+}
+/* height map: by day the relief darkens slopes (flat land is white in the image, so unchanged);
+   at night it's inverted and screened, so slopes show as faint light shading on dark land */
+.chart .map-relief {
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+  pointer-events: none;
+}
+:root[data-theme="dark"] .chart .map-relief {
+  filter: invert(1);
+  mix-blend-mode: screen;
+  opacity: 0.4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chart .map-relief {
+    filter: invert(1);
+    mix-blend-mode: screen;
+    opacity: 0.4;
+  }
+}
+.route-map {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.chart .map-grid {
+  stroke: var(--map-coast);
+  stroke-opacity: 0.22;
+}
+.chart .map-grid-label {
+  font-size: 10px;
+  fill: var(--ink-3);
+}
+.chart .map-country {
+  fill: var(--map-name);
+  font: 600 13px var(--font-cond);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+/* names stay legible over coastlines, borders and the route */
+.chart :is(.map-wpt-label, .map-fir-label, .map-grid-label, .sig-label, .map-country) {
+  paint-order: stroke;
+  stroke: var(--map-halo);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+.chart .map-wpt-label {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.chart .route-halo {
+  fill: none;
+  stroke: var(--map-halo);
+  stroke-width: 6;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+.chart .map-fir {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.chart .map-fir-cross {
+  fill: var(--sheet);
+  stroke: var(--ink-2);
+  stroke-width: 1.4;
+}
+.chart .map-fir-label {
+  fill: var(--ink-2);
+  font: 700 11px var(--font-cond);
+  letter-spacing: 0.08em;
+}
+.map-wrap.zoomed .chart {
+  cursor: grab;
+}
+.map-wrap.zoomed .chart:active {
+  cursor: grabbing;
+}
+.map-levels,
+.map-zoom {
+  position: absolute;
+  top: 10px;
+  display: flex;
+  border: 1px solid var(--rule-strong);
+  background: var(--sheet);
+  box-shadow: var(--shadow);
+}
+.map-levels {
+  left: 10px;
+}
+.map-zoom {
+  right: 10px;
+  flex-direction: column;
+}
+.map-levels button,
+.map-zoom button {
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.map-levels button {
+  padding: 4px 10px;
+  border-left: 1px solid var(--rule);
+  font: 700 11.5px var(--font-cond);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.map-levels button:first-child {
+  border-left: 0;
+}
+.map-levels button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--sheet);
+}
+.map-zoom button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-top: 1px solid var(--rule);
+  font: 600 17px var(--font-mono);
+}
+.map-zoom button:first-child {
+  border-top: 0;
+}
+.map-zoom button:disabled {
+  color: var(--rule-strong);
+  cursor: default;
+}
+.map-levels button:hover,
+.map-zoom button:hover:not(:disabled) {
+  color: var(--magenta);
+}
+.map-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 1px 6px;
+  background: var(--sheet);
+  color: var(--ink-3);
+  font: 11px var(--font-mono);
+  pointer-events: none;
+}
+
+/* Settings: samples of the route-map styles (drawn with their own colours) */
+.map-icon {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  margin-top: 6px;
+  border: 1px solid var(--rule);
 }
