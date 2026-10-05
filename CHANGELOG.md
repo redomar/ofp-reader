@@ -4,6 +4,16 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-05
+
+### Added
+
+- **Quick fill in the navigation log.** The fix after the last one you filled in offers two values:
+  - **ATO:** the current UTC time. Click the clock (or press Enter) to stamp it.
+  - **AFOB:** the predicted fuel, which is the planned fuel (TFOB when PIC extra is on) plus your last fuel Δ. Click ✓ (or press Enter) to accept it.
+- **▲▼ on the latest AFOB** step it by 0.1 t; the arrow keys do the same. Once you fill the next fix, the arrows move to it.
+- You can still type any value yourself.
+
 ## [1.10.0] - 2026-10-05
 
 ### Added

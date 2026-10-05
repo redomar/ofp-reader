@@ -43,7 +43,7 @@ and every value gets context: derived margins, decoded weather, a vertical profi
   - Wind: AVG WIND, PWIND and METAR arrows sway like a windsock (faster with more wind, wider and irregular with gusts) and are coloured by strength, calm → storm.
   - NOTAMs: search, category filters, "critical" (CLSD, U/S, NOT AVBL…) and "mentions my planned runway" filters.
 - **Hover (or focus) to learn.** Almost every label explains itself: OFP abbreviations, ICAO equipment and PBN codes, METAR groups, TLR columns.
-- **Fill it in as you fly.** Actual times, weights, ATIS, clearance, RVSM check, ATO / AFOB per waypoint, TLR actuals: all saved per flight in your browser.
+- **Fill it in as you fly.** Actual times, weights, ATIS, clearance, RVSM check, ATO / AFOB per waypoint (one click stamps the time now or accepts the predicted fuel), TLR actuals: all saved per flight in your browser.
 - **One plan across every page.** The plan you open is the active flight on the reader, Weather, Radio and Settings; switch it from the flight chip on any page (or Blank plan to close it), and other open tabs follow.
 - **Reopens instantly, even after SimBrief expires it.** Each PDF is kept locally, so returning to a plan (same link, reload, the flight chip or Settings) doesn't download it again. SimBrief only keeps OFP PDFs for a limited time, so the saved copy is often the only one left.
 - **Printouts for the flight deck.** An MCDU set-up sheet (INIT A, INIT B, F-PLN, PERF TAKE OFF, RAD NAV, winds) and an alternate sheet (return to departure, then one page per alternate, each starting with FINRES), printed line by line on continuous-form paper, with Copy text.
