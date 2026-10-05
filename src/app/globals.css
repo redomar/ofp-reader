@@ -732,6 +732,71 @@ main {
   border-color: var(--blue);
 }
 
+/* nav log quick fill: an offered value with an accept button, or ▲▼ on the latest entry */
+.act-box {
+  display: inline-flex;
+  align-items: stretch;
+  vertical-align: middle;
+  height: 26px;
+  border: 1px dashed var(--rule-strong);
+  border-radius: 2px;
+  background: var(--field);
+}
+.act-box .act {
+  height: 24px;
+  border: 0;
+  background: transparent;
+}
+.act-box:focus-within {
+  border-style: solid;
+  border-color: var(--blue);
+}
+.act-box.offer {
+  border-color: var(--blue);
+}
+.act-box.offer .act::placeholder {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.act-btn,
+.act-nudge button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-left: 1px dashed var(--rule-strong);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.act-btn {
+  width: 22px;
+  color: var(--blue);
+  font-size: 12px;
+}
+.act-box.offer .act-btn {
+  border-left-color: var(--blue);
+}
+.act-nudge {
+  display: flex;
+  flex-direction: column;
+}
+.act-nudge button {
+  flex: 1;
+  width: 16px;
+  font-size: 7px;
+  line-height: 1;
+}
+.act-nudge button + button {
+  border-top: 1px dashed var(--rule-strong);
+}
+.act-btn:hover,
+.act-nudge button:hover {
+  color: var(--blue);
+  background: var(--field);
+}
+
 /* ---------- tables ---------- */
 
 .tbl-wrap {
