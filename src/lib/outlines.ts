@@ -17,7 +17,7 @@ export interface Outlines {
 
 export interface Country {
   name: string;
-  /** Fill tone 0-2, different from its neighbours'. */
+  /** Fill tone 0-3, different from its neighbours'. */
   tone: number;
   /** [lon0, lat0, lon1, lat1] */
   bounds: [number, number, number, number];

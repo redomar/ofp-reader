@@ -29,8 +29,9 @@
   --water: #d6e6ef;
   --map-sea: #d6e6ef;
   --map-land: #ece2c6;
-  --map-land-1: #e4d7b5;
-  --map-land-2: #efe8d2;
+  --map-land-1: #e1d0a8;
+  --map-land-2: #f4eedb;
+  --map-land-3: #dfdcbc;
   --map-coast: #7f8e9c;
   --map-border: #a2967a;
   --map-name: #9a8a62;
@@ -71,16 +72,18 @@
     --water: #13263a;
   --map-sea: #102133;
   --map-land: #262c35;
-  --map-land-1: #2e353f;
-  --map-land-2: #20262e;
+  --map-land-1: #313945;
+  --map-land-2: #1e232b;
+  --map-land-3: #2a3331;
   --map-coast: #6e7f93;
   --map-border: #5b6575;
   --map-name: #8d96a4;
   --map-halo: #121a27;
     --map-sea: #102133;
     --map-land: #262c35;
-    --map-land-1: #2e353f;
-    --map-land-2: #20262e;
+    --map-land-1: #313945;
+    --map-land-2: #1e232b;
+    --map-land-3: #2a3331;
     --map-coast: #6e7f93;
     --map-border: #5b6575;
     --map-name: #8d96a4;
@@ -746,6 +749,10 @@ main {
   height: 24px;
   border: 0;
   background: transparent;
+}
+.act-box .act:focus,
+.act-box .act:focus-visible {
+  outline: none;
 }
 .act-box:focus-within {
   border-style: solid;
@@ -5282,6 +5289,10 @@ main[data-skin="dots"] .rmp .rmp-val {
   fill: var(--map-land-2);
   stroke: var(--map-land-2);
 }
+.chart .map-land.t3 {
+  fill: var(--map-land-3);
+  stroke: var(--map-land-3);
+}
 /* height map: by day the relief darkens slopes (flat land is white in the image, so unchanged);
    at night it's inverted and screened, so slopes show as faint light shading on dark land */
 .chart .map-relief {
@@ -5304,6 +5315,10 @@ main[data-skin="dots"] .rmp .rmp-val {
 .route-map {
   user-select: none;
   -webkit-user-select: none;
+}
+/* zoomed in, one finger moves the map rather than the page */
+.map-wrap.zoomed .route-map {
+  touch-action: none;
 }
 .chart .map-grid {
   stroke: var(--map-coast);
@@ -5429,12 +5444,17 @@ main[data-skin="dots"] .rmp .rmp-val {
 .map-hint {
   position: absolute;
   left: 10px;
-  bottom: 10px;
+  bottom: 24px; /* above the longitude labels */
+  opacity: 0;
+  transition: opacity 0.2s;
   padding: 1px 6px;
   background: var(--sheet);
   color: var(--ink-3);
   font: 11px var(--font-mono);
   pointer-events: none;
+}
+.map-wrap:is(:hover, :focus-within) .map-hint {
+  opacity: 1;
 }
 
 /* Settings: samples of the route-map styles (drawn with their own colours) */

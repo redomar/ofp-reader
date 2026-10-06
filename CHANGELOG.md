@@ -4,6 +4,20 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-10-06
+
+### Added
+
+- **Clock on the OOOI actual times** (Times & weights → Actual Z). Every box shows the current UTC time and a clock button that stamps it, including boxes already filled in.
+- **Gesture zoom on the route map.**
+  - Scroll the mouse wheel or pinch on a trackpad or touchscreen to zoom, centred where you point.
+  - Double-click or double-tap to zoom in; Shift + double-click zooms out.
+  - At the whole-route view, scrolling down still scrolls the page.
+
+### Fixed
+
+- **No contours map:** some neighbouring countries, such as France and Belgium, had the same tone. There are now four parchment tones, and no two neighbours share one.
+
 ## [1.12.0] - 2026-10-05
 
 ### Added
