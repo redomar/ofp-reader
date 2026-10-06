@@ -39,7 +39,7 @@ export function buildGeo(res = "50m") {
 
 /**
  * Builds public/geo/countries-<res>.json: each country's polygons (outer rings, delta-encoded
- * like the outlines), a fill tone 0-2 that differs from its neighbours' (greedy colouring, used
+ * like the outlines), a fill tone 0-3 that differs from its neighbours' (greedy colouring, used
  * by the map's "no contours" style), its bounds, and a label point with the area of its largest
  * part (the label goes there, and small countries go unnamed until zoomed in).
  */
@@ -47,13 +47,21 @@ export function buildCountries(res = "50m") {
   const topo = JSON.parse(readFileSync(require.resolve(`world-atlas/countries-${res}.json`), "utf8"));
   const geoms = topo.objects.countries.geometries;
   const nb = neighbors(geoms);
-  const tone = [];
-  geoms.forEach((_, i) => {
-    const used = new Set(nb[i].map((j) => tone[j]).filter((t) => t != null));
+  // DSatur: colour next the country whose neighbours already use the most tones, so four suffice
+  const tone = geoms.map(() => null);
+  for (let k = 0; k < geoms.length; k++) {
+    let pick = -1;
+    let best = [-1, -1];
+    geoms.forEach((_, i) => {
+      if (tone[i] != null) return;
+      const sat = new Set(nb[i].map((j) => tone[j]).filter((t) => t != null)).size;
+      if (sat > best[0] || (sat === best[0] && nb[i].length > best[1])) [pick, best] = [i, [sat, nb[i].length]];
+    });
+    const used = new Set(nb[pick].map((j) => tone[j]));
     let t = 0;
-    while (used.has(t) && t < 2) t++;
-    tone[i] = t;
-  });
+    while (used.has(t) && t < 3) t++;
+    tone[pick] = t;
+  }
   const out = feature(topo, topo.objects.countries).features.map((f, i) => {
     const polys = f.geometry ? (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates) : [];
     const rings = polys.map((p) => p[0]);

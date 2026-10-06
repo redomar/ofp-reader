@@ -2,7 +2,7 @@
 
 import { useField, useFieldGroup, useOfp } from "../context";
 import { Replay } from "../replay";
-import { Act, Badge, Field, Gauge, Section, Sub, Tip, V } from "../ui";
+import { Act, ActQuick, Badge, ClockIcon, Field, Gauge, Section, Sub, Tip, V, useUtcNow } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtDur, fmtHhmm, fmtOffset, hhmmToMin, pageOf, utcOffset } from "@/lib/ofp/format";
 
@@ -21,6 +21,7 @@ export function TimesWeightsSection({ no }: { no: number }) {
   const rv = useFieldGroup("times.rvsm", S);
   const rvsm = { left: rv.get("left"), stby: rv.get("stby"), right: rv.get("right") };
   const tg = useFieldGroup("times.actual", S);
+  const now = useUtcNow();
   const wg = useFieldGroup("weights.actual", S);
   const actT = (l: string) => tg.get(l);
   const actW = (l: string) => wg.get(l);
@@ -152,7 +153,16 @@ export function TimesWeightsSection({ no }: { no: number }) {
                     {block ? (
                       <V v={blockAct != null ? fmtDur(blockAct) : null} w={5} />
                     ) : (
-                      <Act label={`Actual ${l} time UTC`} value={actT(l)} onChange={(v) => tg.put(l, `Actual ${l} (UTC)`, v.replace(/\D/g, "").slice(0, 4))} w={4} />
+                      <ActQuick
+                        label={`Actual ${l} time UTC`}
+                        value={actT(l)}
+                        onChange={(v) => tg.put(l, `Actual ${l} (UTC)`, v.replace(/\D/g, "").slice(0, 4))}
+                        w={4}
+                        offer={now}
+                        offerIcon={<ClockIcon />}
+                        offerLabel="Time now (UTC)"
+                        always
+                      />
                     )}
                   </td>
                   <td className="num" style={{ color: d != null ? (d > 0 ? "var(--red)" : "var(--green)") : undefined }}>
