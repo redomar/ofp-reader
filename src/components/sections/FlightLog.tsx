@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useField, useFieldGroup, useOfp } from "../context";
 import { useEra } from "../EraLine";
 import { Replay } from "../replay";
-import { Act, ActQuick, Badge, Section, Sub, Tip, V, cx } from "../ui";
+import { Act, ActQuick, Badge, ClockIcon, Section, Sub, Tip, V, cx, useUtcNow } from "../ui";
 import { G } from "@/lib/ofp/glossary";
 import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/ofp/format";
 import type { LogPoint } from "@/lib/ofp/types";
@@ -267,7 +267,12 @@ function midOf(poly: [number, number][]) {
 
 const polyD = (pts: [number, number][]) => pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
 
-function RouteMap({
+/** The route map, when the log has coordinates to draw. */
+function RouteMap(props: Parameters<typeof RouteMapView>[0]) {
+  return props.pts.some((p) => p.latDeg != null && p.lonDeg != null) ? <RouteMapView {...props} /> : null;
+}
+
+function RouteMapView({
   pts,
   active,
   setActive,
@@ -293,18 +298,38 @@ function RouteMap({
   const [zoom, setZoom] = useState(1);
   const [centre, setCentre] = useState<[number, number] | null>(null);
   const drag = useRef<{ x: number; y: number; c: [number, number]; moved: boolean } | null>(null);
+  // Touch points on the map (for pinch), the pinch in progress, and the last tap (for double-tap).
+  const touches = useRef(new Map<number, [number, number]>());
+  const pinch = useRef<{ d: number; z: number } | null>(null);
+  const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
+  const lastTouch = useRef(-Infinity);
+  // Wheel zoom needs a listener that can cancel the page scroll, so it's added by hand and calls
+  // the latest render's zoomAt through this ref.
+  const [svgEl, setSvgEl] = useState<SVGSVGElement | null>(null);
+  const live = useRef<((f: number, x: number, y: number) => boolean) | null>(null);
+  useEffect(() => {
+    if (!svgEl) return;
+    const onWheel = (e: WheelEvent) => {
+      // a trackpad pinch arrives as ctrl + wheel with small steps; a mouse notch is about 100
+      const f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025));
+      if (live.current?.(f, e.clientX, e.clientY)) e.preventDefault();
+    };
+    svgEl.addEventListener("wheel", onWheel, { passive: false });
+    return () => svgEl.removeEventListener("wheel", onWheel);
+  }, [svgEl]);
   // The frame's width, so the drawing area matches its shape instead of letterboxing.
   const [frameW, setFrameW] = useState<number | null>(null);
   const ro = useRef<ResizeObserver | null>(null);
   const svgRef = useCallback((el: SVGSVGElement | null) => {
     ro.current?.disconnect();
     ro.current = null;
+    setSvgEl(el);
     if (!el) return;
     ro.current = new ResizeObserver(([e]) => setFrameW(Math.round(e.contentRect.width)));
     ro.current.observe(el);
   }, []);
   const geo = pts.filter((p) => p.latDeg != null && p.lonDeg != null);
-  if (!geo.length) return null;
+
   // Frame the route, plus any SIGMET area the route passes through and the fuel en-route alternate.
   const sigPts = sigs.flatMap((x) => (x.impact.lateral && x.s.area.kind === "polygon" ? x.s.area.points : []));
   const eraPts = era ? [era.coord] : [];
@@ -440,6 +465,26 @@ function RouteMap({
     if (nz === 1) setCentre(null);
     else if (c) setCentre(c);
   };
+  /**
+   * Zoom by `f` keeping the place under the screen point (clientX, clientY) where it is.
+   * Returns false when already at the limit that way, so a wheel can scroll the page instead.
+   */
+  const zoomAt = (f: number, x: number, y: number) => {
+    const nz = Math.max(1, Math.min(MAP_MAX_ZOOM, zoom * f));
+    if (nz === zoom || !svgEl) return false;
+    const r = svgEl.getBoundingClientRect();
+    const ux = ((x - r.left) * MW) / r.width - MW / 2;
+    const uy = ((y - r.top) * H) / r.height - H / 2;
+    const lon = cLon + ux / (k * s);
+    const lat = cLat - uy / s;
+    const ns = (s * nz) / zoom;
+    setZoom(nz);
+    setCentre(nz === 1 ? null : [lat + uy / ns, lon - ux / (k * ns)]);
+    return true;
+  };
+  useLayoutEffect(() => {
+    live.current = zoomAt;
+  });
   // zoom on the selected waypoint if there is one, else where the map is centred now
   const focus = (): [number, number] => {
     const a = active != null ? geo.find((p) => p.i === active) : null;
@@ -461,14 +506,32 @@ function RouteMap({
           else if (e.key === "-") zoomTo(zoom / 1.6, focus());
           else onKey(e);
         }}
-        aria-label="Route map with waypoints and FIR boundaries. Arrow keys step through waypoints; + and − zoom; drag to move when zoomed in."
+        aria-label="Route map with waypoints and FIR boundaries. Arrow keys step through waypoints; + and − zoom (or scroll, pinch, double-click); drag to move when zoomed in."
         onPointerLeave={() => setActive(null)}
         onPointerDown={(e) => {
+          if (e.pointerType === "touch") {
+            touches.current.set(e.pointerId, [e.clientX, e.clientY]);
+            if (touches.current.size === 2) {
+              const [a, b] = [...touches.current.values()];
+              pinch.current = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z: zoom };
+              drag.current = null;
+              (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+              return;
+            }
+          }
           if (zoom <= 1 || e.button !== 0) return;
           drag.current = { x: e.clientX, y: e.clientY, c: [cLat, cLon], moved: false };
           (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
         }}
         onPointerMove={(e) => {
+          if (touches.current.has(e.pointerId)) touches.current.set(e.pointerId, [e.clientX, e.clientY]);
+          const pn = pinch.current;
+          if (pn && touches.current.size === 2) {
+            const [a, b] = [...touches.current.values()];
+            const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+            zoomAt((pn.z * d) / pn.d / zoom, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+            return;
+          }
           const d = drag.current;
           if (!d) return;
           const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -478,8 +541,31 @@ function RouteMap({
           if (Math.hypot(dx, dy) > 3) d.moved = true;
           setCentre([d.c[0] + dy / s, d.c[1] - dx / (k * s)]);
         }}
-        onPointerUp={() => (drag.current = null)}
-        onPointerCancel={() => (drag.current = null)}
+        onPointerUp={(e) => {
+          const wasPinch = !!pinch.current;
+          const moved = drag.current?.moved;
+          touches.current.delete(e.pointerId);
+          if (touches.current.size < 2) pinch.current = null;
+          drag.current = null;
+          // double-tap to zoom in (a mouse uses double-click, below)
+          if (e.pointerType !== "touch") return;
+          lastTouch.current = e.timeStamp;
+          if (wasPinch || moved) return;
+          const t = lastTap.current;
+          if (t && e.timeStamp - t.t < 320 && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 30) {
+            zoomAt(2, e.clientX, e.clientY);
+            lastTap.current = null;
+          } else lastTap.current = { t: e.timeStamp, x: e.clientX, y: e.clientY };
+        }}
+        onPointerCancel={(e) => {
+          touches.current.delete(e.pointerId);
+          pinch.current = null;
+          drag.current = null;
+        }}
+        onDoubleClick={(e) => {
+          if (e.timeStamp - lastTouch.current < 700) return; // a double-tap, already handled
+          zoomAt(e.shiftKey ? 0.5 : 2, e.clientX, e.clientY);
+        }}
       >
         <rect x={0} y={0} width={MW} height={H} className="map-sea" />
         <defs>
@@ -625,7 +711,7 @@ function RouteMap({
           ⤢
         </button>
       </div>
-      {zoom > 1 && <span className="map-hint">Drag to move</span>}
+      <span className="map-hint">{zoom > 1 ? "Drag to move · scroll or pinch to zoom" : "Scroll, pinch or double-click to zoom"}</span>
     </div>
   );
 }
@@ -1179,27 +1265,3 @@ function EmptyChart({ label }: { label: string }) {
   );
 }
 
-/** The time now as HHMM UTC, updated every 10 s; null until mounted, so the server render matches. */
-function useUtcNow() {
-  const [now, setNow] = useState<string | null>(null);
-  useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setNow(`${String(d.getUTCHours()).padStart(2, "0")}${String(d.getUTCMinutes()).padStart(2, "0")}`);
-    };
-    const first = setTimeout(tick, 0);
-    const id = setInterval(tick, 10_000);
-    return () => {
-      clearTimeout(first);
-      clearInterval(id);
-    };
-  }, []);
-  return now;
-}
-
-const ClockIcon = () => (
-  <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
-    <circle cx="6" cy="6" r="4.8" />
-    <path d="M6 3.4V6l1.8 1.2" />
-  </svg>
-);

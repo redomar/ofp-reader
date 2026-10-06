@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { useCollapse } from "./collapse";
 import { Replay } from "./replay";
 import { isBlank } from "@/lib/ofp/format";
@@ -239,6 +239,7 @@ export function ActQuick({
   offerIcon,
   offerLabel,
   nudge,
+  always,
   ...p
 }: {
   label: string;
@@ -250,6 +251,8 @@ export function ActQuick({
   offerIcon?: ReactNode;
   offerLabel?: string;
   nudge?: number;
+  /** Keep the offer button even once filled (it then replaces the value), without the blue outline. */
+  always?: boolean;
 }) {
   const offering = !p.value && !!offer;
   const step = (dir: 1 | -1) => {
@@ -258,7 +261,7 @@ export function ActQuick({
     p.onChange(Math.max(0, n + dir * nudge).toFixed(1));
   };
   return (
-    <span className={cx("act-box", offering && "offer")}>
+    <span className={cx("act-box", offering && !always && "offer")}>
       <ActInput
         {...p}
         placeholder={offering ? offer : undefined}
@@ -272,8 +275,8 @@ export function ActQuick({
           }
         }}
       />
-      {offering ? (
-        <button type="button" className="act-btn" aria-label={`${offerLabel ?? "Use"} ${offer}`} data-tip={`${offerLabel ?? "Use"} ${offer}`} onClick={() => p.onChange(offer)}>
+      {offering || (always && offer) ? (
+        <button type="button" className="act-btn" aria-label={`${offerLabel ?? "Use"} ${offer}`} data-tip={`${offerLabel ?? "Use"} ${offer}`} onClick={() => p.onChange(offer!)}>
           {offerIcon ?? "✓"}
         </button>
       ) : (
@@ -325,3 +328,28 @@ function ActInput({
     />
   );
 }
+
+/** The time now as HHMM UTC, updated every 10 s; null until mounted, so the server render matches. */
+export function useUtcNow() {
+  const [now, setNow] = useState<string | null>(null);
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setNow(`${String(d.getUTCHours()).padStart(2, "0")}${String(d.getUTCMinutes()).padStart(2, "0")}`);
+    };
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 10_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, []);
+  return now;
+}
+
+export const ClockIcon = () => (
+  <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+    <circle cx="6" cy="6" r="4.8" />
+    <path d="M6 3.4V6l1.8 1.2" />
+  </svg>
+);
