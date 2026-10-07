@@ -140,11 +140,16 @@ function MapIcon({ style }: { style: MapStyle }) {
       <path d="M0 14 C18 10 30 18 44 12 L62 8 L62 44 L0 44 Z" fill="var(--map-land)" />
       <path d="M62 8 L84 6 C98 10 108 4 120 8 L120 44 L62 44 Z" fill={style === "plain" ? "var(--map-land-1)" : "var(--map-land)"} />
       {style === "relief" && (
-        <g>
-          <path d="M0 30 C20 26 40 32 62 28 L62 44 L0 44 Z" fill="var(--map-d0)" stroke="var(--map-depth-line)" strokeWidth="0.7" strokeDasharray="3 2" />
-          <path d="M68 44 C70 30 80 20 92 22 C104 24 112 32 116 44 Z" fill="var(--map-h1)" stroke="var(--map-contour)" strokeWidth="0.7" />
-          <path d="M80 44 C82 34 88 28 94 30 C100 32 104 38 106 44 Z" fill="var(--map-h3)" stroke="var(--map-contour)" strokeWidth="0.7" />
-          <path d="M88 44 C90 38 93 35 96 37 C99 39 100 42 101 44 Z" fill="var(--map-h5)" stroke="var(--map-contour)" strokeWidth="0.9" />
+        // the earlier mountains, now as the Elevation style draws them: height bands with contour lines
+        <g stroke="var(--map-contour)" strokeWidth="0.7" strokeLinejoin="round">
+          <path d="M0 14 C18 10 30 18 44 12 L62 8 L84 6 C98 10 108 4 120 8 L120 44 L0 44 Z" fill="var(--map-land-low)" stroke="none" />
+          <path d="M58 44 L64 39 L69 40.5 L78 30.5 L85 36.5 L91 32 L100 39.5 L107 35.5 L119 44 Z" fill="var(--map-h1)" />
+          <path d="M68 44 L73 41.5 L78 35 L83 39 L91 35.5 L98 41.5 L103 44 Z" fill="var(--map-h3)" />
+          <path d="M75.5 38.5 L78 35 L80.5 37.5 Z M88.5 37.5 L91 35.5 L93.5 38 Z" fill="var(--map-h5)" strokeWidth="0.9" />
+          <path d="M78 30.5 L85 36.5 L82 38.5 Z M91 32 L100 39.5 L96.5 40.5 Z M107 35.5 L119 44 L113 44 Z" fill="var(--ink)" opacity="0.16" stroke="none" />
+          <path d="M20 44 L28 37.5 L33 40.5 L38 38.5 L47 44 Z" fill="var(--map-h1)" />
+          <path d="M25 44 L28 40.5 L32 44 Z" fill="var(--map-h3)" />
+          <path d="M28 37.5 L33 40.5 L31 42 Z" fill="var(--ink)" opacity="0.16" stroke="none" />
         </g>
       )}
       {lines && <path d="M0 14 C18 10 30 18 44 12 L62 8 L84 6 C98 10 108 4 120 8" fill="none" stroke="var(--map-coast)" strokeWidth="1" />}
