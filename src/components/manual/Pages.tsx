@@ -139,10 +139,7 @@ export function SettingsManual({ no }: { no: number }) {
           <dt>Flight summary graphic</dt>
           <dd>Vertical profile (default), Profile + times, Route silhouette, Progress timeline or Classic arc.</dd>
           <dt>Route map</dt>
-          <dd>
-            Contours (default), No contours, or Elevation (height bands on land and depth bands at sea, with a key under the waypoint card; only the area around
-            the route is downloaded).
-          </dd>
+          <dd>Contours (default), No contours, or Elevation (height bands on land and depth bands at sea, with a key under the waypoint card).</dd>
           <dt>FIR / UIR on the route map</dt>
           <dd>Lines with boundaries (default), Lines only (circles where you cross in), or Hidden.</dd>
         </dl>
