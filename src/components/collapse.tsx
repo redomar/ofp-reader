@@ -60,7 +60,11 @@ const CollapseContext = createContext<CollapseApi>({
 export const useCollapse = () => useContext(CollapseContext);
 
 export function CollapseProvider({ children }: { children: ReactNode }) {
-  const raw = useSyncExternalStore(subscribe, () => memory ?? read(), () => null);
+  const raw = useSyncExternalStore(
+    subscribe,
+    () => memory ?? read(),
+    () => null,
+  );
   const set = useMemo(() => {
     try {
       const v = JSON.parse(raw ?? "[]");
@@ -112,7 +116,12 @@ export function CollapseAllButton({ ids, className }: { ids: readonly string[]; 
   const { isCollapsed, setAll } = useCollapse();
   const allClosed = ids.length > 0 && ids.every(isCollapsed);
   return (
-    <button type="button" className={className} onClick={() => setAll(ids, !allClosed)} aria-label={allClosed ? "Expand all sections" : "Collapse all sections"}>
+    <button
+      type="button"
+      className={className}
+      onClick={() => setAll(ids, !allClosed)}
+      aria-label={allClosed ? "Expand all sections" : "Collapse all sections"}
+    >
       <BoxToggleIcon open={!allClosed} /> {allClosed ? "Expand all" : "Collapse all"}
     </button>
   );

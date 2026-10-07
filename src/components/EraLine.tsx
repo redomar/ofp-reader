@@ -41,7 +41,10 @@ export function EraLine({ unit = "kg" }: { unit?: string }) {
       {era.cont && (
         <span className="muted">
           · for{" "}
-          <Tip tip="Contingency fuel: covers unforeseen factors en route. This plan's contingency is worked out with the fuel en-route alternate named on its line." title={era.cont.label}>
+          <Tip
+            tip="Contingency fuel: covers unforeseen factors en route. This plan's contingency is worked out with the fuel en-route alternate named on its line."
+            title={era.cont.label}
+          >
             {era.cont.label}
           </Tip>
           {era.cont.fuel != null && ` (${era.cont.fuel.toLocaleString("en-GB")} ${unit})`}

@@ -33,9 +33,12 @@ export function FlapCode({ code, label }: { code: string; label?: string }) {
       for (let k = 0; k <= flips; k++) {
         const ch = k === flips ? final : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
         timers.push(
-          setTimeout(() => {
-            setTiles((prev) => prev.map((t, j) => (j === i ? { ch, n: t.n + 1 } : t)));
-          }, start + k * STEP_MS),
+          setTimeout(
+            () => {
+              setTiles((prev) => prev.map((t, j) => (j === i ? { ch, n: t.n + 1 } : t)));
+            },
+            start + k * STEP_MS,
+          ),
         );
       }
     });

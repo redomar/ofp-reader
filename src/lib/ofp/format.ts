@@ -20,7 +20,7 @@ export function fmtDur(min: number | null | undefined): string | null {
 }
 
 /** "0124" → "01:24" */
-export const fmtHhmm = (v: string | null | undefined) => (v && /^\d{4}$/.test(v) ? `${v.slice(0, 2)}:${v.slice(2)}` : v ?? null);
+export const fmtHhmm = (v: string | null | undefined) => (v && /^\d{4}$/.test(v) ? `${v.slice(0, 2)}:${v.slice(2)}` : (v ?? null));
 
 export const fmtNum = (n: number | null | undefined, digits = 0) =>
   n == null || Number.isNaN(n) ? null : n.toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -33,8 +33,7 @@ export function signed(v: string | null | undefined): number | null {
   return (m[1] === "M" ? -1 : 1) * Number(m[2]);
 }
 
-export const fmtSigned = (n: number | null, unit = "") =>
-  n == null ? null : `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n)}${unit}`;
+export const fmtSigned = (n: number | null, unit = "") => (n == null ? null : `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n)}${unit}`);
 
 /** Clock difference in minutes between two HHMM strings, wrapping midnight. */
 export function clockDiff(from: string | null | undefined, to: string | null | undefined): number | null {

@@ -18,7 +18,11 @@ export const DEFAULT_MAP: MapStyle = "contours";
 export type FirMode = "marks" | "line" | "off";
 
 export const FIR_MODES: { value: FirMode; label: string; desc: string }[] = [
-  { value: "marks", label: "Lines with boundaries", desc: "Dashed line beside the route, named, with a mark across both lines where one FIR ends and the next begins" },
+  {
+    value: "marks",
+    label: "Lines with boundaries",
+    desc: "Dashed line beside the route, named, with a mark across both lines where one FIR ends and the next begins",
+  },
   { value: "line", label: "Lines only", desc: "Dashed line beside the route, named, with a circle where the route crosses in" },
   { value: "off", label: "Hidden", desc: "No FIR / UIR lines, circles or names on the map" },
 ];

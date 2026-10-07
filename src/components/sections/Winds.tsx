@@ -54,15 +54,19 @@ export function WindsSection({ no }: { no: number }) {
         Forecast wind and temperature at five levels around each point. Rows highlighted in magenta are the planned level at that point.{" "}
         {strongest && (
           <>
-            Strongest: <b className="mono">{strongest.dir}/{strongest.spd}</b> at FL{Number(strongest.fl)} over {strongest.name}. Coldest:{" "}
-            <b className="mono">{coldest!.temp}°C</b> at FL{Number(coldest!.fl)}.
+            Strongest:{" "}
+            <b className="mono">
+              {strongest.dir}/{strongest.spd}
+            </b>{" "}
+            at FL{Number(strongest.fl)} over {strongest.name}. Coldest: <b className="mono">{coldest!.temp}°C</b> at FL{Number(coldest!.fl)}.
           </>
         )}
       </p>
       <Replay className="windgrid">
         {stations.map((s, k) => {
           const cfl = s.name ? cruiseAt(s.name) : null;
-          const nearest = cfl != null && s.levels.length ? s.levels.reduce((a, b) => (Math.abs(Number(b.fl) - cfl) < Math.abs(Number(a.fl) - cfl) ? b : a)).fl : null;
+          const nearest =
+            cfl != null && s.levels.length ? s.levels.reduce((a, b) => (Math.abs(Number(b.fl) - cfl) < Math.abs(Number(a.fl) - cfl) ? b : a)).fl : null;
           return (
             <div className="windcard" key={s.name + k}>
               <h4>

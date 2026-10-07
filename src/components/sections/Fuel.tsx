@@ -80,7 +80,10 @@ export function FuelSection({ no }: { no: number }) {
                       </th>
                       <td>
                         {era?.cont === r ? (
-                          <Tip tip={`${era.name} (${era.icao}): the fuel en-route alternate this contingency fuel is worked out with.`} title={`${era.icao} · fuel ERA`}>
+                          <Tip
+                            tip={`${era.name} (${era.icao}): the fuel en-route alternate this contingency fuel is worked out with.`}
+                            title={`${era.icao} · fuel ERA`}
+                          >
                             <V v={r.arpt} w={3} />
                           </Tip>
                         ) : (
@@ -142,28 +145,39 @@ export function FuelSection({ no }: { no: number }) {
         <div>
           <Sub>Block fuel composition</Sub>
           <Replay>
-          <div className="fuelbar a-wipe" role="img" aria-label={ofp ? `Block fuel ${block} ${unit}: ${segs.filter((s) => s.value).map((s) => `${s.key} ${s.value}`).join(", ")}` : "Block fuel composition, not loaded"}>
-            {segs
-              .filter((s) => s.value > 0)
-              .map((s) => (
-                <span
-                  key={s.key}
-                  style={{ flexGrow: s.value, flexBasis: 0, background: s.color, color: s.ink }}
-                  data-tip={`${fmtNum(s.value)} ${unit} (${((s.value / sum) * 100).toFixed(1)}% of ${pic ? "total" : "block"})${s.row?.time ? ` · ${fmtHhmm(s.row.time)}` : ""}`}
-                  data-tip-title={s.key}
-                >
-                  {s.value / sum > 0.09 ? s.key : ""}
+            <div
+              className="fuelbar a-wipe"
+              role="img"
+              aria-label={
+                ofp
+                  ? `Block fuel ${block} ${unit}: ${segs
+                      .filter((s) => s.value)
+                      .map((s) => `${s.key} ${s.value}`)
+                      .join(", ")}`
+                  : "Block fuel composition, not loaded"
+              }
+            >
+              {segs
+                .filter((s) => s.value > 0)
+                .map((s) => (
+                  <span
+                    key={s.key}
+                    style={{ flexGrow: s.value, flexBasis: 0, background: s.color, color: s.ink }}
+                    data-tip={`${fmtNum(s.value)} ${unit} (${((s.value / sum) * 100).toFixed(1)}% of ${pic ? "total" : "block"})${s.row?.time ? ` · ${fmtHhmm(s.row.time)}` : ""}`}
+                    data-tip-title={s.key}
+                  >
+                    {s.value / sum > 0.09 ? s.key : ""}
+                  </span>
+                ))}
+            </div>
+            <div className="legend" aria-hidden="true">
+              {segs.map((s) => (
+                <span key={s.key}>
+                  <i style={{ background: s.color }} />
+                  {s.key} {s.value ? fmtNum(s.value) : "—"}
                 </span>
               ))}
-          </div>
-          <div className="legend" aria-hidden="true">
-            {segs.map((s) => (
-              <span key={s.key}>
-                <i style={{ background: s.color }} />
-                {s.key} {s.value ? fmtNum(s.value) : "—"}
-              </span>
-            ))}
-          </div>
+            </div>
           </Replay>
 
           <div className="fields" style={{ marginTop: 14 }}>
@@ -205,7 +219,13 @@ export function FuelSection({ no }: { no: number }) {
             </Tip>
           </Sub>
           <div className="fields">
-            {(f?.fmc.length ? f.fmc : [{ label: "FINRES+ALTN", value: null }, { label: "TRIP+TAXI", value: null }]).map((r) => (
+            {(f?.fmc.length
+              ? f.fmc
+              : [
+                  { label: "FINRES+ALTN", value: null },
+                  { label: "TRIP+TAXI", value: null },
+                ]
+            ).map((r) => (
               <Field key={r.label} label={r.label} tip={G[r.label]} className="field-lg" sub={unit}>
                 <V v={fmtNum(r.value)} w={5} />
               </Field>

@@ -134,8 +134,7 @@ export function SummarySection({ no }: { no: number }) {
             <Tip tip="Air time: OFF → ON (wheels up to touchdown)">AIR</Tip> <V v={fmtDur(air)} w={5} />
           </div>
           <div className="mid-label">
-            <V v={h?.gndDist != null ? `${h.gndDist} NM` : null} w={6} /> ground ·{" "}
-            <V v={h?.aircraft} w={14} />
+            <V v={h?.gndDist != null ? `${h.gndDist} NM` : null} w={6} /> ground · <V v={h?.aircraft} w={14} />
           </div>
         </div>
         <div className="strip-apt arr">
@@ -163,7 +162,11 @@ export function SummarySection({ no }: { no: number }) {
         <Field label="CRZ SYS" tip={G["CRZ SYS"]}>
           <V v={h?.crzSys ?? (h?.costIndex ? `CI ${h.costIndex}` : null)} w={5} />
         </Field>
-        <Field label="Cost index" tip={G.CI} sub={h?.costIndex ? (Number(h.costIndex) <= 20 ? "economy" : Number(h.costIndex) >= 60 ? "fast" : "balanced") : null}>
+        <Field
+          label="Cost index"
+          tip={G.CI}
+          sub={h?.costIndex ? (Number(h.costIndex) <= 20 ? "economy" : Number(h.costIndex) >= 60 ? "fast" : "balanced") : null}
+        >
           <V v={h?.costIndex} w={3} />
         </Field>
         <Field label="GND DIST" tip={G["GND DIST"]} sub="NM">
@@ -179,11 +182,7 @@ export function SummarySection({ no }: { no: number }) {
           {wind && <WindArrow kind="AVG" dir={wind.dir} spd={wind.spd} label={`Average wind from ${wind.dir} degrees at ${wind.spd} knots`} />}
           <V v={h?.avgWind} w={7} />
         </Field>
-        <Field
-          label="AVG W/C"
-          tip={G["AVG W/C"]}
-          sub={wc != null ? (wc < 0 ? `${Math.abs(wc)} kt headwind` : wc > 0 ? `${wc} kt tailwind` : "calm") : null}
-        >
+        <Field label="AVG W/C" tip={G["AVG W/C"]} sub={wc != null ? (wc < 0 ? `${Math.abs(wc)} kt headwind` : wc > 0 ? `${wc} kt tailwind` : "calm") : null}>
           <V v={h?.avgWc} w={4} />
         </Field>
         <Field label="AVG ISA" tip={G["AVG ISA"]} sub={isa != null ? `ISA ${fmtSigned(isa, " °C")}` : null}>
@@ -311,7 +310,11 @@ export function SummarySection({ no }: { no: number }) {
                 <span className="muted small">obs</span>
                 {h?.wxObs.length ? (
                   h.wxObs.map((t, i) => (
-                    <Tip key={"o" + i} plain tip={`Model run based on observations at ${ddhh(t)}${h.wxProg[i] ? `, used for the forecast valid ${ddhh(h.wxProg[i])}` : ""}`}>
+                    <Tip
+                      key={"o" + i}
+                      plain
+                      tip={`Model run based on observations at ${ddhh(t)}${h.wxProg[i] ? `, used for the forecast valid ${ddhh(h.wxProg[i])}` : ""}`}
+                    >
                       <span className="code">{t}</span>
                     </Tip>
                   ))
@@ -384,7 +387,19 @@ function WxPicto({ wx, when }: { wx: ForecastAt; when: string | null }) {
   );
 }
 
-function IataTag({ icao, iata, side, wx = null, when = null }: { icao: string; iata: string | null; side: "dep" | "arr"; wx?: ForecastAt | null; when?: string | null }) {
+function IataTag({
+  icao,
+  iata,
+  side,
+  wx = null,
+  when = null,
+}: {
+  icao: string;
+  iata: string | null;
+  side: "dep" | "arr";
+  wx?: ForecastAt | null;
+  when?: string | null;
+}) {
   const iso = icaoCountry(icao);
   const [broken, setBroken] = useState(false);
   const label = iso ? countryLabel(icao, iso) : null;
@@ -394,7 +409,14 @@ function IataTag({ icao, iata, side, wx = null, when = null }: { icao: string; i
       {iso && !broken && (
         <Tip tip={label} title={iso} plain>
           {/* eslint-disable-next-line @next/next/no-img-element -- tiny static SVG from /public/flags */}
-          <img className="flag" src={`/flags/${iso.toLowerCase()}.svg`} alt={label?.split(" · ")[0] ?? iso} width={21} height={16} onError={() => setBroken(true)} />
+          <img
+            className="flag"
+            src={`/flags/${iso.toLowerCase()}.svg`}
+            alt={label?.split(" · ")[0] ?? iso}
+            width={21}
+            height={16}
+            onError={() => setBroken(true)}
+          />
         </Tip>
       )}
       {iata && <span className="small muted mono">{side === "dep" ? `/${iata}` : `${iata}/`}</span>}

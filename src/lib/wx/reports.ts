@@ -185,7 +185,10 @@ export function splitReports(text: string): string[] {
   const out: string[] = [];
   for (const block of blocks) {
     let cur: string[] = [];
-    for (const line of block.split("\n").map((l) => l.trim()).filter(Boolean)) {
+    for (const line of block
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)) {
       // Inside an ATIS, a line naming the same information ("THIS WAS … INFORMATION B") continues it.
       const inAtis = cur.length > 0 && ATIS_START.test(cur[0]);
       const sameAtis = inAtis && ATIS_START.test(line) && (/THIS (WAS|IS)$/.test(cur.at(-1)!) || atisLetter(line) === atisLetter(cur.join(" ")));
@@ -261,7 +264,15 @@ function parseTaf(tokens: string[], raw: string): Report {
       groups.push({ type: "BECMG", prob: null, tempo: false, from, to, text, cond: prevailing });
     } else {
       const prob = h.startsWith("PROB") ? Number(h.slice(4)) : null;
-      groups.push({ type: prob ? "PROB" : "TEMPO", prob, tempo: h === "TEMPO" || p.head[1] === "TEMPO", from, to, text, cond: mergeConditions(prevailing, own, text) });
+      groups.push({
+        type: prob ? "PROB" : "TEMPO",
+        prob,
+        tempo: h === "TEMPO" || p.head[1] === "TEMPO",
+        from,
+        to,
+        text,
+        cond: mergeConditions(prevailing, own, text),
+      });
     }
   }
   // An FM group lasts until the next FM, or the end of the TAF.
@@ -291,18 +302,60 @@ function parseMetar(tokens: string[], raw: string): Report {
 /* ---------- ATIS ---------- */
 
 const PHONETIC: Record<string, string> = {
-  ALFA: "A", ALPHA: "A", BRAVO: "B", CHARLIE: "C", DELTA: "D", ECHO: "E", FOXTROT: "F", GOLF: "G", HOTEL: "H", INDIA: "I",
-  JULIET: "J", JULIETT: "J", KILO: "K", LIMA: "L", MIKE: "M", NOVEMBER: "N", OSCAR: "O", PAPA: "P", QUEBEC: "Q", ROMEO: "R",
-  SIERRA: "S", TANGO: "T", UNIFORM: "U", VICTOR: "V", WHISKEY: "W", WHISKY: "W", XRAY: "X", "X-RAY": "X", YANKEE: "Y", ZULU: "Z",
+  ALFA: "A",
+  ALPHA: "A",
+  BRAVO: "B",
+  CHARLIE: "C",
+  DELTA: "D",
+  ECHO: "E",
+  FOXTROT: "F",
+  GOLF: "G",
+  HOTEL: "H",
+  INDIA: "I",
+  JULIET: "J",
+  JULIETT: "J",
+  KILO: "K",
+  LIMA: "L",
+  MIKE: "M",
+  NOVEMBER: "N",
+  OSCAR: "O",
+  PAPA: "P",
+  QUEBEC: "Q",
+  ROMEO: "R",
+  SIERRA: "S",
+  TANGO: "T",
+  UNIFORM: "U",
+  VICTOR: "V",
+  WHISKEY: "W",
+  WHISKY: "W",
+  XRAY: "X",
+  "X-RAY": "X",
+  YANKEE: "Y",
+  ZULU: "Z",
 };
-const NUMWORD: Record<string, string> = { ZERO: "0", ONE: "1", TWO: "2", THREE: "3", TREE: "3", FOUR: "4", FIVE: "5", FIFE: "5", SIX: "6", SEVEN: "7", EIGHT: "8", NINE: "9", NINER: "9" };
+const NUMWORD: Record<string, string> = {
+  ZERO: "0",
+  ONE: "1",
+  TWO: "2",
+  THREE: "3",
+  TREE: "3",
+  FOUR: "4",
+  FIVE: "5",
+  FIFE: "5",
+  SIX: "6",
+  SEVEN: "7",
+  EIGHT: "8",
+  NINE: "9",
+  NINER: "9",
+};
 const COVER_WORD: Record<string, CloudLayer["cover"]> = { FEW: "FEW", SCATTERED: "SCT", SCT: "SCT", BROKEN: "BKN", BKN: "BKN", OVERCAST: "OVC", OVC: "OVC" };
 /** Sentences that are ATIS furniture rather than information. */
 const BOILERPLATE = /\b(ADVISE|ADVS|ACKNOWLEDGE|ACK|ON (INITIAL )?(CONTACT|CTC)|YOU HAVE (INFO|INFORMATION))\b/;
 /** Coded METAR-style groups (D-ATIS weather after a full stop isn't a notice). */
 const CODED_GROUP = /\b(?:(?:VRB|\d{3})\d{2,3}(?:G\d{2,3})?(?:KT|MPS)|Q\d{4}|A\d{4}|(?:FEW|SCT|BKN|OVC)\d{3}|M?\d{2}\/M?\d{2}|CAVOK)\b/;
 /** Sentences already shown as fields. */
-const FIELD_SENTENCE = /^(?:\S+\s+){0,5}?(INFO|INFORMATION|ATIS)\b|^\d{4}Z?$|^(AT\s+)?TIME\b|\b(RWYS?|RUNWAYS?)\b|^(SURFACE )?WIND\b|^(VIS|VISIBILITY|CAVOK)\b|^(FEW|SCT|BKN|OVC|SCATTERED|BROKEN|OVERCAST|NO SIGNIFICANT CLOUD|SKY CLEAR)\b|^(TEMP|TEMPERATURE|DEW ?POINT|DP)\b|^(QNH|ALTIMETER)\b|^(TRL|TL|TRANSITION LEVEL)\b|^(EXP|EXPECT)\s+(ILS|RNP|RNAV|VOR|NDB|LOC|VISUAL)\b|^(LIGHT|HEAVY|MODERATE)?\s*(RAIN|DRIZZLE|SNOW|FOG|MIST|HAZE|SHOWERS?|THUNDERSTORMS?)\b/;
+const FIELD_SENTENCE =
+  /^(?:\S+\s+){0,5}?(INFO|INFORMATION|ATIS)\b|^\d{4}Z?$|^(AT\s+)?TIME\b|\b(RWYS?|RUNWAYS?)\b|^(SURFACE )?WIND\b|^(VIS|VISIBILITY|CAVOK)\b|^(FEW|SCT|BKN|OVC|SCATTERED|BROKEN|OVERCAST|NO SIGNIFICANT CLOUD|SKY CLEAR)\b|^(TEMP|TEMPERATURE|DEW ?POINT|DP)\b|^(QNH|ALTIMETER)\b|^(TRL|TL|TRANSITION LEVEL)\b|^(EXP|EXPECT)\s+(ILS|RNP|RNAV|VOR|NDB|LOC|VISUAL)\b|^(LIGHT|HEAVY|MODERATE)?\s*(RAIN|DRIZZLE|SNOW|FOG|MIST|HAZE|SHOWERS?|THUNDERSTORMS?)\b/;
 const WX_WORD: [RegExp, string][] = [
   [/\bTHUNDERSTORMS?\b/, "TS"],
   [/\bHEAVY RAIN\b/, "+RA"],
@@ -370,7 +423,11 @@ function parseAtis(raw: string): Report {
     const p = emptyConditions();
     let m: RegExpMatchArray | null;
     if (/\bWIND\s+CALM\b|\bCALM\b/.test(s)) p.wind = { dir: null, spd: 0, gust: null, sector: null, calm: true };
-    else if ((m = s.match(/\bWIND\s+(?:IS\s+)?(\d{3})\s*(?:DEGREES?|DEG)?\s*(?:AT\s+(\d{1,3})(?:\s*(?:KNOTS?|KT))?|(\d{1,3})\s*(?:KNOTS?|KT))\b(?:[^.]*?\b(?:GUST(?:ING|S)?|G)\s*(?:TO\s+)?(\d{1,3}))?/)))
+    else if (
+      (m = s.match(
+        /\bWIND\s+(?:IS\s+)?(\d{3})\s*(?:DEGREES?|DEG)?\s*(?:AT\s+(\d{1,3})(?:\s*(?:KNOTS?|KT))?|(\d{1,3})\s*(?:KNOTS?|KT))\b(?:[^.]*?\b(?:GUST(?:ING|S)?|G)\s*(?:TO\s+)?(\d{1,3}))?/,
+      ))
+    )
       p.wind = { dir: Number(m[1]), spd: Number(m[2] ?? m[3]), gust: m[4] ? Number(m[4]) : null, sector: null, calm: false };
     else if ((m = s.match(/\bWIND\s+VARIABLE\s+(\d{1,2})\s*(?:KNOTS?|KT)/))) p.wind = { dir: null, spd: Number(m[1]), gust: null, sector: null, calm: false };
     if (p.wind && (m = s.match(/\bVARYING\s+(?:BETWEEN\s+)?(\d{3})\s*(?:DEGREES?)?\s*(?:AND|TO)\s+(\d{3})/))) p.wind.sector = [Number(m[1]), Number(m[2])];
@@ -379,7 +436,9 @@ function parseAtis(raw: string): Report {
       p.visM = 10000;
     } else if ((m = s.match(/\b(?:VISIBILITY|VIS)\s+(?:IS\s+)?(\d+(?:\.\d+)?)\s*(KILOMET(?:RE|ER)S?|KM|MET(?:RE|ER)S?|M|MILES?|SM)\b/)))
       p.visM = Math.min(10000, Math.round(Number(m[1]) * (/^K/.test(m[2]) ? 1000 : /^(MILE|SM)/.test(m[2]) ? 1609 : 1)));
-    for (const m2 of s.matchAll(/\b(FEW|SCATTERED|SCT|BROKEN|BKN|OVERCAST|OVC)\s+(?:AT\s+)?(\d{3,5})(?:\s*(?:FEET|FT))?\b(\s+CUMULONIMBUS|\s+CB\b|\s+TOWERING CUMULUS|\s+TCU\b)?/g)) {
+    for (const m2 of s.matchAll(
+      /\b(FEW|SCATTERED|SCT|BROKEN|BKN|OVERCAST|OVC)\s+(?:AT\s+)?(\d{3,5})(?:\s*(?:FEET|FT))?\b(\s+CUMULONIMBUS|\s+CB\b|\s+TOWERING CUMULUS|\s+TCU\b)?/g,
+    )) {
       const cover = COVER_WORD[m2[1]];
       const base = Number(m2[2]);
       p.clouds.push({ cover, baseFt: base, type: /CUMULONIMBUS|CB/.test(m2[3] ?? "") ? "CB" : m2[3] ? "TCU" : null });
@@ -424,7 +483,16 @@ function parseAtis(raw: string): Report {
     time,
     cond,
     taf: null,
-    atis: { letter, kind, name: nameM?.[1]?.trim().replace(/\s+(ARPT|AIRPORT|AIRFIELD|AERODROME)$/, "") ?? null, runways, approach: approach === "LOCALIZER" ? "LOC" : approach, transitionLevel: tl, plain: !coded, notes },
+    atis: {
+      letter,
+      kind,
+      name: nameM?.[1]?.trim().replace(/\s+(ARPT|AIRPORT|AIRFIELD|AERODROME)$/, "") ?? null,
+      runways,
+      approach: approach === "LOCALIZER" ? "LOC" : approach,
+      transitionLevel: tl,
+      plain: !coded,
+      notes,
+    },
   };
 }
 
@@ -460,8 +528,28 @@ export function ageMinutes(t: DayTime, now = new Date()): number {
 }
 
 const WX_TEXT: Record<string, string> = {
-  TS: "thunderstorm", RA: "rain", DZ: "drizzle", SN: "snow", SH: "showers", FG: "fog", BR: "mist", HZ: "haze", GR: "hail", GS: "small hail",
-  PL: "ice pellets", SG: "snow grains", FZ: "freezing", VC: "nearby", BL: "blowing", DR: "drifting", MI: "shallow", BC: "patchy", FU: "smoke", DU: "dust", SA: "sand", SQ: "squalls",
+  TS: "thunderstorm",
+  RA: "rain",
+  DZ: "drizzle",
+  SN: "snow",
+  SH: "showers",
+  FG: "fog",
+  BR: "mist",
+  HZ: "haze",
+  GR: "hail",
+  GS: "small hail",
+  PL: "ice pellets",
+  SG: "snow grains",
+  FZ: "freezing",
+  VC: "nearby",
+  BL: "blowing",
+  DR: "drifting",
+  MI: "shallow",
+  BC: "patchy",
+  FU: "smoke",
+  DU: "dust",
+  SA: "sand",
+  SQ: "squalls",
 };
 
 /** "-SHRA" → "light rain showers". */
@@ -482,9 +570,12 @@ export function headline(c: Conditions): string {
   if (c.wx.length) bits.push(c.wx.map(wxWords).join(", "));
   if (c.cavok) bits.push("CAVOK (clear, good visibility)");
   else {
-    const top = [...c.clouds].sort((a, b) => ({ VV: 5, OVC: 4, BKN: 3, SCT: 2, FEW: 1 })[b.cover] - ({ VV: 5, OVC: 4, BKN: 3, SCT: 2, FEW: 1 })[a.cover])[0];
+    const top = [...c.clouds].sort((a, b) => ({ VV: 5, OVC: 4, BKN: 3, SCT: 2, FEW: 1 })[b.cover] - { VV: 5, OVC: 4, BKN: 3, SCT: 2, FEW: 1 }[a.cover])[0];
     const word = { FEW: "a few clouds", SCT: "scattered cloud", BKN: "broken cloud", OVC: "overcast", VV: "sky obscured" } as const;
-    if (top) bits.push(`${word[top.cover]}${top.baseFt != null ? ` at ${top.baseFt.toLocaleString("en-GB")} ft` : ""}${top.type === "CB" ? " (CB)" : top.type === "TCU" ? " (TCU)" : ""}`);
+    if (top)
+      bits.push(
+        `${word[top.cover]}${top.baseFt != null ? ` at ${top.baseFt.toLocaleString("en-GB")} ft` : ""}${top.type === "CB" ? " (CB)" : top.type === "TCU" ? " (TCU)" : ""}`,
+      );
     else if (c.noCloud) bits.push(c.noCloud === "NCD" ? "no cloud detected" : c.noCloud === "NSC" ? "no significant cloud" : "clear sky");
   }
   if (!bits.length) return c.visM != null || c.wind ? "No cloud or weather reported" : "No weather groups found";

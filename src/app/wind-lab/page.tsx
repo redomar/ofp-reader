@@ -107,7 +107,21 @@ const SAMPLES: Sample[] = [
 
 /* ---------------- visuals ---------------- */
 
-function Arrow({ dir, amp, chaosAmp, size, guides, swayRef }: { dir: number; amp: number; chaosAmp: number; size: number; guides: boolean; swayRef: (el: HTMLSpanElement | null) => void }) {
+function Arrow({
+  dir,
+  amp,
+  chaosAmp,
+  size,
+  guides,
+  swayRef,
+}: {
+  dir: number;
+  amp: number;
+  chaosAmp: number;
+  size: number;
+  guides: boolean;
+  swayRef: (el: HTMLSpanElement | null) => void;
+}) {
   const r = 7.6;
   // rounded so server and browser trig agree (avoids a hydration mismatch)
   const toXY = (deg: number) => [Math.sin((deg * Math.PI) / 180) * r, -Math.cos((deg * Math.PI) / 180) * r].map((v) => Math.round(v * 1000) / 1000);
@@ -130,7 +144,13 @@ function Arrow({ dir, amp, chaosAmp, size, guides, swayRef }: { dir: number; amp
       <span className="wl-sway" ref={swayRef}>
         <svg width={size} height={size} viewBox="-8 -8 16 16" aria-hidden="true">
           <g transform={`rotate(${dir + 180})`}>
-            <path d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z" fill="var(--cat, var(--blue))" stroke="var(--ink)" strokeWidth={size < 24 ? 0.9 : 0.45} strokeLinejoin="round" />
+            <path
+              d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z"
+              fill="var(--cat, var(--blue))"
+              stroke="var(--ink)"
+              strokeWidth={size < 24 ? 0.9 : 0.45}
+              strokeLinejoin="round"
+            />
           </g>
         </svg>
       </span>
@@ -205,7 +225,14 @@ function Card({ s, i, cfg, phase }: { s: Sample; i: number; cfg: Cfg; phase: num
   const input: SwayInput = { amp: d.amp, chaosAmp: d.chaosAmp, swingMs: d.swingMs, spread: d.kickSpread, ease, seed, chaos: cfg.chaos, maxDeg: d.limit + 10 };
   const { bindBig, bindSmall, canvas } = useMotion(input, cfg.reduced);
   return (
-    <article className="wl-card" data-cat={d.cat} style={{ ["--cat" as string]: cfg.catColour ? CATS[d.cat].color : "var(--blue)", ["--cat-ink" as string]: cfg.catColour ? CATS[d.cat].ink : "var(--sheet)" }}>
+    <article
+      className="wl-card"
+      data-cat={d.cat}
+      style={{
+        ["--cat" as string]: cfg.catColour ? CATS[d.cat].color : "var(--blue)",
+        ["--cat-ink" as string]: cfg.catColour ? CATS[d.cat].ink : "var(--sheet)",
+      }}
+    >
       <header>
         <span className="wl-kind" data-k={s.kind}>
           {kindLabel[s.kind]}
@@ -228,7 +255,8 @@ function Card({ s, i, cfg, phase }: { s: Sample; i: number; cfg: Cfg; phase: num
       </div>
       <canvas ref={canvas} width={480} height={70} className="wl-trace" aria-label="Live angle trace" />
       <div className="wl-mini wl-legend">
-        <i style={{ background: "rgba(61,127,208,0.55)" }} /> regular swing <i style={{ background: "#c2338c" }} /> total angle · ±{(d.limit + 10).toFixed(0)}° scale
+        <i style={{ background: "rgba(61,127,208,0.55)" }} /> regular swing <i style={{ background: "#c2338c" }} /> total angle · ±{(d.limit + 10).toFixed(0)}°
+        scale
       </div>
       <dl className="wl-debug">
         <dt>direction</dt>
@@ -295,7 +323,9 @@ export default function WindLab() {
     gust: custom.gust > custom.spd ? custom.gust : null,
     sector: custom.s0 && custom.s1 ? [Number(custom.s0), Number(custom.s1)] : null,
   };
-  const list = [...(customOn ? [customSample] : []), ...SAMPLES].filter((s) => s.kind === "CUSTOM" || ((filter === "ALL" || s.kind === filter) && (catFilter === "ALL" || compute(s, cfg).cat === catFilter)));
+  const list = [...(customOn ? [customSample] : []), ...SAMPLES].filter(
+    (s) => s.kind === "CUSTOM" || ((filter === "ALL" || s.kind === filter) && (catFilter === "ALL" || compute(s, cfg).cat === catFilter)),
+  );
   const catCount = (k: Cat) => SAMPLES.filter((s) => (filter === "ALL" || s.kind === filter) && compute(s, cfg).cat === k).length;
 
   const num = (k: keyof Cfg, label: string, min: number, max: number, step: number, unit = "") => (
@@ -355,7 +385,10 @@ export default function WindLab() {
           <ThemeToggle />
         </div>
         <div className="status" role="status">
-          <span>Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One beat = {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}.</span>
+          <span>
+            Tune how the wind arrow sways (AVG WIND, PWIND, METAR chips). One beat ={" "}
+            {cfg.beat === "swing" ? "one swing (tick→tock)" : "one full left-right-left cycle"}.
+          </span>
         </div>
       </header>
       <div className="layout wl">
@@ -412,10 +445,18 @@ export default function WindLab() {
                     {cfg.anchors.map(([k, b], i) => (
                       <tr key={i}>
                         <td>
-                          <input type="number" value={k} onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [Number(e.target.value), a[1]] : a)) as Cfg["anchors"])} />
+                          <input
+                            type="number"
+                            value={k}
+                            onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [Number(e.target.value), a[1]] : a)) as Cfg["anchors"])}
+                          />
                         </td>
                         <td>
-                          <input type="number" value={b} onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [a[0], Number(e.target.value)] : a)) as Cfg["anchors"])} />
+                          <input
+                            type="number"
+                            value={b}
+                            onChange={(e) => set("anchors", cfg.anchors.map((a, j) => (j === i ? [a[0], Number(e.target.value)] : a)) as Cfg["anchors"])}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -431,9 +472,22 @@ export default function WindLab() {
                     </g>
                   ))}
                   {[20, 34].map((kt) => (
-                    <line key={kt} x1={20 + kt * 3.6} x2={20 + kt * 3.6} y1={8} y2={92} stroke={kt === 20 ? "var(--amber)" : "var(--red)"} strokeDasharray="3 2" />
+                    <line
+                      key={kt}
+                      x1={20 + kt * 3.6}
+                      x2={20 + kt * 3.6}
+                      y1={8}
+                      y2={92}
+                      stroke={kt === 20 ? "var(--amber)" : "var(--red)"}
+                      strokeDasharray="3 2"
+                    />
                   ))}
-                  <polyline fill="none" stroke="var(--magenta)" strokeWidth="2" points={curve.map(([kt, b]) => `${20 + kt * 3.6},${92 - (b / 600) * 84}`).join(" ")} />
+                  <polyline
+                    fill="none"
+                    stroke="var(--magenta)"
+                    strokeWidth="2"
+                    points={curve.map(([kt, b]) => `${20 + kt * 3.6},${92 - (b / 600) * 84}`).join(" ")}
+                  />
                   <text x={4} y={12}>
                     600
                   </text>
@@ -496,7 +550,8 @@ export default function WindLab() {
                 <h2>Chaos tuning</h2>
                 {chaosNum("freqHz", "Wobble frequency", 0.1, 5, 0.1, " Hz")}
                 <label className="wl-chk">
-                  <input type="checkbox" checked={cfg.chaos.freqFromBpm} onChange={(e) => setChaos("freqFromBpm", e.target.checked)} /> Tie wobble to rhythm (× swing rate)
+                  <input type="checkbox" checked={cfg.chaos.freqFromBpm} onChange={(e) => setChaos("freqFromBpm", e.target.checked)} /> Tie wobble to rhythm (×
+                  swing rate)
                 </label>
                 {cfg.chaos.freqFromBpm && chaosNum("freqMul", "× swing rate", 0.1, 3, 0.05)}
                 {chaosNum("kickRate", "Kicks / s at 10 kt spread", 0, 4, 0.1)}
@@ -551,14 +606,23 @@ export default function WindLab() {
                 Any strength
               </button>
               {(Object.keys(CATS) as Cat[]).map((k) => (
-                <button key={k} className="wl-catbtn" aria-pressed={catFilter === k} onClick={() => setCatFilter(catFilter === k ? "ALL" : k)} style={{ ["--cat" as string]: CATS[k].color, ["--cat-ink" as string]: CATS[k].ink }}>
+                <button
+                  key={k}
+                  className="wl-catbtn"
+                  aria-pressed={catFilter === k}
+                  onClick={() => setCatFilter(catFilter === k ? "ALL" : k)}
+                  style={{ ["--cat" as string]: CATS[k].color, ["--cat-ink" as string]: CATS[k].ink }}
+                >
                   <i aria-hidden="true" />
                   {CATS[k].label}
                   <small>{CATS[k].rule(cfg.calmKt)}</small>
                   <small>({catCount(k)})</small>
                 </button>
               ))}
-              <span className="wl-mini">AVG WIND uses its ÷ scaled speed; High follows the Met Office strong-wind warning (20 kt / 28 G); gale (34 / 43 G) and storm (48 kt) follow theirs.</span>
+              <span className="wl-mini">
+                AVG WIND uses its ÷ scaled speed; High follows the Met Office strong-wind warning (20 kt / 28 G); gale (34 / 43 G) and storm (48 kt) follow
+                theirs.
+              </span>
             </div>
 
             {/* the inputs stay in place (dimmed and disabled when off) so turning it on doesn't move anything */}

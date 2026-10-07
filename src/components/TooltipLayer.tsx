@@ -53,7 +53,9 @@ export function TooltipLayer() {
         title: el.getAttribute("data-tip-title"),
         rows: parseRows(el.getAttribute("data-tip-rows")),
         note: el.getAttribute("data-tip-note"),
-        chip: chip ? { label: chip, color: el.getAttribute("data-tip-chip-color") ?? "var(--blue)", ink: el.getAttribute("data-tip-chip-ink") ?? "var(--sheet)" } : null,
+        chip: chip
+          ? { label: chip, color: el.getAttribute("data-tip-chip-color") ?? "var(--blue)", ink: el.getAttribute("data-tip-chip-ink") ?? "var(--sheet)" }
+          : null,
         text,
         x: r.left + r.width / 2,
         y: below ? r.bottom + 8 : r.top - 8,

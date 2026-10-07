@@ -20,14 +20,48 @@ export interface DecodedMetar {
 }
 
 const WX: Record<string, string> = {
-  RA: "rain", SHRA: "rain showers", DZ: "drizzle", SN: "snow", SG: "snow grains", GR: "hail", GS: "small hail",
-  TS: "thunderstorm", TSRA: "thunderstorm with rain", FG: "fog", BR: "mist", HZ: "haze", FU: "smoke", DU: "dust",
-  SA: "sand", VA: "volcanic ash", SQ: "squalls", FC: "funnel cloud", SH: "showers", FZ: "freezing", BC: "patches",
-  MI: "shallow", PR: "partial", BL: "blowing", DR: "drifting", VC: "in the vicinity", PL: "ice pellets", IC: "ice crystals",
-  UP: "unknown precipitation", SHSN: "snow showers", FZRA: "freezing rain", FZDZ: "freezing drizzle", FZFG: "freezing fog",
+  RA: "rain",
+  SHRA: "rain showers",
+  DZ: "drizzle",
+  SN: "snow",
+  SG: "snow grains",
+  GR: "hail",
+  GS: "small hail",
+  TS: "thunderstorm",
+  TSRA: "thunderstorm with rain",
+  FG: "fog",
+  BR: "mist",
+  HZ: "haze",
+  FU: "smoke",
+  DU: "dust",
+  SA: "sand",
+  VA: "volcanic ash",
+  SQ: "squalls",
+  FC: "funnel cloud",
+  SH: "showers",
+  FZ: "freezing",
+  BC: "patches",
+  MI: "shallow",
+  PR: "partial",
+  BL: "blowing",
+  DR: "drifting",
+  VC: "in the vicinity",
+  PL: "ice pellets",
+  IC: "ice crystals",
+  UP: "unknown precipitation",
+  SHSN: "snow showers",
+  FZRA: "freezing rain",
+  FZDZ: "freezing drizzle",
+  FZFG: "freezing fog",
 };
 
-const COVER: Record<string, string> = { FEW: "Few (1–2 oktas)", SCT: "Scattered (3–4 oktas)", BKN: "Broken (5–7 oktas)", OVC: "Overcast (8 oktas)", VV: "Vertical visibility" };
+const COVER: Record<string, string> = {
+  FEW: "Few (1–2 oktas)",
+  SCT: "Scattered (3–4 oktas)",
+  BKN: "Broken (5–7 oktas)",
+  OVC: "Overcast (8 oktas)",
+  VV: "Vertical visibility",
+};
 
 function decodeWx(t: string): string | null {
   const m = t.match(/^([+-]|VC)?([A-Z]{2,8})$/);
@@ -46,10 +80,8 @@ function decodeWx(t: string): string | null {
 
 export function decodeToken(t: string, isTaf = false): MetarToken {
   let m: RegExpMatchArray | null;
-  if ((m = t.match(/^(\d{2})(\d{2})(\d{2})Z?$/)) && !isTaf)
-    return { raw: t, kind: "time", tip: `Observed day ${m[1]} at ${m[2]}:${m[3]} UTC` };
-  if ((m = t.match(/^(\d{2})(\d{2})(\d{2})Z?$/)))
-    return { raw: t, kind: "time", tip: `Issued day ${m[1]} at ${m[2]}:${m[3]} UTC` };
+  if ((m = t.match(/^(\d{2})(\d{2})(\d{2})Z?$/)) && !isTaf) return { raw: t, kind: "time", tip: `Observed day ${m[1]} at ${m[2]}:${m[3]} UTC` };
+  if ((m = t.match(/^(\d{2})(\d{2})(\d{2})Z?$/))) return { raw: t, kind: "time", tip: `Issued day ${m[1]} at ${m[2]}:${m[3]} UTC` };
   if ((m = t.match(/^(\d{2})(\d{2})\/(\d{2})(\d{2})$/)))
     return { raw: t, kind: "period", tip: `Valid from day ${m[1]} ${m[2]}:00 to day ${m[3]} ${m[4]}:00 UTC` };
   if ((m = t.match(/^(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)$/))) {
@@ -57,10 +89,12 @@ export function decodeToken(t: string, isTaf = false): MetarToken {
     return { raw: t, kind: "wind", tip: `${dir} at ${Number(m[2])} ${m[4] === "KT" ? "kt" : "m/s"}${m[3] ? `, gusting ${Number(m[3])}` : ""}` };
   }
   if ((m = t.match(/^(\d{3})V(\d{3})$/))) return { raw: t, kind: "wind", tip: `Wind direction varying between ${m[1]}° and ${m[2]}°` };
-  if (t === "CAVOK") return { raw: t, kind: "vis", tip: "Ceiling and visibility OK: vis ≥ 10 km, no cloud below 5000 ft or MSA, no CB/TCU, no significant weather" };
+  if (t === "CAVOK")
+    return { raw: t, kind: "vis", tip: "Ceiling and visibility OK: vis ≥ 10 km, no cloud below 5000 ft or MSA, no CB/TCU, no significant weather" };
   if (t === "9999") return { raw: t, kind: "vis", tip: "Visibility 10 km or more" };
   if ((m = t.match(/^(\d{4})$/))) return { raw: t, kind: "vis", tip: `Visibility ${Number(m[1])} m` };
-  if ((m = t.match(/^(P)?(\d{1,2}|\d\/\d{1,2})SM$/))) return { raw: t, kind: "vis", tip: `Visibility ${m[1] ? "more than " : ""}${m[2]} statute mile${m[2] === "1" ? "" : "s"}` };
+  if ((m = t.match(/^(P)?(\d{1,2}|\d\/\d{1,2})SM$/)))
+    return { raw: t, kind: "vis", tip: `Visibility ${m[1] ? "more than " : ""}${m[2]} statute mile${m[2] === "1" ? "" : "s"}` };
   if (t === "NCD") return { raw: t, kind: "cloud", tip: "No cloud detected (automatic station)" };
   if (t === "NSC") return { raw: t, kind: "cloud", tip: "No significant cloud" };
   if (t === "SKC" || t === "CLR") return { raw: t, kind: "cloud", tip: "Sky clear" };

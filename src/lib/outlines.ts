@@ -46,7 +46,7 @@ function decode(lines: number[][], q: number): Float32Array[] {
 }
 
 type CountryJson = { n: string; t: number; b: [number, number, number, number]; l: [number, number] | null; a: number; r: number[][] };
-const json = <T,>(url: string) =>
+const json = <T>(url: string) =>
   fetch(url)
     .then((r) => (r.ok ? (r.json() as Promise<T>) : null))
     .catch(() => null);

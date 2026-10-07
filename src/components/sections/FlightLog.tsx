@@ -27,7 +27,7 @@ function prep(log: LogPoint[]): P[] {
   let cum = 0;
   const pts: P[] = log.map((p, i) => {
     cum += Number(p.dis ?? 0) || 0;
-    const name = p.kind === "fir" ? p.position ?? "FIR" : p.ident ?? p.position?.replace(/\s/g, "") ?? "—";
+    const name = p.kind === "fir" ? (p.position ?? "FIR") : (p.ident ?? p.position?.replace(/\s/g, "") ?? "—");
     return { ...p, i, cum, alt: p.fl ? Number(p.fl) : NaN, name };
   });
   // Departure & destination sit on the ground; FIR crossings take the neighbour level.
@@ -400,7 +400,9 @@ function RouteMapView({
   const coast = outlines && lines ? outlinePath(outlines.coast, clip, px, py) : "";
   const borders = outlines && lines ? outlinePath(outlines.borders, clip, px, py) : "";
   // Countries in view: land fill (one tone, or neighbours in different tones without contours), and names.
-  const inView = (outlines?.countries ?? []).filter((c) => c.bounds[2] >= clip.lon0 && c.bounds[0] <= clip.lon1 && c.bounds[3] >= clip.lat0 && c.bounds[1] <= clip.lat1);
+  const inView = (outlines?.countries ?? []).filter(
+    (c) => c.bounds[2] >= clip.lon0 && c.bounds[0] <= clip.lon1 && c.bounds[3] >= clip.lat0 && c.bounds[1] <= clip.lat1,
+  );
   const land = inView.map((c) => ({ c, d: ringsPath(c.rings, px, py) }));
   // Anything a name shouldn't sit on: the route's points and the fuel ERA.
   // (the route is sampled every few px, so names keep off the line between waypoints too)
@@ -588,7 +590,16 @@ function RouteMapView({
         ))}
         {style === "relief" && (
           // equirectangular raster: lon and lat map linearly to x and y, like this projection
-          <image href="/geo/relief.jpg" x={px(-180)} y={py(90)} width={px(180) - px(-180)} height={py(-90) - py(90)} preserveAspectRatio="none" clipPath="url(#map-land-clip)" className="map-relief" />
+          <image
+            href="/geo/relief.jpg"
+            x={px(-180)}
+            y={py(90)}
+            width={px(180) - px(-180)}
+            height={py(-90) - py(90)}
+            preserveAspectRatio="none"
+            clipPath="url(#map-land-clip)"
+            className="map-relief"
+          />
         )}
         {borders && <path d={borders} className="map-border" />}
         {coast && <path d={coast} className="map-coast" />}
@@ -619,7 +630,12 @@ function RouteMapView({
           return (
             <g
               key={sg.id}
-              className={cx("sig-area", sg.phenomenon?.severity === "mod" || sg.kind === "AIRMET" ? "mod" : "sev", hlSig === sg.id && "hl", impact.verdict === "affects" && "on-route")}
+              className={cx(
+                "sig-area",
+                sg.phenomenon?.severity === "mod" || sg.kind === "AIRMET" ? "mod" : "sev",
+                hlSig === sg.id && "hl",
+                impact.verdict === "affects" && "on-route",
+              )}
               onPointerEnter={() => setHighlightedSigmet(sg.id)}
               onPointerLeave={() => setHighlightedSigmet(null)}
               data-tip={`${sg.phenomenon?.text ?? "Hazard"}${sg.levels ? ` · ${sg.levels.text}` : ""} · valid ${sg.validFrom ? `${String(sg.validFrom.hour).padStart(2, "0")}${String(sg.validFrom.min).padStart(2, "0")}` : "?"}–${sg.validTo ? `${String(sg.validTo.hour).padStart(2, "0")}${String(sg.validTo.min).padStart(2, "0")}` : "?"}Z`}
@@ -648,20 +664,33 @@ function RouteMapView({
         {firShown.map((f, i) => (
           <g
             key={"fn" + i}
-            data-tip={f.name ? `The route is in ${f.name} along this dashed line${f.at ? `, from the ${firMode === "marks" ? "boundary mark" : "circle"} where it crosses in` : ""}.` : undefined}
+            data-tip={
+              f.name
+                ? `The route is in ${f.name} along this dashed line${f.at ? `, from the ${firMode === "marks" ? "boundary mark" : "circle"} where it crosses in` : ""}.`
+                : undefined
+            }
             data-tip-title={f.name || undefined}
           >
             {f.tick && firMode === "marks" && <path d={f.tick} className="map-fir-bound" />}
             {f.at && firMode === "line" && <circle cx={f.at[0]} cy={f.at[1]} r={3} className="map-fir-cross" />}
             {f.named && (
-              <text transform={`translate(${f.mid.x.toFixed(1)} ${f.mid.y.toFixed(1)}) rotate(${f.mid.ang.toFixed(1)})`} textAnchor="middle" dominantBaseline="middle" className="map-fir-label">
+              <text
+                transform={`translate(${f.mid.x.toFixed(1)} ${f.mid.y.toFixed(1)}) rotate(${f.mid.ang.toFixed(1)})`}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="map-fir-label"
+              >
                 {f.name}
               </text>
             )}
           </g>
         ))}
         {era && (
-          <g className="map-era" data-tip={`${era.name}: the fuel en-route alternate.${era.abeam ? ` The route passes ${Math.round(era.abeam.nm)} NM away, abeam ${era.abeam.fix}${era.when ? ` at ${era.when}` : ""}.` : ""}`} data-tip-title={`${era.icao} · fuel ERA`}>
+          <g
+            className="map-era"
+            data-tip={`${era.name}: the fuel en-route alternate.${era.abeam ? ` The route passes ${Math.round(era.abeam.nm)} NM away, abeam ${era.abeam.fix}${era.when ? ` at ${era.when}` : ""}.` : ""}`}
+            data-tip-title={`${era.icao} · fuel ERA`}
+          >
             {era.abeam && <line x1={px(era.abeam.point[1])} y1={py(era.abeam.point[0])} x2={px(era.coord[1])} y2={py(era.coord[0])} className="map-era-line" />}
             {era.abeam && <circle cx={px(era.abeam.point[1])} cy={py(era.abeam.point[0])} r={3} className="map-era-abeam" />}
             <path d={`M${px(era.coord[1])} ${py(era.coord[0]) - 8} l8 8 l-8 8 l-8 -8 Z`} className="map-era-mark" />
@@ -681,10 +710,19 @@ function RouteMapView({
               {ends ? (
                 <circle cx={cx0} cy={cy0} r={on ? 9 : 7} fill={p === end ? "var(--ink)" : "var(--sheet)"} stroke="var(--ink)" strokeWidth={2} />
               ) : (
-                <path d={`M${cx0} ${cy0 - 5} L${cx0 + 4.5} ${cy0 + 3.5} L${cx0 - 4.5} ${cy0 + 3.5} Z`} className={cx("wpt", on && "active")} transform={on ? `translate(${cx0} ${cy0}) scale(1.6) translate(${-cx0} ${-cy0})` : undefined} />
+                <path
+                  d={`M${cx0} ${cy0 - 5} L${cx0 + 4.5} ${cy0 + 3.5} L${cx0 - 4.5} ${cy0 + 3.5} Z`}
+                  className={cx("wpt", on && "active")}
+                  transform={on ? `translate(${cx0} ${cy0}) scale(1.6) translate(${-cx0} ${-cy0})` : undefined}
+                />
               )}
               {(labelled.has(p.i) || on) && (
-                <text x={cx0 + 9} y={cy0 + 4} className={cx("map-wpt-label", ends && "label-strong", on && !ends && "label-mag")} style={ends ? { fontSize: 14 } : undefined}>
+                <text
+                  x={cx0 + 9}
+                  y={cy0 + 4}
+                  className={cx("map-wpt-label", ends && "label-strong", on && !ends && "label-mag")}
+                  style={ends ? { fontSize: 14 } : undefined}
+                >
                   {p.name}
                 </text>
               )}
@@ -749,6 +787,9 @@ export function FlightLogSection({ no }: { no: number }) {
   // The route starts in the FIR listed around the departure in the NOTAMs (the log only marks crossings).
   const depFir = ofp?.notams.groups.find((g) => /AROUND DEPARTURE/i.test(g.section) && /\b(FIR|UIR)\b/.test(g.locationName ?? ""))?.locationName ?? null;
   const [active, setActive] = useState<number | null>(null);
+  // nav log row under the pointer / holding focus (for quick fill)
+  const [rowHover, setRowHover] = useState<number | null>(null);
+  const [rowFocus, setRowFocus] = useState<number | null>(null);
   const [off, setOff] = useField("log.off", "Flight log", "Actual take-off (OFF, UTC)");
   const lg = useFieldGroup("log", "Flight log");
   const [picExtraRaw] = useField("fuel.picExtra", "Planned fuel", "PIC extra fuel");
@@ -759,7 +800,11 @@ export function FlightLogSection({ no }: { no: number }) {
   const [retoOn, setRetoOn] = useField("log.useTimesOff", "Flight log", "Use Times & weights OFF in nav log");
   const logOffSet = /^\d{4}$/.test(off);
   // Both OFF boxes filled is ambiguous, so the switch is off then; it also needs a Times & weights OFF.
-  const retoBlocked = !timesOff ? "Fill in Actual OFF in Times & weights to enable" : logOffSet ? "Both Actual OFF boxes are filled; clear one to use this" : null;
+  const retoBlocked = !timesOff
+    ? "Fill in Actual OFF in Times & weights to enable"
+    : logOffSet
+      ? "Both Actual OFF boxes are filled; clear one to use this"
+      : null;
   const reto = retoOn === "on" && !retoBlocked;
   const wkey = (p: P) => String(p.i).padStart(3, "0");
   const pts = useMemo(() => (ofp ? prep(ofp.log) : []), [ofp]);
@@ -803,18 +848,25 @@ export function FlightLogSection({ no }: { no: number }) {
 
   const rows: (P | null)[] = pts.length ? pts : Array.from({ length: 8 }, () => null);
 
-  // Quick fill: the fix after the last one filled in offers the time now (UTC) for ATO and, for AFOB,
-  // its planned fuel shifted by the last fuel Δ. The latest AFOB gets ▲▼ to adjust by 0.1 t.
+  // Quick fill: the fix after the last one filled in, and the row under the pointer (or with focus),
+  // offer the time now (UTC) for ATO and, for AFOB, the planned fuel (TFOB with PIC extra) shifted
+  // by the fuel Δ of the nearest filled-in fix above. The latest AFOB gets ▲▼ to adjust by 0.1 t.
   const nowZ = useUtcNow();
   const fixes = pts.filter((p) => p.kind !== "fir");
   const lastFilled = (k: string) => fixes.findLastIndex((p) => !!lg.get(`${wkey(p)}.${k}`));
   const fuelRef = (p: P) => pic?.tfob(p.efob, p.pbrn) ?? (p.efob ? Number(p.efob) : null);
   const atoNext = fixes[lastFilled("ato") + 1]?.i ?? null;
   const afLatest = fixes[lastFilled("afob")] ?? null;
-  const afNextP = fixes[lastFilled("afob") + 1] ?? null;
-  const lastDF = afLatest && fuelRef(afLatest) != null ? Number(lg.get(`${wkey(afLatest)}.afob`)) - fuelRef(afLatest)! : 0;
-  const afNextRef = afNextP ? fuelRef(afNextP) : null;
-  const afOffer = afNextRef != null && !Number.isNaN(lastDF) ? Math.max(0, afNextRef + lastDF).toFixed(1) : null;
+  const afNext = fixes[lastFilled("afob") + 1]?.i ?? null;
+  const predictFob = (p: P) => {
+    const ref = fuelRef(p);
+    if (ref == null) return null;
+    const above = fixes.findLast((q) => q.i < p.i && !!lg.get(`${wkey(q)}.afob`));
+    const aboveRef = above ? fuelRef(above) : null;
+    const d = above && aboveRef != null ? Number(lg.get(`${wkey(above)}.afob`)) - aboveRef : 0;
+    return Number.isNaN(d) ? null : Math.max(0, ref + d).toFixed(1);
+  };
+  const offering = (i: number, next: number | null) => i === next || i === rowHover || i === rowFocus;
   const toc = pts.find((p) => /T O C/.test(p.position ?? ""));
   const tod = pts.find((p) => /T O D/.test(p.position ?? ""));
   const maxFl = Math.max(0, ...pts.map((p) => p.alt));
@@ -859,7 +911,13 @@ export function FlightLogSection({ no }: { no: number }) {
       </div>
 
       <Sub>Vertical profile</Sub>
-      <Replay className="chart-frame" mode="once" sectionId="log">{pts.length ? <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} pic={pic} sigs={sigsShown} /> : <EmptyChart label="Profile" />}</Replay>
+      <Replay className="chart-frame" mode="once" sectionId="log">
+        {pts.length ? (
+          <Profile pts={pts} active={active} setActive={setActive} minFuel={minFuel} onKey={step} pic={pic} sigs={sigsShown} />
+        ) : (
+          <EmptyChart label="Profile" />
+        )}
+      </Replay>
       <div className="legend small" aria-hidden="true">
         <span>
           <i style={{ background: "var(--magenta)" }} />
@@ -902,7 +960,11 @@ export function FlightLogSection({ no }: { no: number }) {
                 setActive={setActive}
                 onKey={step}
                 sigs={sigsShown}
-                era={eraInfo.era && eraInfo.coord ? { icao: eraInfo.era.icao, name: eraInfo.era.name, coord: eraInfo.coord, abeam: eraInfo.abeam, when: eraInfo.when?.clock ?? null } : null}
+                era={
+                  eraInfo.era && eraInfo.coord
+                    ? { icao: eraInfo.era.icao, name: eraInfo.era.name, coord: eraInfo.coord, abeam: eraInfo.abeam, when: eraInfo.when?.clock ?? null }
+                    : null
+                }
                 depFir={depFir}
               />
             ) : (
@@ -926,7 +988,9 @@ export function FlightLogSection({ no }: { no: number }) {
               ))}
             </dl>
             <p className="wp-foot small muted">
-              {pts.length ? "Hover the profile, map or a table row — or focus a chart and use the arrow keys." : "Waypoint details appear here once a plan is loaded."}
+              {pts.length
+                ? "Hover the profile, map or a table row — or focus a chart and use the arrow keys."
+                : "Waypoint details appear here once a plan is loaded."}
             </p>
           </div>
         </div>
@@ -945,14 +1009,30 @@ export function FlightLogSection({ no }: { no: number }) {
               Actual OFF
             </span>
           </Tip>
-          <Act label="Actual take-off time UTC" value={off} onChange={(v) => setOff(v.replace(/\D/g, "").slice(0, 4))} w={4} placeholder={plannedOff ?? "HHMM"} />
+          <Act
+            label="Actual take-off time UTC"
+            value={off}
+            onChange={(v) => setOff(v.replace(/\D/g, "").slice(0, 4))}
+            w={4}
+            placeholder={plannedOff ?? "HHMM"}
+          />
         </label>
         <span
           className="switch-wrap"
-          data-tip={retoBlocked ?? `Adds a RETO column: ETOs worked from the Actual OFF in Times & weights (${fmtHhmm(timesOff)}Z); ATO is then compared with RETO`}
+          data-tip={
+            retoBlocked ?? `Adds a RETO column: ETOs worked from the Actual OFF in Times & weights (${fmtHhmm(timesOff)}Z); ATO is then compared with RETO`
+          }
           data-tip-title="Times & weights OFF"
         >
-          <button type="button" role="switch" aria-checked={reto} disabled={!!retoBlocked} className="switch" onClick={() => setRetoOn(retoOn === "on" ? "" : "on")} aria-describedby="navlog-reto-note">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={reto}
+            disabled={!!retoBlocked}
+            className="switch"
+            onClick={() => setRetoOn(retoOn === "on" ? "" : "on")}
+            aria-describedby="navlog-reto-note"
+          >
             <span className="switch-main">
               <span className="switch-track" aria-hidden="true">
                 <span className="switch-thumb" />
@@ -1082,7 +1162,20 @@ export function FlightLogSection({ no }: { no: number }) {
               const dF = af && ref != null ? Number(af) - ref : null;
               const isFir = p.kind === "fir";
               return (
-                <tr key={p.i} className={cx(isFir && "fir", active === p.i && "active")} onPointerEnter={() => setActive(p.i)} onPointerLeave={() => setActive(null)}>
+                <tr
+                  key={p.i}
+                  className={cx(isFir && "fir", active === p.i && "active")}
+                  onPointerEnter={() => {
+                    setActive(p.i);
+                    setRowHover(p.i);
+                  }}
+                  onPointerLeave={() => {
+                    setActive(null);
+                    setRowHover(null);
+                  }}
+                  onFocus={(e) => setRowFocus(e.target instanceof HTMLInputElement ? p.i : null)}
+                  onBlur={() => setRowFocus(null)}
+                >
                   <th scope="row" style={{ position: "sticky", left: 0, background: "var(--sheet)", zIndex: 1 }}>
                     <span style={{ display: "block" }}>
                       {isFir ? `▸ ${p.name}` : p.name}
@@ -1113,8 +1206,7 @@ export function FlightLogSection({ no }: { no: number }) {
                     let out: string | null = v;
                     if (c.k === "eet" || c.k === "ttlt") out = fmtHhmm(v);
                     if (c.k === "fl" && v) out = String(Number(v));
-                    const color =
-                      c.k === "comp" && v ? ((signed(v) ?? 0) < 0 ? "var(--red)" : (signed(v) ?? 0) > 0 ? "var(--green)" : undefined) : undefined;
+                    const color = c.k === "comp" && v ? ((signed(v) ?? 0) < 0 ? "var(--red)" : (signed(v) ?? 0) > 0 ? "var(--green)" : undefined) : undefined;
                     return (
                       <td key={c.label} className={c.num ? "num" : undefined} style={{ color }}>
                         {out ?? ""}
@@ -1123,7 +1215,11 @@ export function FlightLogSection({ no }: { no: number }) {
                   })}
                   <td className="num muted">{isFir ? "" : fmtHhmm(e)}</td>
                   {reto && (
-                    <td className="num tfob" data-tip={!isFir && re ? `Actual OFF ${fmtHhmm(timesOff)}Z (Times & weights) + TTLT ${fmtHhmm(p.ttlt)}` : undefined} data-tip-title={!isFir && re ? `RETO ${fmtHhmm(re)}Z` : undefined}>
+                    <td
+                      className="num tfob"
+                      data-tip={!isFir && re ? `Actual OFF ${fmtHhmm(timesOff)}Z (Times & weights) + TTLT ${fmtHhmm(p.ttlt)}` : undefined}
+                      data-tip-title={!isFir && re ? `RETO ${fmtHhmm(re)}Z` : undefined}
+                    >
                       {isFir ? "" : fmtHhmm(re)}
                     </td>
                   )}
@@ -1134,7 +1230,7 @@ export function FlightLogSection({ no }: { no: number }) {
                         value={atoV ?? ""}
                         onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))}
                         w={4}
-                        offer={p.i === atoNext ? nowZ : null}
+                        offer={offering(p.i, atoNext) ? nowZ : null}
                         offerIcon={<ClockIcon />}
                         offerLabel="Time now (UTC)"
                       />
@@ -1165,13 +1261,16 @@ export function FlightLogSection({ no }: { no: number }) {
                         onChange={(v) => lg.put(`${wkey(p)}.afob`, `AFOB ${p.name} (t)`, v.replace(/[^\d.]/g, ""))}
                         w={4}
                         inputMode="decimal"
-                        offer={p.i === afNextP?.i ? afOffer : null}
+                        offer={offering(p.i, afNext) ? predictFob(p) : null}
                         offerLabel="Predicted fuel"
                         nudge={p.i === afLatest?.i ? 0.1 : undefined}
                       />
                     )}
                   </td>
-                  <td className="num delta" style={{ color: dF != null && !Number.isNaN(dF) && Math.abs(dF) >= 0.05 ? (dF < 0 ? "var(--red)" : "var(--green)") : undefined }}>
+                  <td
+                    className="num delta"
+                    style={{ color: dF != null && !Number.isNaN(dF) && Math.abs(dF) >= 0.05 ? (dF < 0 ? "var(--red)" : "var(--green)") : undefined }}
+                  >
                     {dF != null && !Number.isNaN(dF) ? `${dF >= 0.05 ? "+" : dF <= -0.05 ? "−" : "±"}${Math.abs(dF).toFixed(1)}` : ""}
                   </td>
                   {TAIL.map((c) => {
@@ -1196,9 +1295,7 @@ export function FlightLogSection({ no }: { no: number }) {
       </div>
       <dl className="navlog-notes small" aria-label="How these columns are worked out">
         <dt>ETO</dt>
-        <dd>
-          Actual OFF{plannedOff ? ` (or planned ${fmtHhmm(plannedOff)}Z)` : ""} + TTLT. Type ATO and AFOB as you fly; differences from plan are coloured.
-        </dd>
+        <dd>Actual OFF{plannedOff ? ` (or planned ${fmtHhmm(plannedOff)}Z)` : ""} + TTLT. Type ATO and AFOB as you fly; differences from plan are coloured.</dd>
         <dt>RETO</dt>
         <dd id="navlog-reto-note">
           {retoBlocked
@@ -1221,7 +1318,9 @@ export function FlightLogSection({ no }: { no: number }) {
       {pts.length > 0 && (
         <p className="note">
           Legs: {pts.filter((p) => p.kind === "wpt").length - 1} · FIR crossings: {firs.length} · planned air time {fmtHhmm(pts.at(-1)?.ttlt)} ·{" "}
-          {plannedOff && ofp?.header.onTime ? `OFF ${fmtHhmm(plannedOff)}Z → ON ${fmtHhmm(ofp.header.onTime)}Z (${clockDiff(plannedOff, ofp.header.onTime)} min)` : ""}
+          {plannedOff && ofp?.header.onTime
+            ? `OFF ${fmtHhmm(plannedOff)}Z → ON ${fmtHhmm(ofp.header.onTime)}Z (${clockDiff(plannedOff, ofp.header.onTime)} min)`
+            : ""}
         </p>
       )}
     </Section>
@@ -1264,4 +1363,3 @@ function EmptyChart({ label }: { label: string }) {
     </svg>
   );
 }
-

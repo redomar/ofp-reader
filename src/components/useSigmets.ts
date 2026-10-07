@@ -36,7 +36,15 @@ export function useSigmets(): { list: SigmetOnRoute[]; offLabel: string | null }
       const alt = i === 0 || i === ofp.log.length - 1 ? 0 : p.fl ? Number(p.fl) * 100 : lastAlt;
       lastAlt = alt;
       if (p.latDeg == null || p.lonDeg == null) return;
-      route.push({ name: p.ident ?? p.position ?? "—", lat: p.latDeg, lon: p.lonDeg, alt, ttlt: hhmmToMin(p.ttlt) ?? 0, cum, fir: p.kind === "fir" ? fir : undefined });
+      route.push({
+        name: p.ident ?? p.position ?? "—",
+        lat: p.latDeg,
+        lon: p.lonDeg,
+        alt,
+        ttlt: hhmmToMin(p.ttlt) ?? 0,
+        cum,
+        fir: p.kind === "fir" ? fir : undefined,
+      });
     });
     const list = ofp.wx.advisories
       .filter((a) => /SIGMET|AIRMET/i.test(a.title))

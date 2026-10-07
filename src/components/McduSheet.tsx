@@ -42,7 +42,14 @@ export function McduSheet() {
     `${col("ALTN", 14)}${h.altn ?? "...."}`,
     `${col("FLT NBR", 14)}${h.atcCallsign ?? h.flightNo ?? ""}`,
     `${col("COST INDEX", 14)}${h.costIndex ?? "..."}`,
-    `${col("CRZ FL", 14)}${initial?.level ?? "....."}${h.flSteps.length > 1 ? `  STEP ${h.flSteps.slice(1).map((s) => `FL${Number(s.fl)} AT ${s.fix}`).join(", ")}` : ""}`,
+    `${col("CRZ FL", 14)}${initial?.level ?? "....."}${
+      h.flSteps.length > 1
+        ? `  STEP ${h.flSteps
+            .slice(1)
+            .map((s) => `FL${Number(s.fl)} AT ${s.fix}`)
+            .join(", ")}`
+        : ""
+    }`,
     `${col("AVG WIND/ISA", 14)}${h.avgWind ?? "..."}  ${h.avgIsa ?? ""}`,
   ];
 
@@ -95,13 +102,18 @@ export function McduSheet() {
     .map((w) => {
       const want = flownAt(w.name) ?? crz;
       const lv = want ? [...w.levels].sort((a, b) => Math.abs(Number(a.fl) - want) - Math.abs(Number(b.fl) - want))[0] : w.levels[0];
-      return lv ? `${col(w.name, 8)}FL${col(lv.fl, 4)}${String(lv.dir).padStart(3, "0")}/${String(lv.spd).padStart(3, "0")}  ${lv.temp > 0 ? "+" : ""}${lv.temp}` : null;
+      return lv
+        ? `${col(w.name, 8)}FL${col(lv.fl, 4)}${String(lv.dir).padStart(3, "0")}/${String(lv.spd).padStart(3, "0")}  ${lv.temp > 0 ? "+" : ""}${lv.temp}`
+        : null;
     })
     .filter((x): x is string => !!x);
   if (winds.length) lines.push(...head("WINDS  (CLB / CRZ / DES)"), ...winds);
 
   lines.push(RULE, "", `${col("", 12)}*** END OF LISTING ***`);
-  const title = [`${col("OFP READER  MCDU SET-UP SHEET", 40)}${col("PAGE 001", 12, true)}`, `${col(h.flightNo, 9)}${col(`${dep}-${dest}`, 11)}${col(h.date, 11)}${col(h.acType, 6)}${col(h.reg, 15)}`];
+  const title = [
+    `${col("OFP READER  MCDU SET-UP SHEET", 40)}${col("PAGE 001", 12, true)}`,
+    `${col(h.flightNo, 9)}${col(`${dep}-${dest}`, 11)}${col(h.date, 11)}${col(h.acType, 6)}${col(h.reg, 15)}`,
+  ];
   return printout([...title, ...lines]);
 }
 
@@ -151,7 +163,21 @@ export function PrintFace({
  * A button that "prints" a sheet: opens it full screen over a dimmed page (a modal
  * dialog, so Esc and focus work), with the paper's punched holes see-through.
  */
-function PrintButton({ title, chips, sub, label, disabled, children }: { title: string; chips: string[]; sub: string; label: string; disabled: boolean; children: ReactNode }) {
+function PrintButton({
+  title,
+  chips,
+  sub,
+  label,
+  disabled,
+  children,
+}: {
+  title: string;
+  chips: string[];
+  sub: string;
+  label: string;
+  disabled: boolean;
+  children: ReactNode;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   const [copied, setCopied] = useState(false);
   const open = () => ref.current?.showModal();
@@ -191,7 +217,13 @@ function PrintButton({ title, chips, sub, label, disabled, children }: { title: 
 export function McduPrint() {
   const { ofp } = useOfp();
   return (
-    <PrintButton title="Print MCDU set-up sheet" chips={PAGES} sub="The plan in MCDU page order, ready to type in." label="MCDU set-up sheet" disabled={!ofp?.fpl}>
+    <PrintButton
+      title="Print MCDU set-up sheet"
+      chips={PAGES}
+      sub="The plan in MCDU page order, ready to type in."
+      label="MCDU set-up sheet"
+      disabled={!ofp?.fpl}
+    >
       <McduSheet />
     </PrintButton>
   );
@@ -261,7 +293,13 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, eraInfo?: 
       lines.push(...head(`FCST AT ETA ${clockOf(eta)}`));
       if (f) {
         lines.push(...wrap(`${headline(f.prevailing)}${f.prevailing.category ? ` · ${f.prevailing.category}` : ""}`.toUpperCase(), col("PREVAILING", 14)));
-        for (const g of f.temporary) lines.push(...wrap(`${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(), col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14)));
+        for (const g of f.temporary)
+          lines.push(
+            ...wrap(
+              `${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(),
+              col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14),
+            ),
+          );
       } else lines.push("ETA OUTSIDE THE TAF VALIDITY");
     }
     if (wx?.metar) lines.push(...head("METAR"), ...wrap(`${icao} ${wx.metar}`, "", 52, 0));
@@ -300,7 +338,8 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, eraInfo?: 
   if (over != null && over > 0) {
     const mins = h.avgFf ? Math.round((over / h.avgFf) * 60) : null;
     ret.push(`${col("OVERWEIGHT", 14)}${over.toLocaleString("en-GB")} ${u} ABOVE MLW`);
-    if (mins != null) ret.push(...wrap(`ABOUT ${mins} MIN TO BURN AT THE PLANNED AVG FUEL FLOW (${h.avgFf} ${u}/H), OR LAND OVERWEIGHT PER YOUR PROCEDURES`, col("", 14)));
+    if (mins != null)
+      ret.push(...wrap(`ABOUT ${mins} MIN TO BURN AT THE PLANNED AVG FUEL FLOW (${h.avgFf} ${u}/H), OR LAND OVERWEIGHT PER YOUR PROCEDURES`, col("", 14)));
   } else if (over != null) ret.push(`${col("OVERWEIGHT", 14)}NO, ${(-over).toLocaleString("en-GB")} ${u} BELOW MLW`);
   const mora = ofp.log.find((p) => p.mora)?.mora;
   const sid = routeLegs(ofp.fpl?.items.find((i) => i.item === "15")?.value ?? "", dep, h.arr ?? "").legs[0];
@@ -315,7 +354,13 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, eraInfo?: 
     ret.push(...head(`FCST AT ${clockOf(back)} (OFF + 45 MIN)`));
     if (f) {
       ret.push(...wrap(`${headline(f.prevailing)}${f.prevailing.category ? ` · ${f.prevailing.category}` : ""}`.toUpperCase(), col("PREVAILING", 14)));
-      for (const g of f.temporary) ret.push(...wrap(`${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(), col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14)));
+      for (const g of f.temporary)
+        ret.push(
+          ...wrap(
+            `${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(),
+            col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14),
+          ),
+        );
     } else ret.push("OUTSIDE THE TAF VALIDITY");
   }
   if (depWx?.metar) ret.push(...head("METAR"), ...wrap(`${dep} ${depWx.metar}`, "", 52, 0));
@@ -350,7 +395,13 @@ function altPages(ofp: NonNullable<ReturnType<typeof useOfp>["ofp"]>, eraInfo?: 
       const f = eraInfo.forecast;
       eraPage.push(...head(`FCST AT ${when.clock} (ABEAM)`));
       eraPage.push(...wrap(`${headline(f.prevailing)}${f.prevailing.category ? ` · ${f.prevailing.category}` : ""}`.toUpperCase(), col("PREVAILING", 14)));
-      for (const g of f.temporary) eraPage.push(...wrap(`${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(), col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14)));
+      for (const g of f.temporary)
+        eraPage.push(
+          ...wrap(
+            `${headline(g.cond)}${g.cond.category ? ` · ${g.cond.category}` : ""}`.toUpperCase(),
+            col(g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : "TEMPO", 14),
+          ),
+        );
     }
     if (era.wx.metar) eraPage.push(...head("METAR"), ...wrap(`${era.icao} ${era.wx.metar}`, "", 52, 0));
     const nGroups = ofp.notams.groups.filter((g) => /ENROUTE AIRPORT/i.test(g.section) && g.location?.startsWith(era.icao));
@@ -372,7 +423,10 @@ function AltSheet() {
       {pages.map((lines, i) => (
         <div key={i} className={`rx-page${i > 0 ? " zz-top" : ""}${i < pages.length - 1 ? " zz-bottom" : ""}`}>
           {/* keep printing on from where the previous page stopped */}
-          {printout(lines, pages.slice(0, i).reduce((n, pg) => n + pg.length, 0))}
+          {printout(
+            lines,
+            pages.slice(0, i).reduce((n, pg) => n + pg.length, 0),
+          )}
         </div>
       ))}
     </div>

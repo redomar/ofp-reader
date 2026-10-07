@@ -200,35 +200,37 @@ export function Toc({
       <PageTabs links={links} />
       {!pending && (
         <>
-      <div className="toc-card">
-        <div className="toc-top">
-          <p className="toc-title">Contents</p>
-          <span className="toc-pos" aria-label={`Section ${at + 1} of ${sections.length}`}>
-            {String(at + 1).padStart(2, "0")} / {sections.length}
-          </span>
-        </div>
-        {groups ? (
-          groups.map(([g, ids]) => (
-            <div key={g}>
-              <p className="toc-grp">
-                <span>{g}</span>
-                <b>{ids.length}</b>
-              </p>
-              <ol>{ids.filter((id) => index.has(id)).map(item)}</ol>
+          <div className="toc-card">
+            <div className="toc-top">
+              <p className="toc-title">Contents</p>
+              <span className="toc-pos" aria-label={`Section ${at + 1} of ${sections.length}`}>
+                {String(at + 1).padStart(2, "0")} / {sections.length}
+              </span>
             </div>
-          ))
-        ) : (
-          <ol>{sections.map(([id]) => item(id))}</ol>
-        )}
-      </div>
-      {/* attached under the card; the box is there from the first paint so nothing shifts when the button appears */}
-      <div className="toc-foot-box">{ready ? <CollapseAllButton ids={sectionIds} className="toc-all" /> : <span className="toc-all" aria-hidden="true" />}</div>
-      {saved && saved.size > 0 && (
-        <p className="toc-legend">
-          <span className="toc-dot" aria-hidden="true" />
-          has saved entries
-        </p>
-      )}
+            {groups ? (
+              groups.map(([g, ids]) => (
+                <div key={g}>
+                  <p className="toc-grp">
+                    <span>{g}</span>
+                    <b>{ids.length}</b>
+                  </p>
+                  <ol>{ids.filter((id) => index.has(id)).map(item)}</ol>
+                </div>
+              ))
+            ) : (
+              <ol>{sections.map(([id]) => item(id))}</ol>
+            )}
+          </div>
+          {/* attached under the card; the box is there from the first paint so nothing shifts when the button appears */}
+          <div className="toc-foot-box">
+            {ready ? <CollapseAllButton ids={sectionIds} className="toc-all" /> : <span className="toc-all" aria-hidden="true" />}
+          </div>
+          {saved && saved.size > 0 && (
+            <p className="toc-legend">
+              <span className="toc-dot" aria-hidden="true" />
+              has saved entries
+            </p>
+          )}
         </>
       )}
       {footer && <div className="toc-foot">{footer}</div>}

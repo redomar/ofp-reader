@@ -26,13 +26,7 @@ export function Tip({
   if (!tip) return <span className={className}>{children}</span>;
   return (
     <>
-      <span
-        className={cx("tip", plain && "tip-plain", className)}
-        tabIndex={0}
-        data-tip={tip}
-        data-tip-title={title}
-        aria-describedby={id}
-      >
+      <span className={cx("tip", plain && "tip-plain", className)} tabIndex={0} data-tip={tip} data-tip-title={title} aria-describedby={id}>
         {children}
       </span>
       <span id={id} hidden>
@@ -94,19 +88,7 @@ export function Field({
  * no caret on it (the Contents rail shows state). Collapsed bodies use
  * hidden="until-found", so the browser's find-in-page still reaches and reopens them.
  */
-export function Section({
-  id,
-  no,
-  title,
-  meta,
-  children,
-}: {
-  id: string;
-  no: number;
-  title: string;
-  meta?: ReactNode;
-  children: ReactNode;
-}) {
+export function Section({ id, no, title, meta, children }: { id: string; no: number; title: string; meta?: ReactNode; children: ReactNode }) {
   const { isCollapsed, toggle, open } = useCollapse();
   const collapsed = isCollapsed(id);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -192,16 +174,16 @@ export function Gauge({
         <span style={{ fontFamily: "var(--font-cond)", fontWeight: 600, letterSpacing: "0.06em" }}>{label}</span>
       </Tip>
       <Replay>
-      <div
-        className="gauge-track"
-        role="meter"
-        aria-label={`${label} against maximum`}
-        aria-valuemin={0}
-        aria-valuemax={max ?? 100}
-        aria-valuenow={value ?? 0}
-      >
-        <span className={cx("gauge-fill a-grow-x", cls)} style={{ width: `${p}%` }} />
-      </div>
+        <div
+          className="gauge-track"
+          role="meter"
+          aria-label={`${label} against maximum`}
+          aria-valuemin={0}
+          aria-valuemax={max ?? 100}
+          aria-valuenow={value ?? 0}
+        >
+          <span className={cx("gauge-fill a-grow-x", cls)} style={{ width: `${p}%` }} />
+        </div>
       </Replay>
       <span>{display}</span>
     </div>
@@ -224,9 +206,7 @@ export function Act({
   placeholder?: string;
   inputMode?: "numeric" | "decimal" | "text";
 }) {
-  return (
-    <ActInput label={label} value={value} onChange={onChange} w={w} placeholder={placeholder} inputMode={inputMode} />
-  );
+  return <ActInput label={label} value={value} onChange={onChange} w={w} placeholder={placeholder} inputMode={inputMode} />;
 }
 
 /**
@@ -276,7 +256,13 @@ export function ActQuick({
         }}
       />
       {offering || (always && offer) ? (
-        <button type="button" className="act-btn" aria-label={`${offerLabel ?? "Use"} ${offer}`} data-tip={`${offerLabel ?? "Use"} ${offer}`} onClick={() => p.onChange(offer!)}>
+        <button
+          type="button"
+          className="act-btn"
+          aria-label={`${offerLabel ?? "Use"} ${offer}`}
+          data-tip={`${offerLabel ?? "Use"} ${offer}`}
+          onClick={() => p.onChange(offer!)}
+        >
           {offerIcon ?? "✓"}
         </button>
       ) : (

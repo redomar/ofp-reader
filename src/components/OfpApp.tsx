@@ -89,7 +89,11 @@ function ExampleChips({ onPick }: { onPick: (url: string) => void }) {
       <span>Try:</span>
       {EXAMPLES.map((u) => (
         <button key={u} type="button" className="chip-btn" onClick={() => onPick(u)}>
-          {u.split("/").pop()!.slice(0, 8).replace(/(....)(....)/, "$1→$2")}
+          {u
+            .split("/")
+            .pop()!
+            .slice(0, 8)
+            .replace(/(....)(....)/, "$1→$2")}
         </button>
       ))}
     </>
@@ -105,7 +109,6 @@ type Status =
 /** Where the PDF bytes came from: SimBrief, the browser's saved copy, or a local file. */
 type Origin = "network" | "saved" | "upload";
 type Source = { data: ArrayBuffer; origin: Origin };
-
 
 /*
  * Scroll restoration is manual: Chrome restores by re-pinning the element that was at
@@ -423,148 +426,148 @@ export function OfpApp() {
     <OfpContext.Provider value={ctx}>
       <FormContext.Provider value={form}>
         <CollapseProvider>
-      <a href="#main" className="skip">
-        Skip to flight plan
-      </a>
-      <header className="topbar">
-        <div className="topbar-inner">
-          {/* fixed-width label, so the paste box beside it doesn't move when the plan's flight appears */}
-          <Brand sub={<span className="brand-flight">{h?.flightNo ? `· ${h.flightNo} ${h.dep}–${h.arr}` : "· SimBrief"}</span>} />
-          <form className="loader" onSubmit={onSubmit} aria-label="Load a flight plan">
-            <label htmlFor="ofp-url" className="sr-only">
-              SimBrief PDF link
-            </label>
-            <input
-              id="ofp-url"
-              type="url"
-              inputMode="url"
-              placeholder="Paste a SimBrief PDF link…"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button className="btn btn-primary" type="submit" disabled={busy || !url.trim()}>
-              Load
-            </button>
-            <button className="btn" type="button" onClick={() => fileRef.current?.click()} disabled={busy}>
-              <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M8 11V2M4 6l4-4 4 4M2 11v3h12v-3" fill="none" stroke="currentColor" strokeWidth="1.8" />
-              </svg>
-              Upload
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/pdf,.pdf"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) loadFile(f);
-                e.target.value = "";
-              }}
-            />
-          </form>
-          <CollapseAllButton ids={SECTIONS.map(([id]) => id)} className="btn status-all" />
-          <SettingsLink />
-          <ThemeToggle />
-        </div>
-        <div className="status" role="status" aria-live="polite">
-          {/* empty until we know whether a plan is opening, so the chips don't flash before the loading bar */}
-          {status.kind === "idle" && booted && (
-            <div className="examples">
-              {recent.length > 0 && (
+          <a href="#main" className="skip">
+            Skip to flight plan
+          </a>
+          <header className="topbar">
+            <div className="topbar-inner">
+              {/* fixed-width label, so the paste box beside it doesn't move when the plan's flight appears */}
+              <Brand sub={<span className="brand-flight">{h?.flightNo ? `· ${h.flightNo} ${h.dep}–${h.arr}` : "· SimBrief"}</span>} />
+              <form className="loader" onSubmit={onSubmit} aria-label="Load a flight plan">
+                <label htmlFor="ofp-url" className="sr-only">
+                  SimBrief PDF link
+                </label>
+                <input
+                  id="ofp-url"
+                  type="url"
+                  inputMode="url"
+                  placeholder="Paste a SimBrief PDF link…"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <button className="btn btn-primary" type="submit" disabled={busy || !url.trim()}>
+                  Load
+                </button>
+                <button className="btn" type="button" onClick={() => fileRef.current?.click()} disabled={busy}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M8 11V2M4 6l4-4 4 4M2 11v3h12v-3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                  </svg>
+                  Upload
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) loadFile(f);
+                    e.target.value = "";
+                  }}
+                />
+              </form>
+              <CollapseAllButton ids={SECTIONS.map(([id]) => id)} className="btn status-all" />
+              <SettingsLink />
+              <ThemeToggle />
+            </div>
+            <div className="status" role="status" aria-live="polite">
+              {/* empty until we know whether a plan is opening, so the chips don't flash before the loading bar */}
+              {status.kind === "idle" && booted && (
+                <div className="examples">
+                  {recent.length > 0 && (
+                    <>
+                      <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
+                      <span className="examples-sep" aria-hidden="true" />
+                    </>
+                  )}
+                  <span className="muted">Paste a SimBrief link, upload, or drop a PDF anywhere</span>
+                </div>
+              )}
+              {status.kind === "busy" && (
                 <>
-                  <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
-                  <span className="examples-sep" aria-hidden="true" />
+                  <span>{progressText(status.progress)}</span>
+                  <div className="status-bar" aria-hidden="true">
+                    <span style={{ width: `${progressPct(status.progress)}%` }} />
+                  </div>
                 </>
               )}
-              <span className="muted">Paste a SimBrief link, upload, or drop a PDF anywhere</span>
-            </div>
-          )}
-          {status.kind === "busy" && (
-            <>
-              <span>{progressText(status.progress)}</span>
-              <div className="status-bar" aria-hidden="true">
-                <span style={{ width: `${progressPct(status.progress)}%` }} />
-              </div>
-            </>
-          )}
-          {status.kind === "error" && (
-            <div className="examples">
-              <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
-              <span className="status-err">⚠ {status.message}</span>
-            </div>
-          )}
-          {status.kind === "ready" && ofp && (
-            <div className="examples">
-              <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
-              <span className="examples-sep" aria-hidden="true" />
-              <span>
-                <span className="mono">{status.label}</span> · {ofp.pageCount} pages
-              </span>
-              {status.origin === "saved" && status.sourceUrl && (
-                <button
-                  type="button"
-                  className="chip-btn"
-                  onClick={() => loadUrl(status.sourceUrl!, true)}
-                  data-tip="Fetch this plan from SimBrief again instead of using the copy saved in this browser — use it if the plan was re-issued."
-                  data-tip-title="Re-download"
-                >
-                  Re-download
-                </button>
+              {status.kind === "error" && (
+                <div className="examples">
+                  <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
+                  <span className="status-err">⚠ {status.message}</span>
+                </div>
               )}
-              {!status.saving && <span className="status-err">Browser storage unavailable — entries won&apos;t be kept</span>}
+              {status.kind === "ready" && ofp && (
+                <div className="examples">
+                  <PlanChips onBlank={reset} onNew={() => document.getElementById("ofp-url")?.focus()} />
+                  <span className="examples-sep" aria-hidden="true" />
+                  <span>
+                    <span className="mono">{status.label}</span> · {ofp.pageCount} pages
+                  </span>
+                  {status.origin === "saved" && status.sourceUrl && (
+                    <button
+                      type="button"
+                      className="chip-btn"
+                      onClick={() => loadUrl(status.sourceUrl!, true)}
+                      data-tip="Fetch this plan from SimBrief again instead of using the copy saved in this browser — use it if the plan was re-issued."
+                      data-tip-title="Re-download"
+                    >
+                      Re-download
+                    </button>
+                  )}
+                  {!status.saving && <span className="status-err">Browser storage unavailable — entries won&apos;t be kept</span>}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </header>
+          </header>
 
-      <div className="layout">
-        <Toc
-          sections={SECTIONS}
-          groups={GROUPS}
-          saved={savedSections}
-          links={{ radio: `/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}` }}
-        />
-        <main id="main" className={ofp ? "is-filled" : ""} key={ofp?.source ?? "empty"} aria-busy={busy}>
-          {!ofp && booted && !busy && (
-            <div className="hello">
-              <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
-                <rect x="8" y="4" width="40" height="48" fill="none" stroke="currentColor" strokeWidth="2" />
-                <path d="M16 16h24M16 24h24M16 32h14" stroke="currentColor" strokeWidth="2" />
-              </svg>
-              <div>
-                <h1>Blank flight plan</h1>
-                <p>
-                  Paste a SimBrief OFP PDF link or upload the file. It is read and decoded entirely in this browser tab — the form below fills in
-                  as the plan is decoded. Hover or focus any underlined label for an explanation.
-                </p>
-              </div>
+          <div className="layout">
+            <Toc
+              sections={SECTIONS}
+              groups={GROUPS}
+              saved={savedSections}
+              links={{ radio: `/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}` }}
+            />
+            <main id="main" className={ofp ? "is-filled" : ""} key={ofp?.source ?? "empty"} aria-busy={busy}>
+              {!ofp && booted && !busy && (
+                <div className="hello">
+                  <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+                    <rect x="8" y="4" width="40" height="48" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <path d="M16 16h24M16 24h24M16 32h14" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                  <div>
+                    <h1>Blank flight plan</h1>
+                    <p>
+                      Paste a SimBrief OFP PDF link or upload the file. It is read and decoded entirely in this browser tab — the form below fills in as the
+                      plan is decoded. Hover or focus any underlined label for an explanation.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <SummarySection no={1} />
+              <FuelSection no={2} />
+              <RouteSection no={3} />
+              <TimesWeightsSection no={4} />
+              <FlightLogSection no={5} />
+              <WindsSection no={6} />
+              <FplSection no={7} />
+              <AdditionalSection no={8} />
+              <TlrSection no={9} />
+              <WxSection no={10} />
+              <NotamSection no={11} id="notam" title="NOTAM" which="notams" />
+              <NotamSection no={12} id="company" title="Company NOTAM" which="companyNotams" />
+              <ChartsSection no={13} />
+              <SourceSection no={14} />
+            </main>
+          </div>
+          {dragging && (
+            <div className="drop" aria-hidden="true">
+              <div>Drop OFP PDF</div>
             </div>
           )}
-          <SummarySection no={1} />
-          <FuelSection no={2} />
-          <RouteSection no={3} />
-          <TimesWeightsSection no={4} />
-          <FlightLogSection no={5} />
-          <WindsSection no={6} />
-          <FplSection no={7} />
-          <AdditionalSection no={8} />
-          <TlrSection no={9} />
-          <WxSection no={10} />
-          <NotamSection no={11} id="notam" title="NOTAM" which="notams" />
-          <NotamSection no={12} id="company" title="Company NOTAM" which="companyNotams" />
-          <ChartsSection no={13} />
-          <SourceSection no={14} />
-        </main>
-      </div>
-      {dragging && (
-        <div className="drop" aria-hidden="true">
-          <div>Drop OFP PDF</div>
-        </div>
-      )}
-      <TooltipLayer />
+          <TooltipLayer />
         </CollapseProvider>
       </FormContext.Provider>
     </OfpContext.Provider>
