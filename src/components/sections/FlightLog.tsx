@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { useField, useFieldGroup, useOfp } from "../context";
 import { useEra } from "../EraLine";
 import { Replay } from "../replay";
@@ -10,7 +10,8 @@ import { clockDiff, fmtHhmm, hhmmToMin, pageOf, parseTemp, signed } from "@/lib/
 import type { LogPoint } from "@/lib/ofp/types";
 import { picExtraModel, type PicExtraModel } from "@/lib/ofp/picExtra";
 import { outlinePath, ringsPath, useOutlines } from "@/lib/outlines";
-import { useFirMode, useMapStyle } from "@/lib/mapPref";
+import { useFirMode, useMapStyle, type FirMode, type MapStyle } from "@/lib/mapPref";
+import { LAND_LEVELS, SEA_LEVELS, bandPath, tileKeys, useTerrain } from "@/lib/terrain";
 import { setHighlightedSigmet, useHighlightedSigmet, useSigmets, type SigmetOnRoute } from "../useSigmets";
 import type { Area } from "@/lib/wx/sigmet";
 
@@ -354,6 +355,18 @@ function RouteMapView({
   const py = (lat: number) => H / 2 - (lat - cLat) * s;
   // Everything the map shows, in degrees.
   const view = { lon0: cLon - MW / 2 / (k * s), lon1: cLon + MW / 2 / (k * s), lat0: cLat - H / 2 / s, lat1: cLat + H / 2 / s };
+  // Elevation style: height and depth bands for the tiles in view, drawn in degrees and placed with
+  // one transform, so panning and zooming don't rebuild them.
+  const terrain = useTerrain(style === "relief" ? tileKeys(view.lon0 - 5, view.lat0 - 5, view.lon1 + 5, view.lat1 + 5) : null);
+  const terrainPaths = useMemo(
+    () => (terrain ? { depths: terrain.depths.map((b) => bandPath(b.rings)), heights: terrain.heights.map((b) => bandPath(b.rings)) } : null),
+    [terrain],
+  );
+  const degToView = `translate(${(MW / 2 - cLon * k * s).toFixed(2)} ${(H / 2 + cLat * s).toFixed(2)}) scale(${(k * s).toFixed(4)} ${s.toFixed(4)})`;
+  // Scale bar: a round number of NM about 90 units long (1 NM = 1′ of latitude).
+  const nmPx = s / 60;
+  const scaleNm = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000].reduce((b, n) => (Math.abs(n * nmPx - 90) < Math.abs(b * nmPx - 90) ? n : b), 1);
+  const scaleW = scaleNm * nmPx;
   const spanDeg = Math.max(view.lon1 - view.lon0, view.lat1 - view.lat0);
   const step = spanDeg > 30 ? 5 : spanDeg > 14 ? 2 : spanDeg > 5 ? 1 : 0.5;
   const gLon: number[] = [];
@@ -571,11 +584,6 @@ function RouteMapView({
       >
         <rect x={0} y={0} width={MW} height={H} className="map-sea" />
         <defs>
-          <clipPath id="map-land-clip">
-            {land.map(({ c, d }) => (
-              <path key={c.name} d={d} />
-            ))}
-          </clipPath>
           <pattern id="sig-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <line x1="0" y1="0" x2="0" y2="8" className="sig-hatch-line" />
           </pattern>
@@ -585,21 +593,22 @@ function RouteMapView({
             </clipPath>
           ))}
         </defs>
+        {terrainPaths && (
+          <g transform={degToView} className="map-terrain">
+            {terrainPaths.depths.map((d, n) => (
+              <path key={n} d={d} className={`map-depth d${n}`} vectorEffect="non-scaling-stroke" />
+            ))}
+          </g>
+        )}
         {land.map(({ c, d }) => (
           <path key={c.name} d={d} className={`map-land t${style === "plain" ? c.tone : 0}`} />
         ))}
-        {style === "relief" && (
-          // equirectangular raster: lon and lat map linearly to x and y, like this projection
-          <image
-            href="/geo/relief.jpg"
-            x={px(-180)}
-            y={py(90)}
-            width={px(180) - px(-180)}
-            height={py(-90) - py(90)}
-            preserveAspectRatio="none"
-            clipPath="url(#map-land-clip)"
-            className="map-relief"
-          />
+        {terrainPaths && (
+          <g transform={degToView} className="map-terrain">
+            {terrainPaths.heights.map((d, n) => (
+              <path key={n} d={d} className={`map-height h${n}`} vectorEffect="non-scaling-stroke" />
+            ))}
+          </g>
         )}
         {borders && <path d={borders} className="map-border" />}
         {coast && <path d={coast} className="map-coast" />}
@@ -730,6 +739,19 @@ function RouteMapView({
             </g>
           );
         })}
+        {/* distance scale, bottom right above the longitude labels */}
+        <g
+          className="map-scale"
+          transform={`translate(${(MW - 14 - scaleW).toFixed(1)} ${H - 26})`}
+          data-tip={`${scaleNm} nautical miles at this zoom (1 NM = 1′ of latitude). Longitude lines get closer away from the equator, so measure along the route, not across the grid.`}
+          data-tip-title="Scale"
+        >
+          <rect x={-6} y={-15} width={scaleW + 12} height={22} className="map-scale-bg" />
+          <path d={`M0 -4 V2 H${scaleW.toFixed(1)} V-4 M${(scaleW / 2).toFixed(1)} 2 V-1`} className="map-scale-bar" />
+          <text x={scaleW / 2} y={-6} textAnchor="middle" className="map-scale-label">
+            {scaleNm} NM
+          </text>
+        </g>
       </svg>
       <div className="map-levels" role="group" aria-label="Zoom level">
         {MAP_LEVELS.map(([label, z]) => (
@@ -817,6 +839,8 @@ export function FlightLogSection({ no }: { no: number }) {
   const pic = useMemo(() => (ofp && picKg > 0 && picOn === "on" ? picExtraModel(ofp, picKg) : null), [ofp, picKg, picOn]);
   const unitShort = ofp?.header.unit === "LBS" ? "lb" : "kg";
 
+  const [mapStyle] = useMapStyle();
+  const [firMode] = useFirMode();
   const sigmets = useSigmets();
   const [sigHidden, setSigHidden] = useField("log.hideSigmets", "Flight log", "Hide SIGMET areas on the route map");
   const drawable = sigmets.list.filter((x) => x.s.area.kind === "polygon" || x.s.area.kind === "bounds");
@@ -972,7 +996,7 @@ export function FlightLogSection({ no }: { no: number }) {
             )}
           </div>
         </div>
-        <div>
+        <div className="wp-col">
           <Sub>Waypoint</Sub>
           <div className="wp-card">
             <div className="wp-name" aria-live="polite">
@@ -993,6 +1017,7 @@ export function FlightLogSection({ no }: { no: number }) {
                 : "Waypoint details appear here once a plan is loaded."}
             </p>
           </div>
+          {pts.length > 0 && <MapKey style={mapStyle} fir={firMode} era={!!(eraInfo.era && eraInfo.coord)} sigs={sigsShown.some((x) => x.impact.lateral)} />}
         </div>
       </div>
       {firs.length > 0 && (
@@ -1361,5 +1386,82 @@ function EmptyChart({ label }: { label: string }) {
         {label} draws here once a plan is loaded
       </text>
     </svg>
+  );
+}
+
+/**
+ * The route map's key, under the waypoint card and level with the map's bottom edge: the symbols
+ * the map is showing, and the height / depth tints for the Elevation style.
+ */
+function MapKey({ style, fir, era, sigs }: { style: MapStyle; fir: FirMode; era: boolean; sigs: boolean }) {
+  const sym = (d: ReactNode) => (
+    <svg width="26" height="14" viewBox="0 0 26 14" aria-hidden="true">
+      {d}
+    </svg>
+  );
+  const items: [ReactNode, string][] = [
+    [sym(<path d="M1 7 H25" stroke="var(--magenta)" strokeWidth="2.5" />), "Route"],
+    [sym(<path d="M13 2.5 L17.5 11 L8.5 11 Z" fill="var(--sheet)" stroke="var(--ink)" strokeWidth="1.5" />), "Waypoint"],
+    [
+      sym(
+        <>
+          <circle cx="7" cy="7" r="4.5" fill="var(--sheet)" stroke="var(--ink)" strokeWidth="1.6" />
+          <circle cx="19" cy="7" r="4.5" fill="var(--ink)" stroke="var(--ink)" strokeWidth="1.6" />
+        </>,
+      ),
+      "Departure · arrival",
+    ],
+  ];
+  if (fir !== "off")
+    items.push([
+      sym(
+        <>
+          <path d="M1 10 H25" stroke="var(--ink-2)" strokeWidth="1.5" strokeDasharray="4 3" />
+          {fir === "marks" ? (
+            <path d="M13 2 V13" stroke="var(--ink-2)" strokeWidth="2" />
+          ) : (
+            <circle cx="13" cy="10" r="3" fill="var(--sheet)" stroke="var(--ink-2)" strokeWidth="1.4" />
+          )}
+        </>,
+      ),
+      fir === "marks" ? "FIR / UIR, boundary" : "FIR / UIR, crossing",
+    ]);
+  if (era) items.push([sym(<path d="M13 1.5 l5.5 5.5 l-5.5 5.5 l-5.5 -5.5 Z" className="map-era-mark" strokeWidth="1.5" />), "Fuel ERA"]);
+  if (sigs)
+    items.push([
+      sym(<rect x="3" y="2" width="20" height="10" fill="color-mix(in srgb, var(--red) 12%, transparent)" stroke="var(--red)" strokeWidth="1.5" />),
+      "SIGMET / AIRMET",
+    ]);
+  return (
+    <div className="map-key" aria-label="Map key">
+      <ul>
+        {items.map(([icon, label]) => (
+          <li key={label}>
+            {icon}
+            {label}
+          </li>
+        ))}
+      </ul>
+      {style === "relief" && (
+        <div className="map-key-tints">
+          <span className="map-key-k">Height m</span>
+          <span className="map-key-ramp">
+            {LAND_LEVELS.map((v, i) => (
+              <span key={v} className={`h${i}`} title={`${v} m and above`}>
+                {v >= 1000 ? `${v / 1000}k` : v}
+              </span>
+            ))}
+          </span>
+          <span className="map-key-k">Depth m</span>
+          <span className="map-key-ramp">
+            {SEA_LEVELS.map((v, i) => (
+              <span key={v} className={`d${i}`} title={`Deeper than ${v} m`}>
+                {v >= 1000 ? `${v / 1000}k` : v}
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
