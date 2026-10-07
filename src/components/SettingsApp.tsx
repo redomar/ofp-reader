@@ -140,17 +140,16 @@ function MapIcon({ style }: { style: MapStyle }) {
       <path d="M0 14 C18 10 30 18 44 12 L62 8 L62 44 L0 44 Z" fill="var(--map-land)" />
       <path d="M62 8 L84 6 C98 10 108 4 120 8 L120 44 L62 44 Z" fill={style === "plain" ? "var(--map-land-1)" : "var(--map-land)"} />
       {style === "relief" && (
-        // the earlier mountains, now as the Elevation style draws them: height bands with contour lines
+        // two mountain ranges in the Elevation style's lowest height band, either side of the border
         <g stroke="var(--map-contour)" strokeWidth="0.7" strokeLinejoin="round" vectorEffect="non-scaling-stroke">
           <path d="M0 14 C18 10 30 18 44 12 L62 8 L84 6 C98 10 108 4 120 8 L120 44 L0 44 Z" fill="var(--map-land-low)" stroke="none" />
-          <g transform="translate(0 44) scale(1 1.6) translate(0 -44)">
-            <path d="M58 44 L64 39 L69 40.5 L78 30.5 L85 36.5 L91 32 L100 39.5 L107 35.5 L119 44 Z" fill="var(--map-h1)" />
-            <path d="M68 44 L73 41.5 L78 35 L83 39 L91 35.5 L98 41.5 L103 44 Z" fill="var(--map-h3)" />
-            <path d="M75.5 38.5 L78 35 L80.5 37.5 Z M88.5 37.5 L91 35.5 L93.5 38 Z" fill="var(--map-h5)" strokeWidth="0.9" />
-            <path d="M78 30.5 L85 36.5 L82 38.5 Z M91 32 L100 39.5 L96.5 40.5 Z M107 35.5 L119 44 L113 44 Z" fill="var(--ink)" opacity="0.16" stroke="none" />
-            <path d="M20 44 L28 37.5 L33 40.5 L38 38.5 L47 44 Z" fill="var(--map-h1)" />
-            <path d="M25 44 L28 40.5 L32 44 Z" fill="var(--map-h3)" />
-            <path d="M28 37.5 L33 40.5 L31 42 Z" fill="var(--ink)" opacity="0.16" stroke="none" />
+          <g transform="translate(90 23) scale(1.15) translate(-90 -21)">
+            <path d="M66 21 L72 15 L77 18 L83 10 L90 16.5 L97 12 L106 18.5 L114 21 C100 22.5 80 22.5 66 21 Z" fill="var(--map-h1)" />
+            <path d="M83 10 L90 16.5 L87 18 Z M97 12 L106 18.5 L102.5 19.5 Z" fill="var(--ink)" opacity="0.16" stroke="none" />
+          </g>
+          <g transform="translate(90 24) scale(1.15) translate(-90 -21)">
+            <path d="M14 28 L21 21 L26 24 L31 19.5 L39 25.5 C30 27 22 28.5 14 28 Z" fill="var(--map-h1)" />
+            <path d="M21 21 L26 24 L24 25 Z M31 19.5 L39 25.5 L36 26 Z" fill="var(--ink)" opacity="0.16" stroke="none" />
           </g>
         </g>
       )}
