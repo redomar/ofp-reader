@@ -12,7 +12,7 @@ export const MAP_STYLES: { value: MapStyle; label: string; desc: string }[] = [
   {
     value: "relief",
     label: "Elevation",
-    desc: "Contours plus height bands on land and depth bands at sea, with a key (only the area around the route is downloaded)",
+    desc: "Contours plus height bands on land and depth bands at sea",
   },
 ];
 
