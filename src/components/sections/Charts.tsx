@@ -61,7 +61,15 @@ export function ChartsSection({ no }: { no: number }) {
         {list.map((p, i) => {
           const img = p ? imgs[p] : undefined;
           return (
-            <button key={p || `ph${i}`} type="button" className="thumb a-rise" style={{ ["--i" as string]: i }} disabled={!img} onClick={() => img && setOpen(img)} aria-label={p ? `Open chart on PDF page ${p}` : "Chart placeholder"}>
+            <button
+              key={p || `ph${i}`}
+              type="button"
+              className="thumb a-rise"
+              style={{ ["--i" as string]: i }}
+              disabled={!img}
+              onClick={() => img && setOpen(img)}
+              aria-label={p ? `Open chart on PDF page ${p}` : "Chart placeholder"}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element -- local blob URL */}
               {img ? <img src={img.url} alt={`Chart, PDF page ${p}`} /> : <div className="ph">{p ? "rendering…" : "chart"}</div>}
               <figcaption>{p ? `Chart ${i + 1} · p.${p}` : `Chart ${i + 1}`}</figcaption>

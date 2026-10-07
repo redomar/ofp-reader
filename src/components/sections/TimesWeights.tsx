@@ -88,7 +88,12 @@ export function TimesWeightsSection({ no }: { no: number }) {
                 <span className="field-label" style={{ margin: 0 }}>
                   {k === "stby" ? "STBY" : k.toUpperCase()}
                 </span>
-                <Act label={`${k} altimeter reading in feet`} value={rvsm[k]} onChange={(v) => rv.put(k, `RVSM ${k === "stby" ? "STBY" : k.toUpperCase()} altimeter`, v.replace(/\D/g, ""))} w={5} />
+                <Act
+                  label={`${k} altimeter reading in feet`}
+                  value={rvsm[k]}
+                  onChange={(v) => rv.put(k, `RVSM ${k === "stby" ? "STBY" : k.toUpperCase()} altimeter`, v.replace(/\D/g, ""))}
+                  w={5}
+                />
               </label>
             ))}
           </div>
@@ -131,7 +136,7 @@ export function TimesWeightsSection({ no }: { no: number }) {
             {TIME_ROWS.map((l) => {
               const r = t(l);
               const block = l === "BLOCK TIME";
-              const e = block ? r?.est ?? null : est(l);
+              const e = block ? (r?.est ?? null) : est(l);
               const d = !block && act(l) && e ? signedClock(e, act(l)!) : null;
               return (
                 <tr key={l} className={block ? "total" : undefined}>
@@ -183,7 +188,16 @@ export function TimesWeightsSection({ no }: { no: number }) {
           </Field>
         ))}
         <Field label="vs schedule" tip="Estimated block time compared with the airline schedule">
-          <V v={blockEst != null && blockSked != null ? (blockEst === blockSked ? "on sked" : `${blockEst < blockSked ? "−" : "+"}${Math.abs(blockEst - blockSked)} min`) : null} w={6} />
+          <V
+            v={
+              blockEst != null && blockSked != null
+                ? blockEst === blockSked
+                  ? "on sked"
+                  : `${blockEst < blockSked ? "−" : "+"}${Math.abs(blockEst - blockSked)} min`
+                : null
+            }
+            w={6}
+          />
         </Field>
         <Field label="Dep local" tip="Departure airport offset from UTC, derived from the Z/L times">
           <V v={fmtOffset(depOff)} w={5} />
@@ -229,7 +243,10 @@ export function TimesWeightsSection({ no }: { no: number }) {
                     </td>
                     <td className="num">
                       {l === "TOW" && towLimitedByLaw && r?.max ? (
-                        <Tip tip={`Take-off weight is limited by the max landing weight: ${lawMax} + trip ${(trip! / 1000).toFixed(1)} t = ${towMax} t`} title="LAW-limited">
+                        <Tip
+                          tip={`Take-off weight is limited by the max landing weight: ${lawMax} + trip ${(trip! / 1000).toFixed(1)} t = ${towMax} t`}
+                          title="LAW-limited"
+                        >
                           {r.max}
                         </Tip>
                       ) : (
@@ -237,7 +254,13 @@ export function TimesWeightsSection({ no }: { no: number }) {
                       )}
                     </td>
                     <td className="num">
-                      <Act label={`Actual ${l}`} value={actW(l)} onChange={(v) => wg.put(l, `Actual ${l}`, v.replace(/[^\d.]/g, ""))} w={5} inputMode="decimal" />
+                      <Act
+                        label={`Actual ${l}`}
+                        value={actW(l)}
+                        onChange={(v) => wg.put(l, `Actual ${l}`, v.replace(/[^\d.]/g, ""))}
+                        w={5}
+                        inputMode="decimal"
+                      />
                     </td>
                     <td className="small">
                       {r?.note === "LDG" ? (
@@ -330,7 +353,7 @@ function Timeline({ phases, est, act }: { phases: Phase[]; est: Clock; act: Cloc
   const t1 = Math.max(...edges);
   const span = Math.max(1, t1 - t0);
   const clockAt = (m: number) => {
-    const v = ((hhmmToMin(origin)! + m) % 1440 + 1440) % 1440;
+    const v = (((hhmmToMin(origin)! + m) % 1440) + 1440) % 1440;
     return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
   };
 
@@ -348,7 +371,15 @@ function Timeline({ phases, est, act }: { phases: Phase[]; est: Clock; act: Cloc
         return (
           <span
             key={s.k}
-            style={{ position: "absolute", top: 0, bottom: 0, left: `${((s.from - t0) / span) * 100}%`, width: `${(m / span) * 100}%`, background: s.color, color: "var(--sheet)" }}
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: `${((s.from - t0) / span) * 100}%`,
+              width: `${(m / span) * 100}%`,
+              background: s.color,
+              color: "var(--sheet)",
+            }}
             data-tip={`${clockAt(s.from)}Z → ${clockAt(s.to)}Z · ${fmtDur(m)}${diff != null && label === "Actual" ? ` · ${diff === 0 ? "as planned" : `${diff > 0 ? "+" : "−"}${Math.abs(diff)} min vs plan`}` : ""}`}
             data-tip-title={`${label} · ${s.k}`}
           >

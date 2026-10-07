@@ -97,7 +97,9 @@ function LiveWxPanel({ onText, suggested }: { onText: (text: string, from: strin
     setStatus({
       ok: !failed.length,
       text: [
-        got.length ? `${got.length} airport${got.length > 1 ? "s" : ""} loaded${cached.length ? ` (${cached.map((c) => `${c.icao} cached ${Math.round((Date.now() - c.at) / 1000)} s ago`).join(", ")})` : ""}` : "",
+        got.length
+          ? `${got.length} airport${got.length > 1 ? "s" : ""} loaded${cached.length ? ` (${cached.map((c) => `${c.icao} cached ${Math.round((Date.now() - c.at) / 1000)} s ago`).join(", ")})` : ""}`
+          : "",
         ...failed,
       ]
         .filter(Boolean)
@@ -109,7 +111,9 @@ function LiveWxPanel({ onText, suggested }: { onText: (text: string, from: strin
     <details className="live-wx" open={!!token}>
       <summary>Live weather from SimBrief</summary>
       <p className="small muted" style={{ margin: "6px 0 10px" }}>
-        Uses your own sign-in token from dispatch.simbrief.com (DevTools → Network → an <code>api.simbrief.com</code> request → the <code>Authorization</code> header, the part after “Bearer”). It lasts about an hour, stays in this {remember ? "browser" : "tab"} and is only sent to api.simbrief.com. Results are kept for 1 minute.
+        Uses your own sign-in token from dispatch.simbrief.com (DevTools → Network → an <code>api.simbrief.com</code> request → the <code>Authorization</code>{" "}
+        header, the part after “Bearer”). It lasts about an hour, stays in this {remember ? "browser" : "tab"} and is only sent to api.simbrief.com. Results are
+        kept for 1 minute.
       </p>
       <div className="live-wx-row">
         <label className="live-wx-field">

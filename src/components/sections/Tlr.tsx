@@ -39,7 +39,11 @@ function windOf(v?: string | null) {
 
 /** Typed runway → TLR form: "rwy 9" → "09", "32 l" → "32L". */
 const normRwy = (v: string) => {
-  const m = v.toUpperCase().replace(/^RWY\s*/, "").replace(/\s+/g, "").match(/^(\d{1,2})([LRC]?)$/);
+  const m = v
+    .toUpperCase()
+    .replace(/^RWY\s*/, "")
+    .replace(/\s+/g, "")
+    .match(/^(\d{1,2})([LRC]?)$/);
   return m ? m[1].padStart(2, "0") + m[2] : v.toUpperCase().trim();
 };
 
@@ -50,7 +54,15 @@ function vs(v?: string | null) {
   return { shown: v, full: n < 100 ? n + 100 : n };
 }
 
-function WindComp({ w, rwy, source = "the planned (magnetic) wind" }: { w: { dir: number; spd: number } | null; rwy: string | null | undefined; source?: string }) {
+function WindComp({
+  w,
+  rwy,
+  source = "the planned (magnetic) wind",
+}: {
+  w: { dir: number; spd: number } | null;
+  rwy: string | null | undefined;
+  source?: string;
+}) {
   const h = rwyHdg(rwy);
   if (!w || h == null) return null;
   const c = components(w.dir, w.spd, h);
@@ -95,7 +107,10 @@ function PerfTable({
             ))}
             {onActual && (
               <th scope="col" className="rwy-pick">
-                <Tip tip={`The runway you actually ${verb}. Planned stays blue; your pick is green and fills the actual RWY box. Click it again to clear.`} title="Actual">
+                <Tip
+                  tip={`The runway you actually ${verb}. Planned stays blue; your pick is green and fills the actual RWY box. Click it again to clear.`}
+                  title="Actual"
+                >
                   ACT
                 </Tip>
               </th>
@@ -213,11 +228,16 @@ function ActualRunway({
           {same ? "as planned" : `planned ${planned.PRWY}`}
         </Badge>
       )}
-      {!found && <Badge tone="red" tip="This runway isn't in the TLR, so there are no figures for it: check performance separately">not in the analysis</Badge>}
+      {!found && (
+        <Badge tone="red" tip="This runway isn't in the TLR, so there are no figures for it: check performance separately">
+          not in the analysis
+        </Badge>
+      )}
       <WindComp w={w} rwy={rwy} source={actualWind ? `the actual wind ${wind}` : "the planned (magnetic) wind"} />
       {perf && pfRow && (
         <span className="small">
-          <Tip tip={`From ${perf.title}`}>FLEX {col(perf, pfRow, "MT")}°</Tip> · V1/VR/V2 {col(perf, pfRow, "V1")}/{col(perf, pfRow, "VR")}/{col(perf, pfRow, "V2")}
+          <Tip tip={`From ${perf.title}`}>FLEX {col(perf, pfRow, "MT")}°</Tip> · V1/VR/V2 {col(perf, pfRow, "V1")}/{col(perf, pfRow, "VR")}/
+          {col(perf, pfRow, "V2")}
         </span>
       )}
       {maxW != null && (
@@ -232,7 +252,10 @@ function ActualRunway({
       )}
       {cell && (
         <span className="small">
-          <Tip tip={`Max landing weight on ${rwy} at ${cell.oat} °C (${oat ? "nearest to the actual OAT" : "planned OAT"}); F = limited`}>MLW @ {cell.oat}°C</Tip> {cell.value}
+          <Tip tip={`Max landing weight on ${rwy} at ${cell.oat} °C (${oat ? "nearest to the actual OAT" : "planned OAT"}); F = limited`}>
+            MLW @ {cell.oat}°C
+          </Tip>{" "}
+          {cell.value}
         </span>
       )}
       {length && <span className="small">{fmtNum(length)} ft</span>}
@@ -243,7 +266,21 @@ function ActualRunway({
 }
 
 /** Factored landing distance (dry, wet) against runway length, one bar each with the figure inside. */
-function LdgDistance({ title, dry, wet, length, estimate = false, tip }: { title: string; dry: number; wet: number; length: number; estimate?: boolean; tip?: string }) {
+function LdgDistance({
+  title,
+  dry,
+  wet,
+  length,
+  estimate = false,
+  tip,
+}: {
+  title: string;
+  dry: number;
+  wet: number;
+  length: number;
+  estimate?: boolean;
+  tip?: string;
+}) {
   return (
     <>
       <span className="field-label">{tip ? <Tip tip={tip}>{title}</Tip> : title}</span>
@@ -259,7 +296,15 @@ function LdgDistance({ title, dry, wet, length, estimate = false, tip }: { title
         // sheet-coloured (clipped to the fill) where it's over the bar, so it reads at any length.
         return (
           <Replay key={k as string}>
-            <div className={cx("rwybar", estimate && "est")} style={{ ["--fill" as string]: `${fill}%`, ["--barc" as string]: colour }} role="meter" aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`} aria-valuemin={0} aria-valuemax={length} aria-valuenow={d as number}>
+            <div
+              className={cx("rwybar", estimate && "est")}
+              style={{ ["--fill" as string]: `${fill}%`, ["--barc" as string]: colour }}
+              role="meter"
+              aria-label={`${estimate ? "Estimated " : ""}${k} factored distance ${d} of ${length} ft`}
+              aria-valuemin={0}
+              aria-valuemax={length}
+              aria-valuenow={d as number}
+            >
               <span className="rwybar-fill a-grow-x" />
               <span className="rwybar-lbl" aria-hidden="true">
                 {text}
@@ -285,7 +330,10 @@ function ActualRow({ cols, label }: { cols: string[]; label: string }) {
           <tr>
             {cols.map((c) => (
               <th key={c} scope="col">
-                <Tip tip={G[c] ?? (c === "PWR" ? "Thrust setting (FLEX / TOGA)" : c === "CONFIG/CONDITION" ? "Configuration and runway condition" : undefined)} title={c}>
+                <Tip
+                  tip={G[c] ?? (c === "PWR" ? "Thrust setting (FLEX / TOGA)" : c === "CONFIG/CONDITION" ? "Configuration and runway condition" : undefined)}
+                  title={c}
+                >
                   {c}
                 </Tip>
               </th>
@@ -296,7 +344,13 @@ function ActualRow({ cols, label }: { cols: string[]; label: string }) {
           <tr>
             {cols.map((c) => (
               <td key={c}>
-                <Act label={`${label} ${c}`} value={g.get(c)} onChange={(v) => g.put(c, `${label} ${c}`, v)} w={c.includes("CONFIG") ? 12 : c === "WIND" ? 6 : 4} inputMode="text" />
+                <Act
+                  label={`${label} ${c}`}
+                  value={g.get(c)}
+                  onChange={(v) => g.put(c, `${label} ${c}`, v)}
+                  w={c.includes("CONFIG") ? 12 : c === "WIND" ? 6 : 4}
+                  inputMode="text"
+                />
               </td>
             ))}
           </tr>
@@ -333,7 +387,12 @@ function Planned({ p, kind, fallback }: { p: KeyedRow | null; kind: "to" | "ld";
           if (k === "MT" && v) sub = "°C FLEX";
           if (k === "POAT" && v) sub = "°C";
           if (k === "PQNH" && v) sub = "hPa";
-          if (k === "LIMIT" && v) shown = <Badge tone={v === "AFM" ? "ink" : "amber"} tip={LIMIT[v]}>{v}</Badge>;
+          if (k === "LIMIT" && v)
+            shown = (
+              <Badge tone={v === "AFM" ? "ink" : "amber"} tip={LIMIT[v]}>
+                {v}
+              </Badge>
+            );
           return (
             <Field key={k} label={k} tip={G[k]} sub={sub} className={k === "PRWY" ? "field-lg" : undefined}>
               <V v={shown} w={4} />
@@ -380,7 +439,8 @@ export function TlrSection({ no }: { no: number }) {
     const head = w ? components(w.dir, w.spd, h).head : 0;
     const per = dist.rows.find((r) => r[0]?.startsWith(head >= 0 ? "HW" : "TW"));
     const adj = (i: number) => Math.round(Number(plannedDistRow[i]) + (per ? Number(per[i]) * Math.abs(head) : 0));
-    const windNote = !w || head === 0 ? "calm wind" : `${Math.abs(head)} kt ${head > 0 ? "headwind" : "tailwind"} from the ${actualWind ? "actual" : "planned"} wind`;
+    const windNote =
+      !w || head === 0 ? "calm wind" : `${Math.abs(head)} kt ${head > 0 ? "headwind" : "tailwind"} from the ${actualWind ? "actual" : "planned"} wind`;
     return { dry: adj(5), wet: adj(6), length, windNote };
   })();
   const setToRwy = (r: string | null) => toAct.put("RWY", "Takeoff actual RWY", r ?? "");
@@ -401,40 +461,46 @@ export function TlrSection({ no }: { no: number }) {
       <div className="cols" style={{ ["--min" as string]: "300px" }}>
         <div className="stack">
           <Replay>
-          <div className="vspeeds" role="group" aria-label="Planned V-speeds">
-            {(["V1", "VR", "V2"] as const).map((k, i) => {
-              const s = vs(to?.[k]);
-              return (
-                <div className="vspeed a-rise" key={k} style={{ ["--i" as string]: i }}>
-                  <Tip tip={G[k]} title={k} plain>
-                    <span className="k">{k}</span>
-                  </Tip>
-                  <span className="val">
-                    <V v={s.full} w={3} />
-                  </span>
-                  <span className="u">{s.shown && Number(s.shown) < 100 ? <Tip tip={`Printed as "${s.shown}" — the TLR drops the hundreds digit`}>kt · printed {s.shown}</Tip> : "kt"}</span>
-                </div>
-              );
-            })}
-            <div className="vspeed a-rise" style={{ ["--i" as string]: 3 }}>
-              <Tip tip={G.MT} title="FLEX" plain>
-                <span className="k">FLEX</span>
-              </Tip>
-              <span className="val">
-                <V v={to?.MT} w={2} />
-              </span>
-              <span className="u">°C</span>
+            <div className="vspeeds" role="group" aria-label="Planned V-speeds">
+              {(["V1", "VR", "V2"] as const).map((k, i) => {
+                const s = vs(to?.[k]);
+                return (
+                  <div className="vspeed a-rise" key={k} style={{ ["--i" as string]: i }}>
+                    <Tip tip={G[k]} title={k} plain>
+                      <span className="k">{k}</span>
+                    </Tip>
+                    <span className="val">
+                      <V v={s.full} w={3} />
+                    </span>
+                    <span className="u">
+                      {s.shown && Number(s.shown) < 100 ? (
+                        <Tip tip={`Printed as "${s.shown}" — the TLR drops the hundreds digit`}>kt · printed {s.shown}</Tip>
+                      ) : (
+                        "kt"
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+              <div className="vspeed a-rise" style={{ ["--i" as string]: 3 }}>
+                <Tip tip={G.MT} title="FLEX" plain>
+                  <span className="k">FLEX</span>
+                </Tip>
+                <span className="val">
+                  <V v={to?.MT} w={2} />
+                </span>
+                <span className="u">°C</span>
+              </div>
+              <div className="vspeed a-rise" style={{ ["--i" as string]: 4 }}>
+                <Tip tip={G.FLP} title="FLAP" plain>
+                  <span className="k">FLAP</span>
+                </Tip>
+                <span className="val">
+                  <V v={to?.FLP} w={1} />
+                </span>
+                <span className="u">CONF</span>
+              </div>
             </div>
-            <div className="vspeed a-rise" style={{ ["--i" as string]: 4 }}>
-              <Tip tip={G.FLP} title="FLAP" plain>
-                <span className="k">FLAP</span>
-              </Tip>
-              <span className="val">
-                <V v={to?.FLP} w={1} />
-              </span>
-              <span className="u">CONF</span>
-            </div>
-          </div>
           </Replay>
           <Gauge
             label="PTOW"
@@ -471,7 +537,11 @@ export function TlrSection({ no }: { no: number }) {
               </button>
             ))}
           </div>
-          {toPerf[perfIdx] ? <PerfTable t={toPerf[perfIdx]} planned={to?.PRWY} actual={toRwy} onActual={setToRwy} verb="took off from" /> : <V v={null} w={30} />}
+          {toPerf[perfIdx] ? (
+            <PerfTable t={toPerf[perfIdx]} planned={to?.PRWY} actual={toRwy} onActual={setToRwy} verb="took off from" />
+          ) : (
+            <V v={null} w={30} />
+          )}
         </div>
       </div>
 
@@ -499,14 +569,21 @@ export function TlrSection({ no }: { no: number }) {
         </div>
       ) : null}
       <ActualRow label="Landing actual" cols={["RWY", "OAT", "WIND", "QNH", "MRLW", "FLP", "VREF", "PWR", "CONFIG/CONDITION"]} />
-      {ldRwy && <ActualRunway kind="ld" rwy={ldRwy} planned={ld} acars={acarsLd} grid={grid} oat={ldAct.get("OAT")} wind={ldAct.get("WIND")} distRow={plannedDistRow} />}
+      {ldRwy && (
+        <ActualRunway kind="ld" rwy={ldRwy} planned={ld} acars={acarsLd} grid={grid} oat={ldAct.get("OAT")} wind={ldAct.get("WIND")} distRow={plannedDistRow} />
+      )}
 
       <div className="cols" style={{ ["--min" as string]: "340px", marginTop: 14 }}>
         {acarsLd ? <PerfTable t={acarsLd} planned={ld?.PRWY} actual={ldRwy} onActual={setLdRwy} verb="landed on" /> : <V v={null} w={30} />}
         <div>
           {plannedDistRow && ldRwyLen ? (
             <div>
-              <LdgDistance title={`Planned runway ${ld?.PRWY} — factored landing distance vs length`} dry={Number(plannedDistRow[5])} wet={Number(plannedDistRow[6])} length={ldRwyLen} />
+              <LdgDistance
+                title={`Planned runway ${ld?.PRWY} — factored landing distance vs length`}
+                dry={Number(plannedDistRow[5])}
+                wet={Number(plannedDistRow[6])}
+                length={ldRwyLen}
+              />
               <p className="small muted" style={{ margin: "4px 0 0" }}>
                 Runway {fmtNum(ldRwyLen)} ft. Margin wet {fmtNum(ldRwyLen - Number(plannedDistRow[6]))} ft (distances assumed ft, as runway lengths).
               </p>
@@ -536,7 +613,10 @@ export function TlrSection({ no }: { no: number }) {
       {grid && grid.runways.length > 0 && (
         <>
           <Sub>
-            <Tip tip="Maximum landing weight (×10 kg) per runway and OAT, dry / wet. Suffix letter = limiting factor (A = AFM structural, F = field length)." title={grid.title}>
+            <Tip
+              tip="Maximum landing weight (×10 kg) per runway and OAT, dry / wet. Suffix letter = limiting factor (A = AFM structural, F = field length)."
+              title={grid.title}
+            >
               {grid.title}
             </Tip>
           </Sub>
@@ -574,7 +654,9 @@ export function TlrSection({ no }: { no: number }) {
                 {(["hw", "tw"] as const).map((k) => (
                   <tr key={k}>
                     <th scope="row">
-                      <Tip tip={k === "hw" ? "Change in max landing weight per 10 kt headwind (dry / wet)" : "Change per 10 kt tailwind (dry / wet)"}>{k === "hw" ? "HW/10KT" : "TW/10KT"}</Tip>
+                      <Tip tip={k === "hw" ? "Change in max landing weight per 10 kt headwind (dry / wet)" : "Change per 10 kt tailwind (dry / wet)"}>
+                        {k === "hw" ? "HW/10KT" : "TW/10KT"}
+                      </Tip>
                     </th>
                     {grid.runways.map((r) => (
                       <td key={r.rwy} className="num">

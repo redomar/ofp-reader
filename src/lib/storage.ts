@@ -229,7 +229,12 @@ export function setPdfSize(id: string, size: number | null) {
   writeRecord(rec);
 }
 
-const normUrl = (u: string) => u.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "").toLowerCase();
+const normUrl = (u: string) =>
+  u
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
 
 /** The saved flight previously opened from this link, if any. */
 export function findByUrl(url: string): FlightRecord | null {

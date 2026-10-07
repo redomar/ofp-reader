@@ -1,0 +1,7 @@
+out
+.next
+public
+data
+node_modules
+pnpm-lock.yaml
+*.md

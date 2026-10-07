@@ -128,8 +128,7 @@ export function coordToDeg(s: string | null): number | null {
 /* ---------- page cleanup ---------- */
 
 function cleanPages(pages: { page: number; lines: Lines }[]) {
-  const titleLine =
-    pages[0]?.lines.slice(0, 3).find((l) => l.trim() && !PAGE_NO.test(l) && !/^\[/.test(l.trim())) ?? "";
+  const titleLine = pages[0]?.lines.slice(0, 3).find((l) => l.trim() && !PAGE_NO.test(l) && !/^\[/.test(l.trim())) ?? "";
   const title = titleLine.replace(/Page\s+\d+\s*$/, "").trim();
   const cleaned = pages.map((p) => {
     const lines = p.lines.filter((l, idx) => {
@@ -180,8 +179,7 @@ function parseHeader(block: Lines, title: string | null): Header {
   const ac = match(block, /^(\S.*?\/\s*\S+)\s{2,}STA\s+(\d{4})/);
   const ctot = match(block, /CTOT:(\S+)/);
   const g = (re: RegExp) => match(block, re)?.[1] ?? null;
-  const w = (kind: "MAXIMUM" | "ESTIMATED") =>
-    match(block, new RegExp(`^${kind}\\s+TOW\\s+(\\d+)\\s+LAW\\s+(\\d+)\\s+ZFW\\s+(\\d+)`));
+  const w = (kind: "MAXIMUM" | "ESTIMATED") => match(block, new RegExp(`^${kind}\\s+TOW\\s+(\\d+)\\s+LAW\\s+(\\d+)\\s+ZFW\\s+(\\d+)`));
   const max = w("MAXIMUM");
   const est = w("ESTIMATED");
   const ff = match(block, /AVG FF\s+(KGS|LBS)\/HR\s+(\d+)/);
@@ -270,8 +268,7 @@ function parseFuel(block: Lines): Fuel {
   const tank = match(block, /^(.*TANKERING.*)$/)?.[1]?.trim() ?? null;
   const confIdx = block.findIndex((l) => /^I HEREWITH CONFIRM/.test(l));
   const conf: string[] = [];
-  if (confIdx >= 0)
-    for (let i = confIdx; i < block.length && !/^DISPATCHER:/.test(block[i]); i++) conf.push(block[i].trim());
+  if (confIdx >= 0) for (let i = confIdx; i < block.length && !/^DISPATCHER:/.test(block[i]); i++) conf.push(block[i].trim());
   const disp = match(block, /^DISPATCHER:\s*(.+?)\s{2,}PIC NAME:\s*(.+)$/);
   const tel = match(block, /^TEL:\s*(.+?)\s{2,}PIC SIGNATURE:\s*(.+)$/);
   return {
@@ -477,7 +474,10 @@ function parseFpl(lines: Lines): AtcFpl {
   const start = body.findIndex((l) => l.trim().startsWith("(FPL"));
   const text = start >= 0 ? body.slice(start).map((l) => l.replace(/\s+$/, "")) : [];
   // Continuation lines start with a space; each new ICAO item starts with "-".
-  const flat = text.join("").replace(/^\(/, "").replace(/\)\s*$/, "");
+  const flat = text
+    .join("")
+    .replace(/^\(/, "")
+    .replace(/\)\s*$/, "");
   const parts = flat.split("-");
   const items: AtcFpl["items"] = [];
   // parts[0] is "FPL"; item 18 onward may legitimately contain dashes.
@@ -532,7 +532,10 @@ function parseTlr(lines: Lines): Tlr {
       }
       if (!cur) continue;
       if (/^(RWY|OAT|DRY RWY|\s+ACTUAL)/.test(l) && cur.columns.length === 0 && /^RWY\s/.test(l)) {
-        cur.columns = l.trim().replace(/ACARS\s+LENGTH/, "LENGTH").split(/\s+/);
+        cur.columns = l
+          .trim()
+          .replace(/ACARS\s+LENGTH/, "LENGTH")
+          .split(/\s+/);
         continue;
       }
       if (/^(\d{2}[LRC]?|[0-3]\d[LRC]?)\s/.test(l) && cur.columns.length) {
@@ -563,7 +566,13 @@ function parseTlr(lines: Lines): Tlr {
         continue;
       }
       const lens = [...(ld[k + 1] ?? "").matchAll(/(\d+)\s+FT/g)].map((m) => m[1]);
-      const group = names.map((rwy, n) => ({ rwy, length: lens[n] ?? null, cells: [] as LandingGrid["runways"][0]["cells"], hw: null as string | null, tw: null as string | null }));
+      const group = names.map((rwy, n) => ({
+        rwy,
+        length: lens[n] ?? null,
+        cells: [] as LandingGrid["runways"][0]["cells"],
+        hw: null as string | null,
+        tw: null as string | null,
+      }));
       k += 2;
       while (k < ld.length && /^\s*(\/\s*)?\d+\s+\d/.test(ld[k])) {
         const m = ld[k].match(/^\s*(\/)?\s*(\d+)\s+(.*)$/);
@@ -754,8 +763,16 @@ export function parseOfp(source: string, pages: { page: number; lines: Lines }[]
   const { finres, alts } = parseAlternates(rest);
 
   const routing = between(rest, /^ROUTING:/, DASHES);
-  const routeId = routing.find((l) => /^ROUTE ID:/.test(l))?.replace(/^ROUTE ID:\s*/, "").trim() ?? null;
-  const route = routing.filter((l) => !/^ROUTE ID:/.test(l)).map((l) => l.trim()).join(" ") || null;
+  const routeId =
+    routing
+      .find((l) => /^ROUTE ID:/.test(l))
+      ?.replace(/^ROUTE ID:\s*/, "")
+      .trim() ?? null;
+  const route =
+    routing
+      .filter((l) => !/^ROUTE ID:/.test(l))
+      .map((l) => l.trim())
+      .join(" ") || null;
 
   const logStart = rest.findIndex((l) => /^\s+FLIGHT LOG\s*$/.test(l));
   const windStart = rest.findIndex((l) => /WIND INFORMATION/.test(l));
@@ -788,7 +805,9 @@ export function parseOfp(source: string, pages: { page: number; lines: Lines }[]
     mel,
     routeId,
     route,
-    atcClearance: between(rest, /^DEPARTURE ATC CLEARANCE:/, DASHES).map((l) => l.trim()).filter((l) => l && l !== "."),
+    atcClearance: between(rest, /^DEPARTURE ATC CLEARANCE:/, DASHES)
+      .map((l) => l.trim())
+      .filter((l) => l && l !== "."),
     opImpacts: parseOpImpacts(rest),
     atis: atis.filter((l) => l !== "."),
     rvsm,

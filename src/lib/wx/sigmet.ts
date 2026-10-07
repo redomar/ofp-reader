@@ -163,7 +163,8 @@ function parseArea(text: string): Area {
 
 function parseLevels(text: string): Levels | null {
   let m: RegExpMatchArray | null;
-  if ((m = text.match(/\bTOP (ABV |BLW )?(FL\d{2,3})\b/))) return { base: 0, top: fl(m[2])!, text: `top ${m[1] ? `${m[1].trim().toLowerCase() === "abv" ? "above" : "below"} ` : ""}${m[2]}` };
+  if ((m = text.match(/\bTOP (ABV |BLW )?(FL\d{2,3})\b/)))
+    return { base: 0, top: fl(m[2])!, text: `top ${m[1] ? `${m[1].trim().toLowerCase() === "abv" ? "above" : "below"} ` : ""}${m[2]}` };
   if ((m = text.match(/\b(SFC|FL\d{2,3}|\d{3,5}(?:FT|M))\/(FL)?(\d{2,3}|\d{3,5}(?:FT|M))\b/))) {
     const base = fl(m[1]) ?? 0;
     const top = m[2] ? Number(m[3]) * 100 : /FT|M$/.test(m[3]) ? fl(m[3]) : Number(m[3]) * 100;
@@ -236,7 +237,8 @@ function inPolygon(lat: number, lon: number, pts: [number, number][]) {
 
 export function inArea(area: Area, lat: number, lon: number): boolean | null {
   if (area.kind === "polygon") return inPolygon(lat, lon, area.points);
-  if (area.kind === "bounds") return area.planes.every((p) => (p.op === "gt" ? (p.axis === "lat" ? lat : lon) > p.value : (p.axis === "lat" ? lat : lon) < p.value));
+  if (area.kind === "bounds")
+    return area.planes.every((p) => (p.op === "gt" ? (p.axis === "lat" ? lat : lon) > p.value : (p.axis === "lat" ? lat : lon) < p.value));
   return null;
 }
 
@@ -287,7 +289,18 @@ const absMin = (t: { day: number; hour: number; min: number }, ref: { day: numbe
  * @param offAbs take-off time in minutes from 00:00 UTC on `day` (the flight's date).
  */
 export function routeImpact(s: Sigmet, route: RoutePoint[], offAbs: number | null, day: number): Impact {
-  const blank: Impact = { from: null, to: null, altMin: 0, altMax: 0, lateral: null, vertical: null, timing: null, gapMin: null, verdict: "unknown", names: [] };
+  const blank: Impact = {
+    from: null,
+    to: null,
+    altMin: 0,
+    altMax: 0,
+    lateral: null,
+    vertical: null,
+    timing: null,
+    gapMin: null,
+    verdict: "unknown",
+    names: [],
+  };
   if (route.length < 2) return blank;
   type Hit = { name: string; t: number; cum: number; alt: number };
   const hits: Hit[] = [];

@@ -20,7 +20,11 @@ export function routeToken(t: string, i: number, all: string[]): { kind: string;
       tip: `At ${spd[1]} change to ${spd[2] === "N" ? `${Number(spd[3])} kt TAS` : spd[2] === "M" ? `Mach .${spd[3].slice(1)}` : `${Number(spd[3])} km/h`} and ${spd[4] === "F" ? `FL${Number(spd[5])}` : `${Number(spd[5]) * 100} ft`}`,
     };
   const sl = t.match(/^([NMK])(\d{3,4})([FAS])(\d{3,4})$/);
-  if (sl) return { kind: "dct", tip: `Initial cruise speed ${sl[1] === "N" ? `${Number(sl[2])} kt TAS` : `Mach .${sl[2].slice(1)}`} at ${sl[3] === "F" ? `FL${Number(sl[4])}` : sl[4]}` };
+  if (sl)
+    return {
+      kind: "dct",
+      tip: `Initial cruise speed ${sl[1] === "N" ? `${Number(sl[2])} kt TAS` : `Mach .${sl[2].slice(1)}`} at ${sl[3] === "F" ? `FL${Number(sl[4])}` : sl[4]}`,
+    };
   if (/^[A-Z]{2,5}\d[A-Z]$/.test(t)) {
     const isSid = i <= 2;
     return { kind: "proc", tip: `${isSid ? "SID (standard instrument departure)" : "STAR (standard arrival)"} ${t}` };
@@ -47,7 +51,12 @@ export function RouteString({ route }: { route: string | null | undefined }) {
         const { kind, tip } = routeToken(t, i, toks);
         return (
           <span key={i}>
-            <span className="it" data-tip={tip} data-tip-title={t} style={{ color: TOKEN_COLOR[kind], fontWeight: kind === "fix" || kind === "apt" ? 600 : 400 }}>
+            <span
+              className="it"
+              data-tip={tip}
+              data-tip-title={t}
+              style={{ color: TOKEN_COLOR[kind], fontWeight: kind === "fix" || kind === "apt" ? 600 : 400 }}
+            >
               {t}
             </span>{" "}
           </span>
@@ -131,7 +140,16 @@ export function RouteSection({ no }: { no: number }) {
                   <V v={a?.fl} w={3} />
                 </td>
                 <td className="num">
-                  <V v={a?.wc && <Tip tip={(signed(a.wc) ?? 0) < 0 ? `${Math.abs(signed(a.wc)!)} kt headwind` : `${signed(a.wc)} kt tailwind`} plain>{a.wc}</Tip>} w={4} />
+                  <V
+                    v={
+                      a?.wc && (
+                        <Tip tip={(signed(a.wc) ?? 0) < 0 ? `${Math.abs(signed(a.wc)!)} kt headwind` : `${signed(a.wc)} kt tailwind`} plain>
+                          {a.wc}
+                        </Tip>
+                      )
+                    }
+                    w={4}
+                  />
                 </td>
                 <td className="num">
                   <V v={a?.time && `${fmtHhmm(a.time)}`} w={5} />
@@ -212,66 +230,66 @@ export function RouteSection({ no }: { no: number }) {
         </Tip>
       </Sub>
       <Replay>
-      <div className="tbl-wrap">
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th scope="col">If</th>
-              <th scope="col">Change</th>
-              <th scope="col" className="num">
-                Trip Δ {unit}
-              </th>
-              <th scope="col" style={{ width: "40%" }}>
-                <span className="sr-only">Trip change chart</span>
-              </th>
-              <th scope="col" className="num">
-                Time Δ
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {(impacts.length ? impacts : Array.from({ length: 5 }, () => null)).map((m, i) => {
-              const d = m ? (m.tripSign === "M" ? -1 : 1) * (m.trip ?? 0) : 0;
-              const t = m ? (m.timeSign === "M" ? -1 : 1) * (hhmmToMin(m.time) ?? 0) : 0;
-              return (
-                <tr key={i}>
-                  <th scope="row">
-                    <V v={m?.kind} w={12} />
-                  </th>
-                  <td>
-                    <V v={m && impactLabel(m.kind, m.change)} w={10} />
-                  </td>
-                  <td className="num" style={{ color: d > 0 ? "var(--red)" : d < 0 ? "var(--green)" : undefined }}>
-                    <V v={m && `${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)}`} w={4} />
-                  </td>
-                  <td aria-hidden="true">
-                    {m && (
-                      <div style={{ position: "relative", height: 12, background: "var(--sunk)" }}>
-                        <span style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "var(--ink-3)" }} />
-                        <span
-                          className={d >= 0 ? "a-grow-x" : "a-grow-x-r"}
-                          style={{
-                            ["--i" as string]: i,
-                            position: "absolute",
-                            top: 0,
-                            bottom: 0,
-                            left: d >= 0 ? "50%" : `${50 - (Math.abs(d) / maxTrip) * 50}%`,
-                            width: `${(Math.abs(d) / maxTrip) * 50}%`,
-                            background: d > 0 ? "var(--red)" : "var(--green)",
-                          }}
-                        />
-                      </div>
-                    )}
-                  </td>
-                  <td className="num">
-                    <V v={m && (t === 0 ? "±0" : `${t > 0 ? "+" : "−"}${fmtDur(Math.abs(t))}`)} w={5} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+        <div className="tbl-wrap">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th scope="col">If</th>
+                <th scope="col">Change</th>
+                <th scope="col" className="num">
+                  Trip Δ {unit}
+                </th>
+                <th scope="col" style={{ width: "40%" }}>
+                  <span className="sr-only">Trip change chart</span>
+                </th>
+                <th scope="col" className="num">
+                  Time Δ
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {(impacts.length ? impacts : Array.from({ length: 5 }, () => null)).map((m, i) => {
+                const d = m ? (m.tripSign === "M" ? -1 : 1) * (m.trip ?? 0) : 0;
+                const t = m ? (m.timeSign === "M" ? -1 : 1) * (hhmmToMin(m.time) ?? 0) : 0;
+                return (
+                  <tr key={i}>
+                    <th scope="row">
+                      <V v={m?.kind} w={12} />
+                    </th>
+                    <td>
+                      <V v={m && impactLabel(m.kind, m.change)} w={10} />
+                    </td>
+                    <td className="num" style={{ color: d > 0 ? "var(--red)" : d < 0 ? "var(--green)" : undefined }}>
+                      <V v={m && `${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)}`} w={4} />
+                    </td>
+                    <td aria-hidden="true">
+                      {m && (
+                        <div style={{ position: "relative", height: 12, background: "var(--sunk)" }}>
+                          <span style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "var(--ink-3)" }} />
+                          <span
+                            className={d >= 0 ? "a-grow-x" : "a-grow-x-r"}
+                            style={{
+                              ["--i" as string]: i,
+                              position: "absolute",
+                              top: 0,
+                              bottom: 0,
+                              left: d >= 0 ? "50%" : `${50 - (Math.abs(d) / maxTrip) * 50}%`,
+                              width: `${(Math.abs(d) / maxTrip) * 50}%`,
+                              background: d > 0 ? "var(--red)" : "var(--green)",
+                            }}
+                          />
+                        </div>
+                      )}
+                    </td>
+                    <td className="num">
+                      <V v={m && (t === 0 ? "±0" : `${t > 0 ? "+" : "−"}${fmtDur(Math.abs(t))}`)} w={5} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Replay>
       <p className="note">Red = more fuel burnt than planned, green = less. Use these to judge a different cruise level, speed or late load change.</p>
     </Section>

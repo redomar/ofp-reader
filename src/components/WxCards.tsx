@@ -9,7 +9,19 @@ import { Replay } from "./replay";
 import { Badge, Tip, cx } from "./ui";
 import { WindArrow } from "./WindArrow";
 import { CATEGORY_TIP, decodeToken, type Category } from "@/lib/ofp/metar";
-import { ageMinutes, headline, hoursFrom, skyOf, wxWords, type CloudLayer, type Conditions, type DayTime, type Report, type Sky, type TafGroup } from "@/lib/wx/reports";
+import {
+  ageMinutes,
+  headline,
+  hoursFrom,
+  skyOf,
+  wxWords,
+  type CloudLayer,
+  type Conditions,
+  type DayTime,
+  type Report,
+  type Sky,
+  type TafGroup,
+} from "@/lib/wx/reports";
 
 const CAT_TONE: Record<Category, "green" | "blue" | "red" | "mag"> = {
   VFR: "green",
@@ -136,7 +148,11 @@ function CloudColumn({ c }: { c: Conditions }) {
       className="cloud-col"
       role="img"
       aria-label={
-        c.clouds.length ? `Cloud: ${c.clouds.map((l) => `${l.cover} ${l.baseFt ?? "?"} ft${l.type ? ` ${l.type}` : ""}`).join(", ")}` : c.cavok ? "No cloud below 5000 ft (CAVOK)" : "No cloud reported"
+        c.clouds.length
+          ? `Cloud: ${c.clouds.map((l) => `${l.cover} ${l.baseFt ?? "?"} ft${l.type ? ` ${l.type}` : ""}`).join(", ")}`
+          : c.cavok
+            ? "No cloud below 5000 ft (CAVOK)"
+            : "No cloud reported"
       }
     >
       <line x1="30" x2="118" y1={H - 10} y2={H - 10} className="cc-ground" />
@@ -156,7 +172,12 @@ function CloudColumn({ c }: { c: Conditions }) {
               height={7}
               rx={3.5}
               style={{ ["--i" as string]: i + 2 }}
-              className={cx("cc-layer a-grow-x a-svg", l.type === "CB" && "cb", l.type === "TCU" && "tcu", (l.cover === "BKN" || l.cover === "OVC" || l.cover === "VV") && "ceil")}
+              className={cx(
+                "cc-layer a-grow-x a-svg",
+                l.type === "CB" && "cb",
+                l.type === "TCU" && "tcu",
+                (l.cover === "BKN" || l.cover === "OVC" || l.cover === "VV") && "ceil",
+              )}
             />
             <text x={34} y={ly} className="cc-label a-fade" style={{ ["--i" as string]: i + 4 }}>
               {l.cover}
@@ -168,7 +189,7 @@ function CloudColumn({ c }: { c: Conditions }) {
       })}
       {!c.clouds.length && (
         <text x="74" y={H / 2} textAnchor="middle" className="cc-none">
-          {c.cavok ? "CAVOK" : c.noCloud ?? "no cloud"}
+          {c.cavok ? "CAVOK" : (c.noCloud ?? "no cloud")}
         </text>
       )}
     </svg>
@@ -214,7 +235,14 @@ export function Tokens({ text, taf }: { text: string; taf?: boolean }) {
 }
 
 const fmtTime = (t: DayTime | null) => (t ? `${String(t.hour).padStart(2, "0")}${String(t.min).padStart(2, "0")}Z` : "—");
-const fmtAge = (min: number) => (min < 0 ? "in the future?" : min < 60 ? `${min} min ago` : min < 48 * 60 ? `${Math.floor(min / 60)} h ${min % 60} min ago` : `${Math.round(min / 1440)} days ago`);
+const fmtAge = (min: number) =>
+  min < 0
+    ? "in the future?"
+    : min < 60
+      ? `${min} min ago`
+      : min < 48 * 60
+        ? `${Math.floor(min / 60)} h ${min % 60} min ago`
+        : `${Math.round(min / 1440)} days ago`;
 
 function windText(c: Conditions) {
   const w = c.wind;
@@ -255,7 +283,9 @@ function Facts({ c, kind }: { c: Conditions; kind: "METAR" | "PWIND" }) {
       </div>
       <div className="wxc-fact a-rise" style={{ ["--i" as string]: 5 }}>
         <span className="field-label">Visibility</span>
-        <span className="wxc-big">{c.visM == null ? "—" : c.visM >= 10000 ? "≥ 10 km" : c.visM >= 5000 ? `${(c.visM / 1000).toFixed(0)} km` : `${c.visM.toLocaleString("en-GB")} m`}</span>
+        <span className="wxc-big">
+          {c.visM == null ? "—" : c.visM >= 10000 ? "≥ 10 km" : c.visM >= 5000 ? `${(c.visM / 1000).toFixed(0)} km` : `${c.visM.toLocaleString("en-GB")} m`}
+        </span>
         <VisBar visM={c.visM} />
       </div>
       <div className="wxc-fact a-rise" style={{ ["--i" as string]: 6 }}>
@@ -302,7 +332,11 @@ export function ObsCard({ r }: { r: Report }) {
           <Badge
             tone={r.kind === "ATIS" ? "mag" : r.kind === "SPECI" ? "amber" : "ink"}
             tip={
-              r.kind === "ATIS" ? "Automatic Terminal Information Service" : r.kind === "SPECI" ? "Special observation, issued when conditions change significantly" : "Routine aerodrome observation"
+              r.kind === "ATIS"
+                ? "Automatic Terminal Information Service"
+                : r.kind === "SPECI"
+                  ? "Special observation, issued when conditions change significantly"
+                  : "Routine aerodrome observation"
             }
           >
             {r.kind}
@@ -399,7 +433,7 @@ export function TafCard({ r }: { r: Report }) {
   const prevailing = t.groups.filter((g) => g.type === "BASE" || g.type === "FM" || g.type === "BECMG");
   const bands = prevailing.flatMap((g, k) => {
     const next = prevailing[k + 1];
-    const from = x(g.type === "BASE" ? valid?.from ?? null : g.from, 0);
+    const from = x(g.type === "BASE" ? (valid?.from ?? null) : g.from, 0);
     const to = next ? x(next.from, 100) : 100;
     if (g.type !== "BECMG" || !g.to) return [{ g, from, to, changing: false }];
     // Hatched while the change happens, solid once it has.
@@ -430,7 +464,8 @@ export function TafCard({ r }: { r: Report }) {
             {valid && (
               <span className="muted">
                 {" "}
-                · valid {String(valid.from.day).padStart(2, "0")} {String(valid.from.hour).padStart(2, "0")}Z → {String(valid.to.day).padStart(2, "0")} {String(valid.to.hour).padStart(2, "0")}Z
+                · valid {String(valid.from.day).padStart(2, "0")} {String(valid.from.hour).padStart(2, "0")}Z → {String(valid.to.day).padStart(2, "0")}{" "}
+                {String(valid.to.hour).padStart(2, "0")}Z
               </span>
             )}
           </span>
@@ -496,8 +531,12 @@ export function TafCard({ r }: { r: Report }) {
                 <Tip tip={GROUP_TIP[g.type]}>{g.type === "PROB" ? `PROB${g.prob}${g.tempo ? " TEMPO" : ""}` : g.type === "BASE" ? "Initially" : g.type}</Tip>
               </span>
               <span className="tg-when mono small">
-                {g.from ? `${String(g.from.day).padStart(2, "0")} ${String(g.from.hour).padStart(2, "0")}${g.type === "FM" ? String(g.from.min).padStart(2, "0") : ""}Z` : ""}
-                {g.to && g.type !== "BASE" ? `–${g.from && g.to.day !== g.from.day ? `${String(g.to.day).padStart(2, "0")} ` : ""}${String(g.to.hour).padStart(2, "0")}Z` : ""}
+                {g.from
+                  ? `${String(g.from.day).padStart(2, "0")} ${String(g.from.hour).padStart(2, "0")}${g.type === "FM" ? String(g.from.min).padStart(2, "0") : ""}Z`
+                  : ""}
+                {g.to && g.type !== "BASE"
+                  ? `–${g.from && g.to.day !== g.from.day ? `${String(g.to.day).padStart(2, "0")} ` : ""}${String(g.to.hour).padStart(2, "0")}Z`
+                  : ""}
               </span>
               <span className="tg-sky">
                 <SkyIcon sky={skyOf(g.cond)} size={26} />
