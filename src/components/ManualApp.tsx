@@ -66,6 +66,22 @@ const GROUPS = [
 
 type Entry = { id: string; title: string; section: string; sectionId: string; text: string };
 
+/**
+ * Stops lines breaking inside hyphenated words ("take-|off", "V-|speeds") and number ranges
+ * ("118.000–|136.990"): hyphens between letters become non-breaking hyphens and range dashes get
+ * word joiners. The manual is static, so this runs once on mount; links and OFP excerpts are left alone.
+ */
+function keepWordsTogether(root: HTMLElement | null) {
+  if (!root) return;
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const t = n.textContent ?? "";
+    if (!/[-–]/.test(t) || t.includes("://") || n.parentElement?.closest("pre, input, textarea")) continue;
+    const v = t.replace(/(?<=\p{L}|\d)-(?=\p{L}|\d)/gu, "\u2011").replace(/(?<=\d)–(?=\d)/g, "\u2060–\u2060");
+    if (v !== t) n.textContent = v;
+  }
+}
+
 /** The readable text of a topic: text nodes joined with spaces (so table cells and terms don't run together), without the # link. */
 function textOf(el: HTMLElement): string {
   const out: string[] = [];
@@ -73,6 +89,8 @@ function textOf(el: HTMLElement): string {
   for (let n = walk.nextNode(); n; n = walk.nextNode()) if (!n.parentElement?.closest(".man-anchor, [hidden]:not(.sheet-body)")) out.push(n.textContent ?? "");
   return out
     .join(" ")
+    .replace(/\u2011/g, "-")
+    .replace(/\u2060/g, "")
     .replace(/\s+/g, " ")
     .replace(/ ([.,;:)’'])/g, "$1")
     .replace(/\( /g, "(")
@@ -160,6 +178,7 @@ function ManualBody() {
 
   useEffect(() => {
     // The manual is static, so read it once after the first paint.
+    keepWordsTogether(document.getElementById("main"));
     const raf = requestAnimationFrame(() => setIndex(readIndex()));
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;

@@ -87,12 +87,14 @@ export function WorkflowsSection({ no }: { no: number }) {
                   <th scope="row">{phase}</th>
                   <td>{read}</td>
                   <td>{type}</td>
-                  <td className="man-go">
-                    {links.map(([l, href]) => (
-                      <Link key={l} href={href} className="chip-btn">
-                        {l}
-                      </Link>
-                    ))}
+                  <td>
+                    <div className="man-go">
+                      {links.map(([l, href]) => (
+                        <Link key={l} href={href} className="chip-btn">
+                          {l}
+                        </Link>
+                      ))}
+                    </div>
                   </td>
                 </tr>
               ))}

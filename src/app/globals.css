@@ -5794,6 +5794,9 @@ main[data-skin="dots"] .rmp .rmp-val {
 .man .tbl :is(th, td).mono {
   font-family: var(--font-mono);
 }
+.man-card th[scope="row"] {
+  white-space: nowrap !important;
+}
 .man-find th[scope="row"] {
   min-width: 200px;
   font-weight: 600;
