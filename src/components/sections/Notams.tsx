@@ -9,7 +9,8 @@ import type { Notam, NotamBulletin } from "@/lib/ofp/types";
 
 const CRIT = /\b(CLSD|CLOSED|U\/S|NOT AVBL|SUSPENDED|UNSERVICEABLE|JAMMING|SPOOFING|PROHIBITED)\b/;
 const WARN = /\b(CRANE|OBST|OBSTACLE|WIP|GNSS|LTD|RESTRICTED|DRONE|UAS)\b/;
-const KW = /(\bCLSD\b|\bCLOSED\b|\bU\/S\b|\bNOT AVBL\b|\bSUSPENDED\b|\bJAMMING\b|\bSPOOFING\b|\bPROHIBITED\b|\bRWY\s*\d{2}[LRC]?(?:\/\d{2}[LRC]?)?|\bILS\b|\bCRANE\b|\bOBST\b|\bGNSS\b)/g;
+const KW =
+  /(\bCLSD\b|\bCLOSED\b|\bU\/S\b|\bNOT AVBL\b|\bSUSPENDED\b|\bJAMMING\b|\bSPOOFING\b|\bPROHIBITED\b|\bRWY\s*\d{2}[LRC]?(?:\/\d{2}[LRC]?)?|\bILS\b|\bCRANE\b|\bOBST\b|\bGNSS\b)/g;
 
 function highlight(text: string, q: string): ReactNode[] {
   const parts: ReactNode[] = [];
@@ -64,7 +65,14 @@ export function NotamSection({ no, id, title, which }: { no: number; id: string;
   const total = b?.groups.reduce((s, g) => s + g.notams.length, 0) ?? 0;
 
   const sections = useMemo(() => {
-    const out: { name: string; locs: { loc: string | null; name: string | null; groups: { cat: string | null; notams: (Notam & { sev: string; hitsRwy: boolean })[]; notes: string[] }[] }[] }[] = [];
+    const out: {
+      name: string;
+      locs: {
+        loc: string | null;
+        name: string | null;
+        groups: { cat: string | null; notams: (Notam & { sev: string; hitsRwy: boolean })[]; notes: string[] }[];
+      }[];
+    }[] = [];
     for (const g of b?.groups ?? []) {
       let s = out.find((x) => x.name === g.section);
       if (!s) out.push((s = { name: g.section, locs: [] }));
@@ -90,7 +98,12 @@ export function NotamSection({ no, id, title, which }: { no: number; id: string;
   }, 0);
 
   return (
-    <Section id={id} no={no} title={title} meta={<span>{ofp ? `${total} items · PDF p.${pageOf(ofp.pages, which === "notams" ? /^\[ NOTAM \]/ : /^\[ Company NOTAM \]/) ?? "?"}` : "—"}</span>}>
+    <Section
+      id={id}
+      no={no}
+      title={title}
+      meta={<span>{ofp ? `${total} items · PDF p.${pageOf(ofp.pages, which === "notams" ? /^\[ NOTAM \]/ : /^\[ Company NOTAM \]/) ?? "?"}` : "—"}</span>}
+    >
       {b?.header.length ? (
         <div className="stack small mono" style={{ gap: 2, marginBottom: 12 }}>
           {b.header.map((h, i) => (
@@ -109,7 +122,14 @@ export function NotamSection({ no, id, title, which }: { no: number; id: string;
           <label htmlFor={`${id}-q`} className="sr-only">
             Search NOTAMs
           </label>
-          <input id={`${id}-q`} type="search" placeholder="Search NOTAMs (e.g. ILS, RWY 06R, crane)…" value={q} onChange={(e) => setQ(e.target.value)} disabled={!ofp} />
+          <input
+            id={`${id}-q`}
+            type="search"
+            placeholder="Search NOTAMs (e.g. ILS, RWY 06R, crane)…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            disabled={!ofp}
+          />
           <button type="button" className="toggle" aria-pressed={cat === null} onClick={() => setCat(null)}>
             All
           </button>

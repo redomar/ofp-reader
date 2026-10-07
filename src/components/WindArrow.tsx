@@ -43,7 +43,16 @@ export function WindArrow({
   const shownDir = sector && PROPOSAL.useSector ? d.centre : dir;
   const cat = CATS[d.cat];
   const ref = useRef<HTMLSpanElement>(null);
-  const input = { amp: d.amp, chaosAmp: d.chaosAmp, swingMs: d.swingMs, spread: d.kickSpread, ease, seed: seedOf(`${kind}${dir}${spd}${gust}${sector}`), chaos: PROPOSAL.chaos, maxDeg: d.limit + 10 };
+  const input = {
+    amp: d.amp,
+    chaosAmp: d.chaosAmp,
+    swingMs: d.swingMs,
+    spread: d.kickSpread,
+    ease,
+    seed: seedOf(`${kind}${dir}${spd}${gust}${sector}`),
+    chaos: PROPOSAL.chaos,
+    maxDeg: d.limit + 10,
+  };
   const latest = useRef(input);
   useEffect(() => {
     latest.current = input;
@@ -86,7 +95,13 @@ export function WindArrow({
       <span className="wind-sway" ref={ref}>
         <svg width={size} height={size} viewBox="-8 -8 16 16" role="img" aria-label={text}>
           <g transform={`rotate(${shownDir + 180})`}>
-            <path d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z" fill="var(--cat)" stroke="var(--ink)" strokeWidth={size < 24 ? 0.9 : 0.45} strokeLinejoin="round" />
+            <path
+              d="M0 -7 L4 1 L1 0 L1 7 L-1 7 L-1 0 L-4 1 Z"
+              fill="var(--cat)"
+              stroke="var(--ink)"
+              strokeWidth={size < 24 ? 0.9 : 0.45}
+              strokeLinejoin="round"
+            />
           </g>
         </svg>
       </span>

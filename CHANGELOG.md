@@ -4,6 +4,19 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-10-07
+
+### Fixed
+
+- **Nav log quick fill:**
+  - The row under the pointer (or the one you're typing in) also offers the current time and the predicted fuel. The prediction carries the fuel Δ of the nearest filled-in fix above, against TFOB when PIC extra is on.
+  - The clock, ✓ and ▲▼ buttons sit over the next column instead of widening the table, so the columns no longer shift sideways when an offer appears. A dashed line still separates each button from its box.
+
+### Changed
+
+- Updated packages: Next.js 16.4, React 19.3, pdf.js 6.4, ESLint 10, TypeScript 6.0.
+- The code is now formatted with Prettier.
+
 ## [1.13.0] - 2026-10-06
 
 ### Added

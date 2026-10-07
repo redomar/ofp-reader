@@ -11,7 +11,9 @@ export const FIRST_YEAR = 2026;
 
 function git(args: string): string | null {
   try {
-    const out = execSync(`git ${args}`, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    const out = execSync(`git ${args}`, { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
     return out || null;
   } catch {
     return null;

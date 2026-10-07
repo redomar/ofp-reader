@@ -32,7 +32,10 @@ export function itemsToLines(items: RawTextItem[]): string[] {
   const bodyItems = body.filter((i) => Math.abs(i.size - bodySize) < 0.2);
   const pitch =
     bodyItems.reduce((s, i) => s + i.width, 0) /
-    Math.max(1, bodyItems.reduce((s, i) => s + i.str.length, 0));
+    Math.max(
+      1,
+      bodyItems.reduce((s, i) => s + i.str.length, 0),
+    );
   const left = Math.min(...bodyItems.map((i) => i.x));
 
   const rows = new Map<number, { col: number; str: string }[]>();

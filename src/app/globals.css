@@ -70,15 +70,15 @@
     --green-bg: #10301d;
     --terrain: #2a3140;
     --water: #13263a;
-  --map-sea: #102133;
-  --map-land: #262c35;
-  --map-land-1: #313945;
-  --map-land-2: #1e232b;
-  --map-land-3: #2a3331;
-  --map-coast: #6e7f93;
-  --map-border: #5b6575;
-  --map-name: #8d96a4;
-  --map-halo: #121a27;
+    --map-sea: #102133;
+    --map-land: #262c35;
+    --map-land-1: #313945;
+    --map-land-2: #1e232b;
+    --map-land-3: #2a3331;
+    --map-coast: #6e7f93;
+    --map-border: #5b6575;
+    --map-name: #8d96a4;
+    --map-halo: #121a27;
     --map-sea: #102133;
     --map-land: #262c35;
     --map-land-1: #313945;
@@ -137,9 +137,7 @@ body {
   min-height: 100dvh;
   margin: 0;
   background-color: var(--paper);
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size: 48px 48px;
   background-position: -1px -1px;
   color: var(--ink);
@@ -271,7 +269,9 @@ textarea {
   appearance: none;
   /* a drawn chevron, inset like the input's padding (two halves of a rotated square) */
   background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
-  background-position: calc(100% - 19px) 50%, calc(100% - 14px) 50%;
+  background-position:
+    calc(100% - 19px) 50%,
+    calc(100% - 14px) 50%;
   background-size: 5px 5px;
   background-repeat: no-repeat;
   border: 1px solid var(--rule-strong);
@@ -735,8 +735,10 @@ main {
   border-color: var(--blue);
 }
 
-/* nav log quick fill: an offered value with an accept button, or ▲▼ on the latest entry */
+/* nav log quick fill: an offered value with an accept button, or ▲▼ on the latest entry.
+   The buttons hang off the right of the box, over the next (Δ) column, so nothing moves. */
 .act-box {
+  position: relative;
   display: inline-flex;
   align-items: stretch;
   vertical-align: middle;
@@ -766,14 +768,33 @@ main {
   font-style: italic;
 }
 .act-btn,
+.act-nudge {
+  position: absolute;
+  z-index: 2;
+  top: -1px;
+  left: calc(100% + 1px); /* just past the box's right border, which divides them */
+  height: 26px;
+  border: 1px dashed var(--rule-strong);
+  border-left: 0;
+  border-radius: 0 2px 2px 0;
+  background: var(--field);
+}
+.act-box:has(> .act-btn, > .act-nudge) {
+  border-radius: 2px 0 0 2px;
+}
+.act-box.offer > .act-btn {
+  border-color: var(--blue);
+}
+.act-box:focus-within > :is(.act-btn, .act-nudge) {
+  border-style: solid;
+  border-color: var(--blue);
+}
+.act-btn,
 .act-nudge button {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 0;
-  border-left: 1px dashed var(--rule-strong);
-  background: transparent;
   color: var(--ink-3);
   cursor: pointer;
 }
@@ -782,16 +803,15 @@ main {
   color: var(--blue);
   font-size: 12px;
 }
-.act-box.offer .act-btn {
-  border-left-color: var(--blue);
-}
 .act-nudge {
   display: flex;
   flex-direction: column;
+  width: 16px;
 }
 .act-nudge button {
   flex: 1;
-  width: 16px;
+  border: 0;
+  background: transparent;
   font-size: 7px;
   line-height: 1;
 }
@@ -2186,7 +2206,9 @@ dialog.lightbox img {
   height: 12px;
   border-radius: 50%;
   background: var(--ink-3);
-  transition: transform 0.15s, background 0.15s;
+  transition:
+    transform 0.15s,
+    background 0.15s;
 }
 .switch[aria-checked="true"] .switch-track {
   background: var(--green-bg);
@@ -2491,32 +2513,64 @@ dialog.lightbox img {
    shows its final state. Stagger with style={{ "--i": n }}. */
 
 @keyframes a-draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 @keyframes a-grow-x {
-  from { transform: scaleX(0); }
-  to { transform: none; }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
 }
 @keyframes a-grow-y {
-  from { transform: scaleY(0); }
-  to { transform: none; }
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
 }
 @keyframes a-wipe {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
 @keyframes a-rise {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes a-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes a-spin {
-  from { opacity: 0; transform: rotate(-140deg) scale(0.6); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: rotate(-140deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .replay.play .a-draw {
@@ -2528,8 +2582,12 @@ dialog.lightbox img {
   animation: a-grow-x 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   animation-delay: calc(var(--i, 0) * 60ms);
 }
-.a-grow-x { transform-origin: left center; }
-.a-grow-x-r { transform-origin: right center; }
+.a-grow-x {
+  transform-origin: left center;
+}
+.a-grow-x-r {
+  transform-origin: right center;
+}
 .replay.play .a-grow-y {
   transform-box: fill-box;
   transform-origin: 50% 100%;
@@ -2554,25 +2612,55 @@ dialog.lightbox img {
 
 /* Weather cards (components/WxCards.tsx) */
 @keyframes a-drift {
-  from { opacity: 0; transform: translateX(-7px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateX(-7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes a-fall {
-  from { opacity: 0; transform: translateY(-7px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes a-flash {
-  0%, 30% { opacity: 0; }
-  40% { opacity: 1; }
-  55% { opacity: 0.2; }
-  70%, 100% { opacity: 1; }
+  0%,
+  30% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.2;
+  }
+  70%,
+  100% {
+    opacity: 1;
+  }
 }
 @keyframes a-slide {
-  from { left: 0; }
+  from {
+    left: 0;
+  }
 }
 @keyframes a-flip {
-  from { opacity: 0; transform: perspective(120px) rotateX(-90deg); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: perspective(120px) rotateX(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .wxc-replay {
   min-width: 0;
@@ -3663,7 +3751,9 @@ hr.ldg-split {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) 22px;
   margin: 0;
-  box-shadow: 0 1px 0 var(--rule), 0 6px 14px -10px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 1px 0 var(--rule),
+    0 6px 14px -10px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
 /* tractor-feed strips: the holes are cut out (masked), so whatever is behind shows through */
@@ -3720,7 +3810,9 @@ hr.ldg-split {
   border-radius: 3px;
   box-shadow: 3px 3px 0 var(--magenta);
   cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.12s;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s;
 }
 .mcdu-btn:hover:not(:disabled) {
   transform: translate(-1px, -1px);
@@ -4296,7 +4388,10 @@ button.radio-sub {
   border-radius: 4px;
   overflow: hidden;
   background: var(--rmp-bg);
-  box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 4px var(--rmp-rim), inset 0 2px 6px var(--rmp-inset);
+  box-shadow:
+    0 0 0 3px var(--rmp-edge),
+    0 0 0 4px var(--rmp-rim),
+    inset 0 2px 6px var(--rmp-inset);
   font: 600 17px/1 var(--font-mono);
   letter-spacing: 0.04em;
 }
@@ -4413,17 +4508,26 @@ button.radio-sub {
   text-shadow: none;
 }
 .rmp:focus-within {
-  box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 5px var(--blue), inset 0 2px 6px var(--rmp-inset);
+  box-shadow:
+    0 0 0 3px var(--rmp-edge),
+    0 0 0 5px var(--blue),
+    inset 0 2px 6px var(--rmp-inset);
 }
 .rmp.from .rmp-val {
   color: var(--rmp-from);
   text-shadow: var(--rmp-from-glow);
 }
 .rmp.warn {
-  box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 5px var(--amber), inset 0 2px 6px var(--rmp-inset);
+  box-shadow:
+    0 0 0 3px var(--rmp-edge),
+    0 0 0 5px var(--amber),
+    inset 0 2px 6px var(--rmp-inset);
 }
 .rmp.bad {
-  box-shadow: 0 0 0 3px var(--rmp-edge), 0 0 0 5px var(--red), inset 0 2px 6px var(--rmp-inset);
+  box-shadow:
+    0 0 0 3px var(--rmp-edge),
+    0 0 0 5px var(--red),
+    inset 0 2px 6px var(--rmp-inset);
 }
 .radio-row.bad {
   border-left-color: var(--red);
@@ -4520,12 +4624,18 @@ main[data-skin="dots"] {
 }
 main[data-skin="scan"] .rmp,
 main[data-skin="dots"] .rmp {
-  box-shadow: 0 0 0 3px #000, 0 0 0 4px #445, inset 0 0 10px #000, 0 0 14px rgba(60, 240, 210, 0.18);
+  box-shadow:
+    0 0 0 3px #000,
+    0 0 0 4px #445,
+    inset 0 0 10px #000,
+    0 0 14px rgba(60, 240, 210, 0.18);
 }
 main[data-skin="scan"] .rmp {
   background: radial-gradient(ellipse, #0b1f1c, #030a09);
   border-radius: 8px;
-  font: 400 24px/1 var(--f-pixel), var(--font-mono);
+  font:
+    400 24px/1 var(--f-pixel),
+    var(--font-mono);
   letter-spacing: 0.06em;
 }
 main[data-skin="scan"] .rmp::after {
@@ -4542,7 +4652,10 @@ main[data-skin="dots"] .rmp::after {
 }
 main[data-skin="scan"] .rmp:is(:focus-within, .warn, .bad),
 main[data-skin="dots"] .rmp:is(:focus-within, .warn, .bad) {
-  box-shadow: 0 0 0 3px #000, 0 0 0 5px var(--ring), inset 0 0 10px #000;
+  box-shadow:
+    0 0 0 3px #000,
+    0 0 0 5px var(--ring),
+    inset 0 0 10px #000;
 }
 main[data-skin] .rmp:focus-within {
   --ring: var(--blue);
@@ -4638,7 +4751,8 @@ main[data-skin="dots"] .rmp .rmp-val {
   }
 }
 @keyframes rmp-flicker {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   41% {
@@ -5206,7 +5320,9 @@ main[data-skin="dots"] .rmp .rmp-val {
   border-radius: 999px;
   background-color: var(--field);
   background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
-  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-position:
+    calc(100% - 16px) 50%,
+    calc(100% - 11px) 50%;
   background-size: 5px 5px;
   background-repeat: no-repeat;
   color: var(--ink);
@@ -5217,7 +5333,6 @@ main[data-skin="dots"] .rmp .rmp-val {
 .flight-menu:hover {
   border-color: var(--ink-2);
 }
-
 
 /* fuel en-route alternate: where the route passes it, on its weather card */
 .wx-era-note {

@@ -55,7 +55,17 @@ export function WxSection({ no }: { no: number }) {
   const { isCollapsed, toggle, open } = useCollapse();
   const sigmets = useSigmets();
   const wx = ofp?.wx;
-  const airports = wx?.airports.length ? wx.airports : (["Departure", "Destination", "Destination Alternates"].map((role) => ({ role, icao: "", iata: null, name: "", metar: null, taf: [], other: [] })) as NonNullable<typeof wx>["airports"]);
+  const airports = wx?.airports.length
+    ? wx.airports
+    : (["Departure", "Destination", "Destination Alternates"].map((role) => ({
+        role,
+        icao: "",
+        iata: null,
+        name: "",
+        metar: null,
+        taf: [],
+        other: [],
+      })) as NonNullable<typeof wx>["airports"]);
   // Fuel en-route alternate: where the route passes closest, and the forecast for then.
   const era = fuelEra(ofp);
   const eraC = useAirportCoord(era?.icao);
@@ -72,12 +82,26 @@ export function WxSection({ no }: { no: number }) {
         {wx?.header.length ? wx.header.map((h) => <span key={h}>{h}</span>) : <V v={null} w={40} />}
       </div>
       <div className="row" style={{ marginBottom: 14 }}>
-        {(wx?.advisories.length ? wx.advisories : [{ title: "AIRMETs", lines: [] }, { title: "SIGMETs", lines: [] }]).map((a) => {
+        {(wx?.advisories.length
+          ? wx.advisories
+          : [
+              { title: "AIRMETs", lines: [] },
+              { title: "SIGMETs", lines: [] },
+            ]
+        ).map((a) => {
           const none = a.lines.every((l) => /No Wx data/i.test(l));
           const n = parseSigmets(a.lines).length;
           const onRoute = sigmets.list.filter((x) => x.impact.verdict === "affects" && a.lines.join(" ").includes(x.s.raw.slice(0, 30))).length;
           return (
-            <Badge key={a.title} tone={!ofp ? "ink" : none ? "green" : onRoute ? "red" : "amber"} tip={none ? "None issued for this route" : `${n || "Some"} issued for the FIRs on this route${onRoute ? `; ${onRoute} on your route at your level and time` : ""}`}>
+            <Badge
+              key={a.title}
+              tone={!ofp ? "ink" : none ? "green" : onRoute ? "red" : "amber"}
+              tip={
+                none
+                  ? "None issued for this route"
+                  : `${n || "Some"} issued for the FIRs on this route${onRoute ? `; ${onRoute} on your route at your level and time` : ""}`
+              }
+            >
               {a.title}: {!ofp ? "—" : none ? "none" : `${n || a.lines.length}${onRoute ? ` · ${onRoute} on route` : ""}`}
             </Badge>
           );
@@ -129,7 +153,11 @@ export function WxSection({ no }: { no: number }) {
             collapsed && mc
               ? [
                   headline(mc),
-                  mc.wind ? (mc.wind.calm ? "calm" : `${mc.wind.dir == null ? "VRB" : `${String(mc.wind.dir).padStart(3, "0")}°`} ${mc.wind.spd}${mc.wind.gust ? `G${mc.wind.gust}` : ""} kt`) : null,
+                  mc.wind
+                    ? mc.wind.calm
+                      ? "calm"
+                      : `${mc.wind.dir == null ? "VRB" : `${String(mc.wind.dir).padStart(3, "0")}°`} ${mc.wind.spd}${mc.wind.gust ? `G${mc.wind.gust}` : ""} kt`
+                    : null,
                   mc.visM != null ? `vis ${mc.visM >= 10000 ? "≥10 km" : `${mc.visM} m`}` : null,
                 ]
                   .filter(Boolean)
@@ -189,56 +217,61 @@ export function WxSection({ no }: { no: number }) {
                   </>
                 ) : (
                   <>
-                <div className="wx-facts" aria-label="Current conditions">
-                  {d ? (
-                    <>
-                      <span className="wx-fact">
-                        {d.wind?.dir != null && (
-                          <WindArrow
-                            kind="METAR"
-                            dir={d.wind.dir}
-                            spd={d.wind.spd}
-                            gust={d.wind.gust}
-                            sector={parseSector(d.wind.variable)}
-                            label={`Wind from ${d.wind.dir} degrees at ${d.wind.spd} knots${d.wind.gust ? `, gusting ${d.wind.gust}` : ""}${d.wind.variable ? `, varying ${d.wind.variable}` : ""}`}
-                          />
-                        )}
-                        {d.wind ? `${d.wind.dir ?? "VRB"}° ${d.wind.spd}${d.wind.gust ? `G${d.wind.gust}` : ""} kt` : "—"}
-                        {d.wind?.variable && <span className="muted"> ({d.wind.variable})</span>}
-                      </span>
-                      <span className="wx-fact">vis {d.visM != null ? (d.visM >= 10000 ? "≥10 km" : `${d.visM} m`) : "—"}</span>
-                      <span className="wx-fact">ceiling {d.ceilingFt != null ? `${d.ceilingFt} ft` : "none"}</span>
-                      <span className="wx-fact">
-                        {d.temp}°/{d.dew}°{d.temp != null && d.dew != null && d.temp - d.dew <= 2 ? <Badge tone="amber" tip="Temperature/dew-point spread ≤ 2 °C: fog or low cloud possible">fog risk</Badge> : null}
-                      </span>
-                      <span className="wx-fact">Q{d.qnh}</span>
-                    </>
-                  ) : (
-                    <V v={null} w={30} />
-                  )}
-                </div>
-                <div>
-                  <span className="field-label">
-                    <Tip tip="METAR — routine aerodrome observation (SA)">METAR</Tip>
-                  </span>
-                  {a.metar ? <Tokens text={a.metar} /> : <V v={null} w={36} />}
-                </div>
-                <div>
-                  <span className="field-label">
-                    <Tip tip="TAF — aerodrome forecast (FT). Change groups (TEMPO, BECMG, PROB) in magenta">TAF</Tip>
-                  </span>
-                  {a.taf.length ? (
-                    <div className="stack" style={{ gap: 2 }}>
-                      {a.taf.map((l, k) => (
-                        <div key={k} style={{ paddingLeft: k ? 16 : 0 }}>
-                          <Tokens text={l} taf />
-                        </div>
-                      ))}
+                    <div className="wx-facts" aria-label="Current conditions">
+                      {d ? (
+                        <>
+                          <span className="wx-fact">
+                            {d.wind?.dir != null && (
+                              <WindArrow
+                                kind="METAR"
+                                dir={d.wind.dir}
+                                spd={d.wind.spd}
+                                gust={d.wind.gust}
+                                sector={parseSector(d.wind.variable)}
+                                label={`Wind from ${d.wind.dir} degrees at ${d.wind.spd} knots${d.wind.gust ? `, gusting ${d.wind.gust}` : ""}${d.wind.variable ? `, varying ${d.wind.variable}` : ""}`}
+                              />
+                            )}
+                            {d.wind ? `${d.wind.dir ?? "VRB"}° ${d.wind.spd}${d.wind.gust ? `G${d.wind.gust}` : ""} kt` : "—"}
+                            {d.wind?.variable && <span className="muted"> ({d.wind.variable})</span>}
+                          </span>
+                          <span className="wx-fact">vis {d.visM != null ? (d.visM >= 10000 ? "≥10 km" : `${d.visM} m`) : "—"}</span>
+                          <span className="wx-fact">ceiling {d.ceilingFt != null ? `${d.ceilingFt} ft` : "none"}</span>
+                          <span className="wx-fact">
+                            {d.temp}°/{d.dew}°
+                            {d.temp != null && d.dew != null && d.temp - d.dew <= 2 ? (
+                              <Badge tone="amber" tip="Temperature/dew-point spread ≤ 2 °C: fog or low cloud possible">
+                                fog risk
+                              </Badge>
+                            ) : null}
+                          </span>
+                          <span className="wx-fact">Q{d.qnh}</span>
+                        </>
+                      ) : (
+                        <V v={null} w={30} />
+                      )}
                     </div>
-                  ) : (
-                    <V v={null} w={36} />
-                  )}
-                </div>
+                    <div>
+                      <span className="field-label">
+                        <Tip tip="METAR — routine aerodrome observation (SA)">METAR</Tip>
+                      </span>
+                      {a.metar ? <Tokens text={a.metar} /> : <V v={null} w={36} />}
+                    </div>
+                    <div>
+                      <span className="field-label">
+                        <Tip tip="TAF — aerodrome forecast (FT). Change groups (TEMPO, BECMG, PROB) in magenta">TAF</Tip>
+                      </span>
+                      {a.taf.length ? (
+                        <div className="stack" style={{ gap: 2 }}>
+                          {a.taf.map((l, k) => (
+                            <div key={k} style={{ paddingLeft: k ? 16 : 0 }}>
+                              <Tokens text={l} taf />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <V v={null} w={36} />
+                      )}
+                    </div>
                   </>
                 )}
                 {hz.length > 0 && (

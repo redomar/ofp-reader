@@ -90,9 +90,42 @@ function reciprocal(rwy: string): string {
 }
 
 const MORSE: Record<string, string> = {
-  A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.", G: "--.", H: "....", I: "..", J: ".---", K: "-.-", L: ".-..", M: "--",
-  N: "-.", O: "---", P: ".--.", Q: "--.-", R: ".-.", S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-", Y: "-.--", Z: "--..",
-  0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-", 5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----.",
+  A: ".-",
+  B: "-...",
+  C: "-.-.",
+  D: "-..",
+  E: ".",
+  F: "..-.",
+  G: "--.",
+  H: "....",
+  I: "..",
+  J: ".---",
+  K: "-.-",
+  L: ".-..",
+  M: "--",
+  N: "-.",
+  O: "---",
+  P: ".--.",
+  Q: "--.-",
+  R: ".-.",
+  S: "...",
+  T: "-",
+  U: "..-",
+  V: "...-",
+  W: ".--",
+  X: "-..-",
+  Y: "-.--",
+  Z: "--..",
+  0: "-----",
+  1: ".----",
+  2: "..---",
+  3: "...--",
+  4: "....-",
+  5: ".....",
+  6: "-....",
+  7: "--...",
+  8: "---..",
+  9: "----.",
 };
 
 /** A station ident in Morse: dots and dashes per letter, the letter underneath. */
@@ -158,7 +191,11 @@ function Window({
 }) {
   const tip = error ?? warn ?? (from ? "Carried over from the OFP" : undefined);
   return (
-    <span className={`rmp${value ? " has" : ""}${from ? " from" : ""}${error ? " bad" : warn ? " warn" : ""}`} data-tip={tip} data-tip-title={error || warn ? label : undefined}>
+    <span
+      className={`rmp${value ? " has" : ""}${from ? " from" : ""}${error ? " bad" : warn ? " warn" : ""}`}
+      data-tip={tip}
+      data-tip-title={error || warn ? label : undefined}
+    >
       <span className="rmp-ic">
         <ChannelIcon kind={error ? "stop" : icon} />
       </span>
@@ -190,7 +227,17 @@ function Window({
 }
 
 /** The type picker on an added channel: a pill that opens a menu of types with their pictograms. */
-function TypePicker<T extends IconKind>({ value, onPick, where, options = CHANNEL_TYPES as unknown as readonly (readonly [T, string, string])[] }: { value: T; onPick: (t: T) => void; where: string; options?: readonly (readonly [T, string, string])[] }) {
+function TypePicker<T extends IconKind>({
+  value,
+  onPick,
+  where,
+  options = CHANNEL_TYPES as unknown as readonly (readonly [T, string, string])[],
+}: {
+  value: T;
+  onPick: (t: T) => void;
+  where: string;
+  options?: readonly (readonly [T, string, string])[];
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -208,7 +255,14 @@ function TypePicker<T extends IconKind>({ value, onPick, where, options = CHANNE
   const code = options.find(([t]) => t === value)?.[1] ?? options[0][1];
   return (
     <span className="ch-type" ref={ref}>
-      <button type="button" className="ch-type-btn" aria-haspopup="listbox" aria-expanded={open} aria-label={`${where} channel type: ${code}`} onClick={() => setOpen(!open)}>
+      <button
+        type="button"
+        className="ch-type-btn"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`${where} channel type: ${code}`}
+        onClick={() => setOpen(!open)}
+      >
         {code} ▾
       </button>
       {open && (
@@ -292,14 +346,19 @@ export function RadioApp() {
   };
 
   const get = (key: string) => rec?.fields[key]?.value ?? "";
-  const put = useCallback((key: string, label: string, v: string) => flightId && writeField(flightId, key, v ? { section: S, label, value: v } : null), [flightId]);
+  const put = useCallback(
+    (key: string, label: string, v: string) => flightId && writeField(flightId, key, v ? { section: S, label, value: v } : null),
+    [flightId],
+  );
 
   const h = ofp?.header;
   // the sections appear once the plan is read (or there's no plan / it can't be read), all at once
   const loading = !activeReady || (!!flightId && !ofp && (msg === null || msg === READING));
   const name = (icao: string) => ofp?.wx.airports.find((a) => a.icao === icao)?.name ?? "";
   const ils = (kind: "takeoff" | "landing") =>
-    (ofp?.tlr[kind].tables.find((t) => /ACARS/.test(t.title))?.rows ?? []).map((r) => ({ rwy: r[0], ils: r[3]?.match(/ILS\s+(\d{3}\.\d+)/)?.[1] ?? null })).filter((r) => r.ils);
+    (ofp?.tlr[kind].tables.find((t) => /ACARS/.test(t.title))?.rows ?? [])
+      .map((r) => ({ rwy: r[0], ils: r[3]?.match(/ILS\s+(\d{3}\.\d+)/)?.[1] ?? null }))
+      .filter((r) => r.ils);
   const planned = { dep: ofp?.tlr.takeoff.planned?.PRWY, arr: ofp?.tlr.landing.planned?.PRWY };
   const outages = ofp ? notamOutages(ofp) : new Map<string, string>();
   const offMin = hhmmToMin(h?.offTime);
@@ -368,7 +427,14 @@ export function RadioApp() {
         return (
           <div key={n} className={`radio-row added${err ? " bad" : ""}`}>
             <span className="radio-id">
-              <input className="radio-name-in" value={nm} placeholder="Station name" aria-label={`${where} added channel name`} onChange={(e) => put(`${base}.name`, `${where} added channel ${n} name`, e.target.value.toUpperCase())} spellCheck={false} />
+              <input
+                className="radio-name-in"
+                value={nm}
+                placeholder="Station name"
+                aria-label={`${where} added channel name`}
+                onChange={(e) => put(`${base}.name`, `${where} added channel ${n} name`, e.target.value.toUpperCase())}
+                spellCheck={false}
+              />
               <span className="radio-added-meta">
                 <TypePicker value={type} where={nm || where} onPick={(t) => put(`${base}.type`, `${where} added channel ${n} type`, t)} />
                 {err ? (
@@ -380,7 +446,13 @@ export function RadioApp() {
                 )}
               </span>
             </span>
-            <Window value={v} label={nm || `${where} added channel`} icon={type} onChange={(nv) => put(`${base}.freq`, `${where} ${nm || `added channel ${n}`}`, nv)} error={err} />
+            <Window
+              value={v}
+              label={nm || `${where} added channel`}
+              icon={type}
+              onChange={(nv) => put(`${base}.freq`, `${where} ${nm || `added channel ${n}`}`, nv)}
+              error={err}
+            />
           </div>
         );
       })}
@@ -419,7 +491,14 @@ export function RadioApp() {
                   <span className="radio-svc">ILS {r.rwy}</span>
                   <span className={`radio-sub${r.rwy === plannedRwy ? " radio-planned" : ""}`}>{r.rwy === plannedRwy ? "Planned runway" : "Runway"}</span>
                 </span>
-                <Window value={r.ils!} label={`ILS ${r.rwy}`} icon="ils" unlit="888.88" from warn={outageNote(r.ils!) ? `NOTAM: ${outageNote(r.ils!)}` : null} />
+                <Window
+                  value={r.ils!}
+                  label={`ILS ${r.rwy}`}
+                  icon="ils"
+                  unlit="888.88"
+                  from
+                  warn={outageNote(r.ils!) ? `NOTAM: ${outageNote(r.ils!)}` : null}
+                />
               </div>
             ))}
           </div>
@@ -429,7 +508,23 @@ export function RadioApp() {
   );
 
   /* ---- 05 NAV tuning: what to set on the NAV / ADF radios, in flight order ---- */
-  type NavStep = { key: string; eto?: string; etoSub?: string; ident: string; tag: string; tagClass?: string; name: string; note?: string; radio: string; icon: IconKind; freq: string; unlit: string; unit?: string; morse?: boolean; apt?: boolean };
+  type NavStep = {
+    key: string;
+    eto?: string;
+    etoSub?: string;
+    ident: string;
+    tag: string;
+    tagClass?: string;
+    name: string;
+    note?: string;
+    radio: string;
+    icon: IconKind;
+    freq: string;
+    unlit: string;
+    unit?: string;
+    morse?: boolean;
+    apt?: boolean;
+  };
   const ilsOf = (list: { rwy: string; ils: string | null }[], rwy?: string | null) => (rwy ? (list.find((r) => r.rwy === rwy)?.ils ?? null) : null);
   const rwyStep = (key: string, apt: string, rwy: string, freq: string | null, what: string, extra: Partial<NavStep>): NavStep => ({
     key,
@@ -449,14 +544,41 @@ export function RadioApp() {
     const own = ilsOf(ils("takeoff"), planned.dep);
     const rec = reciprocal(planned.dep);
     const recIls = rec !== planned.dep ? ilsOf(ils("takeoff"), rec) : null;
-    depSteps.push(rwyStep("dep", h.dep, planned.dep, own, "planned take-off runway", { eto: clock(offMin), etoSub: "off", apt: true, note: !own && recIls ? `For a quick return: ILS ${rec}, the reciprocal runway, below` : undefined }));
+    depSteps.push(
+      rwyStep("dep", h.dep, planned.dep, own, "planned take-off runway", {
+        eto: clock(offMin),
+        etoSub: "off",
+        apt: true,
+        note: !own && recIls ? `For a quick return: ILS ${rec}, the reciprocal runway, below` : undefined,
+      }),
+    );
     if (recIls) depSteps.push(rwyStep("ret", h.dep, rec, recIls, "", { name: `Return to ${h.dep} · the reciprocal of ${planned.dep}` }));
   }
   const routeSteps: NavStep[] = navs.map((n, i) => {
     const ndb = navaidKind(n.freq).kind === "NDB";
-    return { key: `nav${i}`, eto: n.eto, ident: n.id, tag: ndb ? "NDB" : "VOR", tagClass: ndb ? "ndb" : "", name: `${titleCase(n.name)} · ${n.freq} ${ndb ? "kHz" : "MHz"}`, radio: ndb ? "ADF" : "NAV 2", icon: ndb ? "ndb" : "vor", freq: n.freq, unlit: ndb ? "8888" : "888.88", unit: ndb ? "kHz" : undefined, morse: true };
+    return {
+      key: `nav${i}`,
+      eto: n.eto,
+      ident: n.id,
+      tag: ndb ? "NDB" : "VOR",
+      tagClass: ndb ? "ndb" : "",
+      name: `${titleCase(n.name)} · ${n.freq} ${ndb ? "kHz" : "MHz"}`,
+      radio: ndb ? "ADF" : "NAV 2",
+      icon: ndb ? "ndb" : "vor",
+      freq: n.freq,
+      unlit: ndb ? "8888" : "888.88",
+      unit: ndb ? "kHz" : undefined,
+      morse: true,
+    };
   });
-  if (h?.arr && planned.arr) arrSteps.push(rwyStep("arr", h.arr, planned.arr, ilsOf(ils("landing"), planned.arr), "planned landing runway", { eto: clock(hhmmToMin(h.onTime)), etoSub: "on", apt: true }));
+  if (h?.arr && planned.arr)
+    arrSteps.push(
+      rwyStep("arr", h.arr, planned.arr, ilsOf(ils("landing"), planned.arr), "planned landing runway", {
+        eto: clock(hhmmToMin(h.onTime)),
+        etoSub: "on",
+        apt: true,
+      }),
+    );
 
   const navStep = (st: NavStep, cls: string) => {
     const out = st.freq ? outageNote(st.freq) : undefined;
@@ -487,7 +609,8 @@ export function RadioApp() {
       </div>
     );
   };
-  const navGroup = (steps: NavStep[], start: boolean, end: boolean) => steps.map((st, i) => navStep(st, `${start && i === 0 ? " first" : ""}${end && i === steps.length - 1 ? " last" : ""}`));
+  const navGroup = (steps: NavStep[], start: boolean, end: boolean) =>
+    steps.map((st, i) => navStep(st, `${start && i === 0 ? " first" : ""}${end && i === steps.length - 1 ? " last" : ""}`));
 
   const addedNavaids = () => (
     <>
@@ -507,12 +630,26 @@ export function RadioApp() {
             <div className={`nav-card${err ? " bad" : ""}`}>
               <div className="nav-who">
                 <div className="nav-top">
-                  <input className="nav-ident-in" value={id} placeholder="Ident" aria-label="Navaid ident" maxLength={4} onChange={(e) => put(`${base}.ident`, `${label} ident`, e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} spellCheck={false} />
+                  <input
+                    className="nav-ident-in"
+                    value={id}
+                    placeholder="Ident"
+                    aria-label="Navaid ident"
+                    maxLength={4}
+                    onChange={(e) => put(`${base}.ident`, `${label} ident`, e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                    spellCheck={false}
+                  />
                   <TypePicker value={type} options={NAVAID_TYPES} where={id || "Navaid"} onPick={(t) => put(`${base}.type`, `${label} type`, t)} />
                   <Morse ident={id} />
                 </div>
                 <span className="radio-added-meta">
-                  <input className="nav-name-in" value={nm} placeholder="Station name" aria-label="Navaid name" onChange={(e) => put(`${base}.name`, `${label} name`, e.target.value)} />
+                  <input
+                    className="nav-name-in"
+                    value={nm}
+                    placeholder="Station name"
+                    aria-label="Navaid name"
+                    onChange={(e) => put(`${base}.name`, `${label} name`, e.target.value)}
+                  />
                   <button type="button" className="radio-sub linkish" onClick={() => removeChannel("nav", n)}>
                     Remove
                   </button>
@@ -573,7 +710,14 @@ export function RadioApp() {
         <StatusLine>
           <PlanChips />
           <span className="examples-sep" aria-hidden="true" />
-          <span role="status">{msg ?? (h ? "Typed frequencies are saved with this flight" : flights.length ? "Pick a flight" : "No saved flights with a PDF yet: open a plan in the reader first")}</span>
+          <span role="status">
+            {msg ??
+              (h
+                ? "Typed frequencies are saved with this flight"
+                : flights.length
+                  ? "Pick a flight"
+                  : "No saved flights with a PDF yet: open a plan in the reader first")}
+          </span>
           <span className="status-tools">
             <span className="radio-skins" role="group" aria-label="Display style">
               <span className="status-label" aria-hidden="true">
@@ -589,70 +733,99 @@ export function RadioApp() {
         </StatusLine>
       </header>
       <div className="layout">
-        <Toc sections={sections} pending={loading} links={flightId ? { plan: `/?flight=${encodeURIComponent(flightId)}`, radio: `/radio?flight=${encodeURIComponent(flightId)}` } : undefined} />
+        <Toc
+          sections={sections}
+          pending={loading}
+          links={flightId ? { plan: `/?flight=${encodeURIComponent(flightId)}`, radio: `/radio?flight=${encodeURIComponent(flightId)}` } : undefined}
+        />
         <main id="main" className={ofp ? "is-filled" : ""} data-skin={skin}>
           {!loading && (
             <>
-          <Section id="dep" no={1} title="Departure" meta={<span>COMMS · ILS</span>}>
-            <Replay>
-            {airport(h?.dep, "Departure", ils("takeoff"), planned.dep)}
-            </Replay>
-          </Section>
-          <Section id="enroute" no={2} title="En route" meta={<span>{firs.length} FIR / UIR{era ? " · fuel ERA" : ""}</span>}>
-            <Replay>
-            <h3 className="radio-group">
-              Centres <span className="muted">· FIR / UIR crossings from the OFP</span>
-            </h3>
-            <div className="radio-rows">
-              {firs.map((f) => channel(`radio.fir.${f.name}`, f.name, <>Centre{f.eto && ` · ${f.eto}`}</>, `${f.name} centre`, "ctr"))}
-              {!firs.length && <V v={null} w={30} />}
-            </div>
-            <h3 className="radio-group">
-              Other stations <span className="muted">· information, approach units, and so on</span>
-            </h3>
-            <div className="radio-rows">{addedRows("enroute", "En route", "info")}</div>
-            {era && <div className="radio-era">{airport(era.icao, "Fuel en-route alternate", [])}</div>}
-            </Replay>
-          </Section>
-          <Section id="dest" no={3} title="Destination" meta={<span>COMMS · ILS</span>}>
-            <Replay>
-            {airport(h?.arr, "Destination", ils("landing"), planned.arr)}
-            </Replay>
-          </Section>
-          <Section id="altn" no={4} title="Alternates" meta={<span>{alts.length} airport{alts.length === 1 ? "" : "s"}</span>}>
-            <Replay>
-            <div className="radio-alts">{alts.length ? alts.map((a) => <div key={a}>{airport(a, "Alternate", [])}</div>) : <V v={null} w={30} />}</div>
-            </Replay>
-          </Section>
-          <Section id="navaids" no={5} title="NAV tuning" meta={<span>from the OFP · in flight order</span>}>
-            <Replay>
-              <p className="nav-lede">What to set on the NAV and ADF radios, in the order you&apos;ll need it. The Morse code is each station&apos;s ident, so you can check it by ear.</p>
-              {depSteps.length > 0 && (
-                <>
-                  <h3 className="radio-group nav-phase">
-                    Departure <span className="muted">· {h?.dep} runway {planned.dep}</span>
+              <Section id="dep" no={1} title="Departure" meta={<span>COMMS · ILS</span>}>
+                <Replay>{airport(h?.dep, "Departure", ils("takeoff"), planned.dep)}</Replay>
+              </Section>
+              <Section
+                id="enroute"
+                no={2}
+                title="En route"
+                meta={
+                  <span>
+                    {firs.length} FIR / UIR{era ? " · fuel ERA" : ""}
+                  </span>
+                }
+              >
+                <Replay>
+                  <h3 className="radio-group">
+                    Centres <span className="muted">· FIR / UIR crossings from the OFP</span>
                   </h3>
-                  {navGroup(depSteps, true, false)}
-                </>
-              )}
-              <h3 className="radio-group nav-phase">
-                En route <span className="muted">· VOR and NDB on the route</span>
-              </h3>
-              {routeSteps.length ? navGroup(routeSteps, false, false) : ofp && <p className="small muted nav-none">No radio navaids on this route: it&apos;s flown on RNAV waypoints.</p>}
-              {arrSteps.length > 0 && (
-                <>
-                  <h3 className="radio-group nav-phase">
-                    Arrival <span className="muted">· {h?.arr} runway {planned.arr}</span>
+                  <div className="radio-rows">
+                    {firs.map((f) => channel(`radio.fir.${f.name}`, f.name, <>Centre{f.eto && ` · ${f.eto}`}</>, `${f.name} centre`, "ctr"))}
+                    {!firs.length && <V v={null} w={30} />}
+                  </div>
+                  <h3 className="radio-group">
+                    Other stations <span className="muted">· information, approach units, and so on</span>
                   </h3>
-                  {navGroup(arrSteps, false, true)}
-                </>
-              )}
-              <h3 className="radio-group nav-phase">
-                Added by you <span className="muted">· anything the OFP doesn&apos;t list</span>
-              </h3>
-              {addedNavaids()}
-            </Replay>
-          </Section>
+                  <div className="radio-rows">{addedRows("enroute", "En route", "info")}</div>
+                  {era && <div className="radio-era">{airport(era.icao, "Fuel en-route alternate", [])}</div>}
+                </Replay>
+              </Section>
+              <Section id="dest" no={3} title="Destination" meta={<span>COMMS · ILS</span>}>
+                <Replay>{airport(h?.arr, "Destination", ils("landing"), planned.arr)}</Replay>
+              </Section>
+              <Section
+                id="altn"
+                no={4}
+                title="Alternates"
+                meta={
+                  <span>
+                    {alts.length} airport{alts.length === 1 ? "" : "s"}
+                  </span>
+                }
+              >
+                <Replay>
+                  <div className="radio-alts">{alts.length ? alts.map((a) => <div key={a}>{airport(a, "Alternate", [])}</div>) : <V v={null} w={30} />}</div>
+                </Replay>
+              </Section>
+              <Section id="navaids" no={5} title="NAV tuning" meta={<span>from the OFP · in flight order</span>}>
+                <Replay>
+                  <p className="nav-lede">
+                    What to set on the NAV and ADF radios, in the order you&apos;ll need it. The Morse code is each station&apos;s ident, so you can check it by
+                    ear.
+                  </p>
+                  {depSteps.length > 0 && (
+                    <>
+                      <h3 className="radio-group nav-phase">
+                        Departure{" "}
+                        <span className="muted">
+                          · {h?.dep} runway {planned.dep}
+                        </span>
+                      </h3>
+                      {navGroup(depSteps, true, false)}
+                    </>
+                  )}
+                  <h3 className="radio-group nav-phase">
+                    En route <span className="muted">· VOR and NDB on the route</span>
+                  </h3>
+                  {routeSteps.length
+                    ? navGroup(routeSteps, false, false)
+                    : ofp && <p className="small muted nav-none">No radio navaids on this route: it&apos;s flown on RNAV waypoints.</p>}
+                  {arrSteps.length > 0 && (
+                    <>
+                      <h3 className="radio-group nav-phase">
+                        Arrival{" "}
+                        <span className="muted">
+                          · {h?.arr} runway {planned.arr}
+                        </span>
+                      </h3>
+                      {navGroup(arrSteps, false, true)}
+                    </>
+                  )}
+                  <h3 className="radio-group nav-phase">
+                    Added by you <span className="muted">· anything the OFP doesn&apos;t list</span>
+                  </h3>
+                  {addedNavaids()}
+                </Replay>
+              </Section>
             </>
           )}
         </main>

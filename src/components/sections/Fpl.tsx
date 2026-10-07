@@ -53,7 +53,15 @@ export function FplSection({ no }: { no: number }) {
   const dep = i13?.slice(0, 4) ?? null;
   const dest = destEet?.slice(0, 4) ?? null;
   const dof = i18.get("DOF")?.match(/^(\d{2})(\d{2})(\d{2})$/);
-  const dofText = dof ? new Date(Date.UTC(2000 + Number(dof[1]), Number(dof[2]) - 1, Number(dof[3]))).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : null;
+  const dofText = dof
+    ? new Date(Date.UTC(2000 + Number(dof[1]), Number(dof[2]) - 1, Number(dof[3]))).toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      })
+    : null;
   const known = new Set(["PBN", "DOF", "REG", "EET", "OPR", "PER", "RMK"]);
   const other = [...i18].filter(([k, v]) => !known.has(k) || (k === "RMK" && v !== "TCAS"));
 
@@ -146,7 +154,10 @@ export function FplSection({ no }: { no: number }) {
                   <span className="fc-big mono">{i7}</span>
                   {opr && (
                     <span className="fc-hero-sub">
-                      {opr.name} · <span title="Radio callsign">“{opr.call} {i7?.slice(3)}”</span>
+                      {opr.name} ·{" "}
+                      <span title="Radio callsign">
+                        “{opr.call} {i7?.slice(3)}”
+                      </span>
                     </span>
                   )}
                 </div>
@@ -154,8 +165,16 @@ export function FplSection({ no }: { no: number }) {
                   <FcRow on={on} setOn={setOn} it="8" label="Rules">
                     {i8 ? `${FLIGHT_RULES[i8[0]] ?? i8[0]} · ${FLIGHT_TYPE[i8[1]] ?? i8[1]}` : "—"}
                   </FcRow>
-                  {dofText && <FcRow on={on} setOn={setOn} it="18" label="Date">{dofText}</FcRow>}
-                  {i18.get("OPR") && <FcRow on={on} setOn={setOn} it="18" label="Operator">{OPERATORS[i18.get("OPR")!]?.name ?? i18.get("OPR")}</FcRow>}
+                  {dofText && (
+                    <FcRow on={on} setOn={setOn} it="18" label="Date">
+                      {dofText}
+                    </FcRow>
+                  )}
+                  {i18.get("OPR") && (
+                    <FcRow on={on} setOn={setOn} it="18" label="Operator">
+                      {OPERATORS[i18.get("OPR")!]?.name ?? i18.get("OPR")}
+                    </FcRow>
+                  )}
                 </dl>
               </section>
 
@@ -166,7 +185,11 @@ export function FplSection({ no }: { no: number }) {
                   {AIRCRAFT[type] && <span className="fc-hero-sub">{AIRCRAFT[type]}</span>}
                 </div>
                 <dl>
-                  {i18.get("REG") && <FcRow on={on} setOn={setOn} it="18" label="Registration">{fmtReg(i18.get("REG")!) ?? i18.get("REG")}</FcRow>}
+                  {i18.get("REG") && (
+                    <FcRow on={on} setOn={setOn} it="18" label="Registration">
+                      {fmtReg(i18.get("REG")!) ?? i18.get("REG")}
+                    </FcRow>
+                  )}
                   <FcRow on={on} setOn={setOn} it="9" label="Wake">
                     <Tip tip="Wake turbulence category: sets separation behind and ahead" plain>
                       <span>{WAKE[wake] ?? wake ?? "—"}</span>
@@ -177,7 +200,11 @@ export function FplSection({ no }: { no: number }) {
                       {PER[i18.get("PER")!] ?? i18.get("PER")}
                     </FcRow>
                   )}
-                  {i18.get("RMK") === "TCAS" && <FcRow on={on} setOn={setOn} it="18" label="TCAS">Fitted (ACAS II)</FcRow>}
+                  {i18.get("RMK") === "TCAS" && (
+                    <FcRow on={on} setOn={setOn} it="18" label="TCAS">
+                      Fitted (ACAS II)
+                    </FcRow>
+                  )}
                 </dl>
               </section>
 
@@ -198,7 +225,11 @@ export function FplSection({ no }: { no: number }) {
                   )}
                   {pbn.length > 0 && (
                     <FcRow on={on} setOn={setOn} it="18" label="PBN">
-                      <span className="fc-chips">{pbn.map((c) => chip(c, (PBN[c] ?? c).replace(/ — all permitted sensors/, ""), `PBN capability ${c}: ${PBN[c] ?? "not in the quick reference"}`))}</span>
+                      <span className="fc-chips">
+                        {pbn.map((c) =>
+                          chip(c, (PBN[c] ?? c).replace(/ — all permitted sensors/, ""), `PBN capability ${c}: ${PBN[c] ?? "not in the quick reference"}`),
+                        )}
+                      </span>
                     </FcRow>
                   )}
                   {other.map(([k, v]) => (
@@ -226,11 +257,20 @@ export function FplSection({ no }: { no: number }) {
                 <dl>
                   <FcRow on={on} setOn={setOn} it="13" label="EOBT">
                     {i13 ? `${fmtHhmm(i13.slice(4))}Z` : "—"}
-                    {ofp?.header.outTime && i13 && ofp.header.outTime !== i13.slice(4) && <span className="muted"> (OFP OUT {fmtHhmm(ofp.header.outTime)}Z)</span>}
+                    {ofp?.header.outTime && i13 && ofp.header.outTime !== i13.slice(4) && (
+                      <span className="muted"> (OFP OUT {fmtHhmm(ofp.header.outTime)}Z)</span>
+                    )}
                   </FcRow>
                   <FcRow on={on} setOn={setOn} it="15" label="Cruise">
                     {cruise ? `${cruise.speed} · ${cruise.level}` : "—"}
-                    {changes.map((c, k) => (c.sl ? <span key={k} className="muted"> · from {c.at}: {c.sl.speed}, {c.sl.level}</span> : null))}
+                    {changes.map((c, k) =>
+                      c.sl ? (
+                        <span key={k} className="muted">
+                          {" "}
+                          · from {c.at}: {c.sl.speed}, {c.sl.level}
+                        </span>
+                      ) : null,
+                    )}
                   </FcRow>
                   <FcRow on={on} setOn={setOn} it="15" label="Route">
                     <RouteString route={i15} />
@@ -249,7 +289,6 @@ export function FplSection({ no }: { no: number }) {
                   )}
                 </dl>
               </section>
-
             </div>
           ) : (
             <div className="stack" style={{ gap: 6 }}>
@@ -260,8 +299,6 @@ export function FplSection({ no }: { no: number }) {
           )}
         </div>
       </div>
-
-
     </Section>
   );
 }

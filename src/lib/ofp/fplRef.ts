@@ -156,7 +156,8 @@ export function speedLevel(s: string): { speed: string; level: string } | null {
   const m = s.match(/^([NKM])(\d{3,4})([FASM])(\d{3,4})$/);
   if (!m) return null;
   const speed = m[1] === "N" ? `${Number(m[2])} kt TAS` : m[1] === "K" ? `${Number(m[2])} km/h TAS` : `Mach .${m[2].slice(1)}`;
-  const level = m[3] === "F" ? `FL${m[4]}` : m[3] === "A" ? `${Number(m[4]) * 100} ft` : m[3] === "S" ? `${Number(m[4]) * 10} m (metric level)` : `${Number(m[4]) * 10} m`;
+  const level =
+    m[3] === "F" ? `FL${m[4]}` : m[3] === "A" ? `${Number(m[4]) * 100} ft` : m[3] === "S" ? `${Number(m[4]) * 10} m (metric level)` : `${Number(m[4]) * 10} m`;
   return { speed, level };
 }
 

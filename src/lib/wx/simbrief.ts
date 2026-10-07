@@ -45,8 +45,18 @@ function writeCache(c: Cache) {
 /** Expiry of a JWT access token (ms), or null if it can't be read. */
 export function tokenExpiry(token: string): number | null {
   try {
-    const p = token.trim().replace(/^Bearer\s+/i, "").split(".")[1];
-    const json = JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(p.length / 4) * 4, "=")));
+    const p = token
+      .trim()
+      .replace(/^Bearer\s+/i, "")
+      .split(".")[1];
+    const json = JSON.parse(
+      atob(
+        p
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+          .padEnd(Math.ceil(p.length / 4) * 4, "="),
+      ),
+    );
     return typeof json.exp === "number" ? json.exp * 1000 : null;
   } catch {
     return null;
@@ -79,7 +89,14 @@ export async function fetchAirport(icao: string, token: string): Promise<SbAirpo
     metar: j.text_metar || null,
     taf: j.text_taf || null,
     atis: Array.isArray(j.text_atis)
-      ? j.text_atis.filter((a: { message?: string }) => a?.message).map((a: { letter?: string; type?: string; message: string; issued?: string }) => ({ letter: a.letter ?? null, type: a.type ?? null, message: a.message, issued: a.issued ?? null }))
+      ? j.text_atis
+          .filter((a: { message?: string }) => a?.message)
+          .map((a: { letter?: string; type?: string; message: string; issued?: string }) => ({
+            letter: a.letter ?? null,
+            type: a.type ?? null,
+            message: a.message,
+            issued: a.issued ?? null,
+          }))
       : [],
     at: Date.now(),
   };

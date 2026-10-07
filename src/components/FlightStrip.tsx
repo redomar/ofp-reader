@@ -204,30 +204,50 @@ function Profile({ d, w, withTimes }: { d: StripData; w: number; withTimes: bool
   const height = withTimes ? base + 8 + rowsNeeded(labels, w) * 14 + 4 : base + 6;
 
   return (
-    <svg width={w} height={height} className="fs" role="img" aria-label={`Vertical profile: ${d.levels ?? "cruise"}, ${Math.round(d.total)} NM${withTimes && d.t.off ? `, off ${d.t.off}, on ${d.t.on}` : ""}`}>
+    <svg
+      width={w}
+      height={height}
+      className="fs"
+      role="img"
+      aria-label={`Vertical profile: ${d.levels ?? "cruise"}, ${Math.round(d.total)} NM${withTimes && d.t.off ? `, off ${d.t.off}, on ${d.t.on}` : ""}`}
+    >
       <Reveal w={w} h={height}>
-      <line x1={PAD} x2={w - PAD} y1={base} y2={base} className="fs-base" />
-      <path d={g.area} className="fs-area" />
-      <path d={g.line} className="fs-line" />
-      {d.levels && (
-        <text x={Math.min(Math.max(lvlX, 60), w - 60)} y={cruiseY - 6} textAnchor="middle" className="fs-level">
-          {d.levels}
-        </text>
-      )}
-      {toc && <Marker x={toc[0]} y={toc[1]} title="Top of climb" tip={`${d.t.toc ?? "—"}Z · FL${d.pts[d.toc].alt} · ${Math.round(d.pts[d.toc].cum)} NM from ${d.dep}`} />}
-      {tod && <Marker x={tod[0]} y={tod[1]} title="Top of descent" tip={`${d.t.tod ?? "—"}Z · FL${d.pts[d.tod].alt} · ${Math.round(d.total - d.pts[d.tod].cum)} NM to ${d.arr}`} />}
-      {!withTimes && toc && (
-        <text x={toc[0]} y={toc[1] + 14} textAnchor="middle" className="fs-text">
-          TOC
-        </text>
-      )}
-      {!withTimes && tod && (
-        <text x={tod[0]} y={tod[1] + 14} textAnchor="middle" className="fs-text">
-          TOD
-        </text>
-      )}
-      <Ends a={g.xy[0]} b={g.xy.at(-1)!} />
-      {withTimes && <LabelRows labels={labels} w={w} top={base + 6} />}
+        <line x1={PAD} x2={w - PAD} y1={base} y2={base} className="fs-base" />
+        <path d={g.area} className="fs-area" />
+        <path d={g.line} className="fs-line" />
+        {d.levels && (
+          <text x={Math.min(Math.max(lvlX, 60), w - 60)} y={cruiseY - 6} textAnchor="middle" className="fs-level">
+            {d.levels}
+          </text>
+        )}
+        {toc && (
+          <Marker
+            x={toc[0]}
+            y={toc[1]}
+            title="Top of climb"
+            tip={`${d.t.toc ?? "—"}Z · FL${d.pts[d.toc].alt} · ${Math.round(d.pts[d.toc].cum)} NM from ${d.dep}`}
+          />
+        )}
+        {tod && (
+          <Marker
+            x={tod[0]}
+            y={tod[1]}
+            title="Top of descent"
+            tip={`${d.t.tod ?? "—"}Z · FL${d.pts[d.tod].alt} · ${Math.round(d.total - d.pts[d.tod].cum)} NM to ${d.arr}`}
+          />
+        )}
+        {!withTimes && toc && (
+          <text x={toc[0]} y={toc[1] + 14} textAnchor="middle" className="fs-text">
+            TOC
+          </text>
+        )}
+        {!withTimes && tod && (
+          <text x={tod[0]} y={tod[1] + 14} textAnchor="middle" className="fs-text">
+            TOD
+          </text>
+        )}
+        <Ends a={g.xy[0]} b={g.xy.at(-1)!} />
+        {withTimes && <LabelRows labels={labels} w={w} top={base + 6} />}
       </Reveal>
     </svg>
   );
@@ -254,16 +274,16 @@ function Route({ d, w }: { d: StripData; w: number }) {
   return (
     <svg width={w} height={H} className="fs" role="img" aria-label={`Route from ${d.dep} to ${d.arr}, ${Math.round(d.total)} NM`}>
       <Reveal w={w} h={H}>
-      <line x1={xy[0][0]} x2={xy.at(-1)![0]} y1={H / 2} y2={H / 2} className="fs-direct" />
-      <path d={line} className="fs-line" />
-      {geo.length < 45 &&
-        xy.slice(1, -1).map((p, i) => (
-          <g key={i} data-tip={`+${hm(geo[i + 1].ttlt)} after take-off · ${Math.round(geo[i + 1].cum)} NM`} data-tip-title={geo[i + 1].id}>
-            <path d={`M${p[0]} ${p[1] - 3} l2.6 4.5 h-5.2z`} className="fs-wpt" />
-            <circle cx={p[0]} cy={p[1]} r={7} className="fs-hit" />
-          </g>
-        ))}
-      <Ends a={xy[0]} b={xy.at(-1)!} />
+        <line x1={xy[0][0]} x2={xy.at(-1)![0]} y1={H / 2} y2={H / 2} className="fs-direct" />
+        <path d={line} className="fs-line" />
+        {geo.length < 45 &&
+          xy.slice(1, -1).map((p, i) => (
+            <g key={i} data-tip={`+${hm(geo[i + 1].ttlt)} after take-off · ${Math.round(geo[i + 1].cum)} NM`} data-tip-title={geo[i + 1].id}>
+              <path d={`M${p[0]} ${p[1] - 3} l2.6 4.5 h-5.2z`} className="fs-wpt" />
+              <circle cx={p[0]} cy={p[1]} r={7} className="fs-hit" />
+            </g>
+          ))}
+        <Ends a={xy[0]} b={xy.at(-1)!} />
       </Reveal>
     </svg>
   );
@@ -297,12 +317,12 @@ function Timeline({ d, w }: { d: StripData; w: number }) {
   return (
     <svg width={w} height={height} className="fs" role="img" aria-label={`Timeline: ${events.map(([n, v]) => `${n} ${v}`).join(", ")}`}>
       <Reveal w={w} h={height}>
-      {seg("OUT", "OFF", "fs-taxi")}
-      {seg("OFF", "TOC", "fs-air")}
-      {seg("TOC", "TOD", "fs-cruise", true)}
-      {seg("TOD", "ON", "fs-air")}
-      {seg("ON", "IN", "fs-taxi")}
-      <LabelRows labels={labels} w={w} top={barY + 14} />
+        {seg("OUT", "OFF", "fs-taxi")}
+        {seg("OFF", "TOC", "fs-air")}
+        {seg("TOC", "TOD", "fs-cruise", true)}
+        {seg("TOD", "ON", "fs-air")}
+        {seg("ON", "IN", "fs-taxi")}
+        <LabelRows labels={labels} w={w} top={barY + 14} />
       </Reveal>
     </svg>
   );
@@ -329,7 +349,14 @@ function Arc({ w, live }: { w: number; live: boolean }) {
   };
   const rest = at(STOP);
   return (
-    <svg width={w} height={60} className="fs" role={live ? "img" : undefined} aria-label={live ? "Flight from departure to arrival" : undefined} aria-hidden={live ? undefined : true}>
+    <svg
+      width={w}
+      height={60}
+      className="fs"
+      role={live ? "img" : undefined}
+      aria-label={live ? "Flight from departure to arrival" : undefined}
+      aria-hidden={live ? undefined : true}
+    >
       <path d={d} className="fs-placeholder" />
       {live && (
         <Reveal w={w} h={60}>

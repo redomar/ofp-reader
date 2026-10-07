@@ -4,7 +4,8 @@ import { Badge, cx } from "./ui";
 import { setHighlightedSigmet, useHighlightedSigmet, type SigmetOnRoute } from "./useSigmets";
 import { SIGMET_TOKENS, fmtDdhhmm, nowStatus, type Impact } from "@/lib/wx/sigmet";
 
-const flOf = (ft: number) => (ft <= 0 ? "ground" : ft < 10000 ? `${Math.round(ft).toLocaleString("en-GB")} ft` : `FL${String(Math.round(ft / 100)).padStart(3, "0")}`);
+const flOf = (ft: number) =>
+  ft <= 0 ? "ground" : ft < 10000 ? `${Math.round(ft).toLocaleString("en-GB")} ft` : `FL${String(Math.round(ft / 100)).padStart(3, "0")}`;
 const plus = (m: number) => `+${String(Math.floor(m / 60)).padStart(2, "0")}:${String(Math.round(m % 60)).padStart(2, "0")}`;
 const dur = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`);
 
@@ -14,7 +15,8 @@ function verdictText(i: Impact, levels: string | null, offLabel: string | null) 
   if (i.verdict === "unknown" || !i.from || !i.to) return "Its area can't be placed against the route, so check it against your track.";
   const where = `Your route is inside it ${i.from.name === i.to.name ? `near ${i.from.name}` : `from ${i.from.name} to ${i.to.name}`} (${plus(i.from.t)}–${plus(i.to.t)} after take-off${offLabel ? ` at ${offLabel}` : ""}, ${flOf(i.altMin)}${i.altMax !== i.altMin ? `–${flOf(i.altMax)}` : ""})`;
   if (i.verdict === "clear-level") return `${where}, but you pass ${i.vertical} its levels (${levels}).`;
-  if (i.verdict === "clear-time") return `${where}, but ${i.timing === "after" ? `it ends ${dur(i.gapMin!)} before you get there` : `it starts ${dur(i.gapMin!)} after you've passed`}.`;
+  if (i.verdict === "clear-time")
+    return `${where}, but ${i.timing === "after" ? `it ends ${dur(i.gapMin!)} before you get there` : `it starts ${dur(i.gapMin!)} after you've passed`}.`;
   return `${where}, within its levels${i.timing === "during" ? " and while it's valid" : ""}.`;
 }
 
@@ -31,7 +33,15 @@ function Raw({ text }: { text: string }) {
     <span>
       {text.split(" ").map((t, i) => {
         const coord = /^[NS]\d{2,4}$|^[EW]\d{3,5}$/.test(t);
-        const tip = SIGMET_TOKENS[t] ?? (coord ? `${t[0] === "N" || t[0] === "S" ? "Latitude" : "Longitude"} ${t.slice(1, t[0] === "N" || t[0] === "S" ? 3 : 4)}°${t.length > (t[0] === "N" || t[0] === "S" ? 3 : 4) ? ` ${t.slice(t[0] === "N" || t[0] === "S" ? 3 : 4)}′` : ""} ${t[0]}` : /^FL\d{2,3}$/.test(t) ? `Flight level ${Number(t.slice(2))}` : /^\d{6}\/\d{6}$/.test(t) ? "Valid from / to, ddhhmm UTC" : null);
+        const tip =
+          SIGMET_TOKENS[t] ??
+          (coord
+            ? `${t[0] === "N" || t[0] === "S" ? "Latitude" : "Longitude"} ${t.slice(1, t[0] === "N" || t[0] === "S" ? 3 : 4)}°${t.length > (t[0] === "N" || t[0] === "S" ? 3 : 4) ? ` ${t.slice(t[0] === "N" || t[0] === "S" ? 3 : 4)}′` : ""} ${t[0]}`
+            : /^FL\d{2,3}$/.test(t)
+              ? `Flight level ${Number(t.slice(2))}`
+              : /^\d{6}\/\d{6}$/.test(t)
+                ? "Valid from / to, ddhhmm UTC"
+                : null);
         return (
           <span key={i}>
             {tip ? (
@@ -81,7 +91,9 @@ export function SigmetCard({ item, offLabel }: { item: SigmetOnRoute; offLabel: 
         )}
       </header>
       {s.cancels ? (
-        <p className="sig-what">Cancels {s.kind} {s.cancels}.</p>
+        <p className="sig-what">
+          Cancels {s.kind} {s.cancels}.
+        </p>
       ) : (
         <>
           <p className="sig-what">
@@ -99,7 +111,15 @@ export function SigmetCard({ item, offLabel }: { item: SigmetOnRoute; offLabel: 
             </div>
             <div>
               <dt>Movement</dt>
-              <dd>{s.movement === "STNR" ? "Stationary" : s.movement ? `${s.movement.dir} at ${s.movement.spd} ${s.movement.unit === "KT" ? "kt" : "km/h"}` : s.endArea ? `to forecast position at ${s.endAt?.slice(0, 2)}:${s.endAt?.slice(2)}Z` : "—"}</dd>
+              <dd>
+                {s.movement === "STNR"
+                  ? "Stationary"
+                  : s.movement
+                    ? `${s.movement.dir} at ${s.movement.spd} ${s.movement.unit === "KT" ? "kt" : "km/h"}`
+                    : s.endArea
+                      ? `to forecast position at ${s.endAt?.slice(0, 2)}:${s.endAt?.slice(2)}Z`
+                      : "—"}
+              </dd>
             </div>
             <div>
               <dt>Trend</dt>
@@ -107,7 +127,15 @@ export function SigmetCard({ item, offLabel }: { item: SigmetOnRoute; offLabel: 
             </div>
             <div>
               <dt>Area</dt>
-              <dd>{s.area.kind === "polygon" ? `${s.area.points.length - (s.area.points.length > 3 ? 1 : 0)}-point area` : s.area.kind === "bounds" ? "Part of the FIR (by latitude / longitude)" : s.area.kind === "fir" ? "Entire FIR" : "—"}</dd>
+              <dd>
+                {s.area.kind === "polygon"
+                  ? `${s.area.points.length - (s.area.points.length > 3 ? 1 : 0)}-point area`
+                  : s.area.kind === "bounds"
+                    ? "Part of the FIR (by latitude / longitude)"
+                    : s.area.kind === "fir"
+                      ? "Entire FIR"
+                      : "—"}
+              </dd>
             </div>
           </dl>
           <div className={cx("sig-verdict", `v-${v.tone}`)}>

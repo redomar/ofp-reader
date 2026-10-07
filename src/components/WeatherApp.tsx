@@ -125,25 +125,30 @@ export function WeatherApp() {
     }));
   }, [reports]);
 
-  const loadPlan = useCallback(async (id: string) => {
-    const f = saved.find((s) => s.meta.id === id);
-    if (!f) return;
-    setBusy(`Reading ${f.meta.flightNo ?? id}…`);
-    try {
-      const data = await getPdf(id);
-      if (!data) throw new Error("The saved PDF is missing.");
-      const { readOfp } = await import("@/lib/ofp/pdf");
-      const { ofp } = await readOfp(data, f.meta.source);
-      // The OFP lists reports under an airport heading, without the ICAO code in the report itself.
-      const lines = ofp.wx.airports.flatMap((a) => [a.metar ? `METAR ${a.icao} ${a.metar}` : "", a.taf.length ? `TAF ${a.icao} ${a.taf.join("\n  ")}` : "", ""]).filter((l, i, arr) => l || arr[i - 1]);
-      setText(lines.join("\n").trim());
-      setFrom(id);
-      setLoadedFrom(`${f.meta.flightNo ?? id} ${f.meta.dep ?? ""}→${f.meta.arr ?? ""}`);
-      setBusy(null);
-    } catch (e) {
-      setBusy(e instanceof Error ? e.message : "Couldn't read that plan.");
-    }
-  }, [saved]);
+  const loadPlan = useCallback(
+    async (id: string) => {
+      const f = saved.find((s) => s.meta.id === id);
+      if (!f) return;
+      setBusy(`Reading ${f.meta.flightNo ?? id}…`);
+      try {
+        const data = await getPdf(id);
+        if (!data) throw new Error("The saved PDF is missing.");
+        const { readOfp } = await import("@/lib/ofp/pdf");
+        const { ofp } = await readOfp(data, f.meta.source);
+        // The OFP lists reports under an airport heading, without the ICAO code in the report itself.
+        const lines = ofp.wx.airports
+          .flatMap((a) => [a.metar ? `METAR ${a.icao} ${a.metar}` : "", a.taf.length ? `TAF ${a.icao} ${a.taf.join("\n  ")}` : "", ""])
+          .filter((l, i, arr) => l || arr[i - 1]);
+        setText(lines.join("\n").trim());
+        setFrom(id);
+        setLoadedFrom(`${f.meta.flightNo ?? id} ${f.meta.dep ?? ""}→${f.meta.arr ?? ""}`);
+        setBusy(null);
+      } catch (e) {
+        setBusy(e instanceof Error ? e.message : "Couldn't read that plan.");
+      }
+    },
+    [saved],
+  );
 
   // Follow the active flight: load its reports when the box holds another flight's (or nothing yet),
   // but never replace reports you pasted yourself; for those, offer a button instead.
@@ -194,76 +199,82 @@ export function WeatherApp() {
       </header>
 
       <div className="layout">
-        <Toc
-          sections={sections}
-          pending={pending}
-        />
+        <Toc sections={sections} pending={pending} />
         <main id="main" className="is-filled">
           {!pending && (
             <>
-          <Section id="reports" no={1} title="Paste reports" meta={<span>METAR · SPECI · TAF · ATIS</span>}>
-            <p className="small muted" style={{ marginTop: 0 }}>
-              Paste any mix of reports, one after another. Coded and plain-language ATIS both work. Nothing leaves your browser; the text is kept here for next time.
-            </p>
-            <textarea
-              className="wx-input"
-              value={text}
-              onChange={(e) => setOwnText(e.target.value)}
-              spellCheck={false}
-              rows={8}
-              aria-label="METAR, TAF and ATIS text"
-              placeholder={"METAR EGLL 021250Z 24012KT 9999 FEW040 15/09 Q1013\nTAF EGLL 021100Z 0212/0318 24012KT 9999 SCT030 TEMPO 0212/0218 4000 SHRA\nEGLL ARR ATIS F 1250Z EXP ILS APCH RWY 27L …"}
-            />
-            <LiveWx
-              suggested={[...new Set(reports.map((r) => r.icao).filter((x): x is string => !!x))]}
-              onText={(t, src) => {
-                setOwnText(t);
-                setLoadedFrom(src);
-              }}
-            />
-            <div className="row" style={{ marginTop: 8 }}>
-              <button type="button" className="btn" onClick={() => setOwnText(buildExample())}>
-                Load examples
-              </button>
-              {canLoad && !autoLoad && (
-                <button type="button" className="btn" onClick={() => void loadPlan(activeId!)}>
-                  {own ? "Replace with" : "Load"} {activeRec?.meta.flightNo ?? "the active flight"}&apos;s reports
-                </button>
-              )}
-              <button type="button" className="btn" disabled={!text} onClick={() => setOwnText("")}>
-                Clear
-              </button>
-              {busy && <span className="small muted">{busy}</span>}
-            </div>
-            {unknown.length > 0 && (
-              <div className="note" role="status">
-                <b>Not recognised</b> (no airport code or report time):
-                <ul className="small mono">
-                  {unknown.map((r, i) => (
-                    <li key={i}>{r.raw.length > 90 ? `${r.raw.slice(0, 90)}…` : r.raw}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </Section>
+              <Section id="reports" no={1} title="Paste reports" meta={<span>METAR · SPECI · TAF · ATIS</span>}>
+                <p className="small muted" style={{ marginTop: 0 }}>
+                  Paste any mix of reports, one after another. Coded and plain-language ATIS both work. Nothing leaves your browser; the text is kept here for
+                  next time.
+                </p>
+                <textarea
+                  className="wx-input"
+                  value={text}
+                  onChange={(e) => setOwnText(e.target.value)}
+                  spellCheck={false}
+                  rows={8}
+                  aria-label="METAR, TAF and ATIS text"
+                  placeholder={
+                    "METAR EGLL 021250Z 24012KT 9999 FEW040 15/09 Q1013\nTAF EGLL 021100Z 0212/0318 24012KT 9999 SCT030 TEMPO 0212/0218 4000 SHRA\nEGLL ARR ATIS F 1250Z EXP ILS APCH RWY 27L …"
+                  }
+                />
+                <LiveWx
+                  suggested={[...new Set(reports.map((r) => r.icao).filter((x): x is string => !!x))]}
+                  onText={(t, src) => {
+                    setOwnText(t);
+                    setLoadedFrom(src);
+                  }}
+                />
+                <div className="row" style={{ marginTop: 8 }}>
+                  <button type="button" className="btn" onClick={() => setOwnText(buildExample())}>
+                    Load examples
+                  </button>
+                  {canLoad && !autoLoad && (
+                    <button type="button" className="btn" onClick={() => void loadPlan(activeId!)}>
+                      {own ? "Replace with" : "Load"} {activeRec?.meta.flightNo ?? "the active flight"}&apos;s reports
+                    </button>
+                  )}
+                  <button type="button" className="btn" disabled={!text} onClick={() => setOwnText("")}>
+                    Clear
+                  </button>
+                  {busy && <span className="small muted">{busy}</span>}
+                </div>
+                {unknown.length > 0 && (
+                  <div className="note" role="status">
+                    <b>Not recognised</b> (no airport code or report time):
+                    <ul className="small mono">
+                      {unknown.map((r, i) => (
+                        <li key={i}>{r.raw.length > 90 ? `${r.raw.slice(0, 90)}…` : r.raw}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Section>
 
-          {airports.map((a, i) => (
-            <Section key={a.id} id={a.id} no={i + 2} title={a.key} meta={<span>{a.list.map((r) => r.kind + (r.atis?.letter ? ` ${r.atis.letter}` : "")).join(" · ")}</span>}>
-              {/* Observations (METAR / SPECI / ATIS) share a row; each TAF takes the full width below. */}
-              <div className="wxc-grid">
-                {a.list
-                  .filter((r) => r.kind !== "TAF")
-                  .map((r, k) => (
-                    <ObsCard key={k} r={r} />
-                  ))}
-              </div>
-              {a.list
-                .filter((r) => r.kind === "TAF")
-                .map((r, k) => (
-                  <TafCard key={k} r={r} />
-                ))}
-            </Section>
-          ))}
+              {airports.map((a, i) => (
+                <Section
+                  key={a.id}
+                  id={a.id}
+                  no={i + 2}
+                  title={a.key}
+                  meta={<span>{a.list.map((r) => r.kind + (r.atis?.letter ? ` ${r.atis.letter}` : "")).join(" · ")}</span>}
+                >
+                  {/* Observations (METAR / SPECI / ATIS) share a row; each TAF takes the full width below. */}
+                  <div className="wxc-grid">
+                    {a.list
+                      .filter((r) => r.kind !== "TAF")
+                      .map((r, k) => (
+                        <ObsCard key={k} r={r} />
+                      ))}
+                  </div>
+                  {a.list
+                    .filter((r) => r.kind === "TAF")
+                    .map((r, k) => (
+                      <TafCard key={k} r={r} />
+                    ))}
+                </Section>
+              ))}
             </>
           )}
         </main>
