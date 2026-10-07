@@ -4,6 +4,16 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+### Added
+
+- **Manual** (`/manual`), on a full-width tab under the page tabs. It covers:
+  - **Getting started:** what the site does, the screen, opening plans, and a **Find it fast** table showing where each piece of information is in the reader and on the printed OFP.
+  - **Workflows:** a quick reference card by phase of flight, then step-by-step briefing, gate, take-off, cruise, en-route changes, arrival and after-landing flows, with worked examples.
+  - **The reader:** every section, with where it comes from on the OFP, what you can do there and examples.
+  - **Other pages:** Weather, Radio, Settings and Wind lab.
+  - **Reference:** saved data, keys and gestures, colours, troubleshooting, and the full glossary.
+- **Searching the manual:** press `/` to search every topic and glossary term; a result inside a folded section opens it.
+
 ## [1.13.1] - 2026-10-07
 
 ### Fixed
