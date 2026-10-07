@@ -749,6 +749,9 @@ export function FlightLogSection({ no }: { no: number }) {
   // The route starts in the FIR listed around the departure in the NOTAMs (the log only marks crossings).
   const depFir = ofp?.notams.groups.find((g) => /AROUND DEPARTURE/i.test(g.section) && /\b(FIR|UIR)\b/.test(g.locationName ?? ""))?.locationName ?? null;
   const [active, setActive] = useState<number | null>(null);
+  // nav log row under the pointer / holding focus (for quick fill)
+  const [rowHover, setRowHover] = useState<number | null>(null);
+  const [rowFocus, setRowFocus] = useState<number | null>(null);
   const [off, setOff] = useField("log.off", "Flight log", "Actual take-off (OFF, UTC)");
   const lg = useFieldGroup("log", "Flight log");
   const [picExtraRaw] = useField("fuel.picExtra", "Planned fuel", "PIC extra fuel");
@@ -803,18 +806,25 @@ export function FlightLogSection({ no }: { no: number }) {
 
   const rows: (P | null)[] = pts.length ? pts : Array.from({ length: 8 }, () => null);
 
-  // Quick fill: the fix after the last one filled in offers the time now (UTC) for ATO and, for AFOB,
-  // its planned fuel shifted by the last fuel Δ. The latest AFOB gets ▲▼ to adjust by 0.1 t.
+  // Quick fill: the fix after the last one filled in, and the row under the pointer (or with focus),
+  // offer the time now (UTC) for ATO and, for AFOB, the planned fuel (TFOB with PIC extra) shifted
+  // by the fuel Δ of the nearest filled-in fix above. The latest AFOB gets ▲▼ to adjust by 0.1 t.
   const nowZ = useUtcNow();
   const fixes = pts.filter((p) => p.kind !== "fir");
   const lastFilled = (k: string) => fixes.findLastIndex((p) => !!lg.get(`${wkey(p)}.${k}`));
   const fuelRef = (p: P) => pic?.tfob(p.efob, p.pbrn) ?? (p.efob ? Number(p.efob) : null);
   const atoNext = fixes[lastFilled("ato") + 1]?.i ?? null;
   const afLatest = fixes[lastFilled("afob")] ?? null;
-  const afNextP = fixes[lastFilled("afob") + 1] ?? null;
-  const lastDF = afLatest && fuelRef(afLatest) != null ? Number(lg.get(`${wkey(afLatest)}.afob`)) - fuelRef(afLatest)! : 0;
-  const afNextRef = afNextP ? fuelRef(afNextP) : null;
-  const afOffer = afNextRef != null && !Number.isNaN(lastDF) ? Math.max(0, afNextRef + lastDF).toFixed(1) : null;
+  const afNext = fixes[lastFilled("afob") + 1]?.i ?? null;
+  const predictFob = (p: P) => {
+    const ref = fuelRef(p);
+    if (ref == null) return null;
+    const above = fixes.findLast((q) => q.i < p.i && !!lg.get(`${wkey(q)}.afob`));
+    const aboveRef = above ? fuelRef(above) : null;
+    const d = above && aboveRef != null ? Number(lg.get(`${wkey(above)}.afob`)) - aboveRef : 0;
+    return Number.isNaN(d) ? null : Math.max(0, ref + d).toFixed(1);
+  };
+  const offering = (i: number, next: number | null) => i === next || i === rowHover || i === rowFocus;
   const toc = pts.find((p) => /T O C/.test(p.position ?? ""));
   const tod = pts.find((p) => /T O D/.test(p.position ?? ""));
   const maxFl = Math.max(0, ...pts.map((p) => p.alt));
@@ -1082,7 +1092,17 @@ export function FlightLogSection({ no }: { no: number }) {
               const dF = af && ref != null ? Number(af) - ref : null;
               const isFir = p.kind === "fir";
               return (
-                <tr key={p.i} className={cx(isFir && "fir", active === p.i && "active")} onPointerEnter={() => setActive(p.i)} onPointerLeave={() => setActive(null)}>
+                <tr key={p.i} className={cx(isFir && "fir", active === p.i && "active")} onPointerEnter={() => {
+                    setActive(p.i);
+                    setRowHover(p.i);
+                  }}
+                  onPointerLeave={() => {
+                    setActive(null);
+                    setRowHover(null);
+                  }}
+                  onFocus={(e) => setRowFocus(e.target instanceof HTMLInputElement ? p.i : null)}
+                  onBlur={() => setRowFocus(null)}
+                >
                   <th scope="row" style={{ position: "sticky", left: 0, background: "var(--sheet)", zIndex: 1 }}>
                     <span style={{ display: "block" }}>
                       {isFir ? `▸ ${p.name}` : p.name}
@@ -1134,7 +1154,7 @@ export function FlightLogSection({ no }: { no: number }) {
                         value={atoV ?? ""}
                         onChange={(v) => lg.put(`${wkey(p)}.ato`, `ATO ${p.name}`, v.replace(/\D/g, "").slice(0, 4))}
                         w={4}
-                        offer={p.i === atoNext ? nowZ : null}
+                        offer={offering(p.i, atoNext) ? nowZ : null}
                         offerIcon={<ClockIcon />}
                         offerLabel="Time now (UTC)"
                       />
@@ -1165,7 +1185,7 @@ export function FlightLogSection({ no }: { no: number }) {
                         onChange={(v) => lg.put(`${wkey(p)}.afob`, `AFOB ${p.name} (t)`, v.replace(/[^\d.]/g, ""))}
                         w={4}
                         inputMode="decimal"
-                        offer={p.i === afNextP?.i ? afOffer : null}
+                        offer={offering(p.i, afNext) ? predictFob(p) : null}
                         offerLabel="Predicted fuel"
                         nudge={p.i === afLatest?.i ? 0.1 : undefined}
                       />
