@@ -52,6 +52,7 @@ and every value gets context: derived margins, decoded weather, a vertical profi
 - **Radio frequencies.** A Radio page (`/radio`) for planning the flight's frequencies: type each airport's ATIS / DEL / GND / TWR / APP and each FIR's centre into radio-panel windows (checked for the COMMS band and 8.33 kHz channels), add your own stations, and get the OFP's ILS per runway plus a NAV tuning sequence in flight order (departure ILS or the reciprocal for a return, each VOR / NDB with its ETO and Morse ident, the landing ILS).
 - **Weather cards.** A separate page (`/weather`) turns pasted METARs, TAFs and ATIS (coded or plain language), or a saved plan's weather, into cards: sky picture, wind, visibility, cloud layers, TAF timeline by flight category, ATIS letter, runways and notices.
 - **Your layout.** Collapse any section (or all of them) from its header or the Contents rail; it stays the way you left it. Pick the flight summary graphic: vertical profile, profile + times, route silhouette, progress timeline or classic arc.
+- **A manual.** `/manual` explains where every piece of the OFP is in the reader and on paper, with quick-reference workflows for each phase of flight, worked examples, and a searchable glossary.
 - **Day and night themes**, both meeting WCAG AA contrast.
 
 ## Screenshots

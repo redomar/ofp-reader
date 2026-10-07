@@ -75,6 +75,7 @@ const PAGE_ICONS = {
     </>
   ),
   lab: <path d="M4 3v18M4 4l15 2.5v5L4 14zM9 4.8v8.4M14 5.7v6.6" />,
+  manual: <path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5zM12 6.5v13" />,
 };
 const PageIcon = ({ k, size = 22 }: { k: keyof typeof PAGE_ICONS; size?: number }) => (
   <svg className="toc-ic" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
@@ -83,8 +84,8 @@ const PageIcon = ({ k, size = 22 }: { k: keyof typeof PAGE_ICONS; size?: number 
 );
 
 /**
- * The app's pages as a 2×2 block of tabs (the page you're on is marked), with the
- * experimental Wind lab on a dashed, hatched tab underneath.
+ * The app's pages as a 2×2 block of tabs (the page you're on is marked), the Manual on a
+ * full-width tab under them, and the experimental Wind lab on a dashed, hatched tab below that.
  */
 function PageTabs({ links }: { links?: { plan?: string; radio?: string } }) {
   const path = (usePathname() ?? "/").replace(/\/$/, "") || "/";
@@ -102,6 +103,10 @@ function PageTabs({ links }: { links?: { plan?: string; radio?: string } }) {
           {label}
         </Link>
       ))}
+      <Link href="/manual" className="toc-tab wide" aria-current={path === "/manual" ? "page" : undefined}>
+        <PageIcon k="manual" size={18} />
+        Manual
+      </Link>
       <Link href="/wind-lab" className="toc-tab lab" aria-current={path === "/wind-lab" ? "page" : undefined} title="Experimental">
         <span className="toc-hatch" aria-hidden="true" />
         <PageIcon k="lab" size={18} />
