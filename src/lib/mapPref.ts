@@ -8,7 +8,12 @@ export type MapStyle = "contours" | "plain" | "relief";
 export const MAP_STYLES: { value: MapStyle; label: string; desc: string }[] = [
   { value: "contours", label: "Contours", desc: "Parchment land and blue sea, with coastlines and country borders drawn" },
   { value: "plain", label: "No contours", desc: "No coast or border lines; neighbouring countries in different parchment tones" },
-  { value: "relief", label: "Height map", desc: "Contours plus shaded relief, so mountains and high ground show (downloads about 1 MB the first time)" },
+  // stored as "relief" (its earlier name), so a saved choice carries over
+  {
+    value: "relief",
+    label: "Elevation",
+    desc: "Contours plus height bands on land and depth bands at sea, with a key (only the area around the route is downloaded)",
+  },
 ];
 
 /** Default for first-time visitors. */

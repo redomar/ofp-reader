@@ -140,9 +140,11 @@ function MapIcon({ style }: { style: MapStyle }) {
       <path d="M0 14 C18 10 30 18 44 12 L62 8 L62 44 L0 44 Z" fill="var(--map-land)" />
       <path d="M62 8 L84 6 C98 10 108 4 120 8 L120 44 L62 44 Z" fill={style === "plain" ? "var(--map-land-1)" : "var(--map-land)"} />
       {style === "relief" && (
-        <g opacity="0.55">
-          <path d="M72 30 l8 -12 l7 9 l6 -8 l9 14 Z" fill="#8f8567" />
-          <path d="M80 18 l7 9 l-4 4 Z M93 19 l9 14 l-5 0 Z" fill="#5a5038" />
+        <g>
+          <path d="M0 30 C20 26 40 32 62 28 L62 44 L0 44 Z" fill="var(--map-d0)" stroke="var(--map-depth-line)" strokeWidth="0.7" strokeDasharray="3 2" />
+          <path d="M68 44 C70 30 80 20 92 22 C104 24 112 32 116 44 Z" fill="var(--map-h1)" stroke="var(--map-contour)" strokeWidth="0.7" />
+          <path d="M80 44 C82 34 88 28 94 30 C100 32 104 38 106 44 Z" fill="var(--map-h3)" stroke="var(--map-contour)" strokeWidth="0.7" />
+          <path d="M88 44 C90 38 93 35 96 37 C99 39 100 42 101 44 Z" fill="var(--map-h5)" stroke="var(--map-contour)" strokeWidth="0.9" />
         </g>
       )}
       {lines && <path d="M0 14 C18 10 30 18 44 12 L62 8 L84 6 C98 10 108 4 120 8" fill="none" stroke="var(--map-coast)" strokeWidth="1" />}
