@@ -286,7 +286,8 @@ export function LogManual({ no }: { no: number }) {
       <Topic id="log-map" title="Route map">
         <p>
           The route from the waypoint coordinates over a map in one of three styles (<See to="settings-appearance">Settings</See>): contours, no contours
-          (neighbouring countries in different tones), or height map. Country names are placed so they don&apos;t cover the route.
+          (neighbouring countries in different tones), or elevation (height bands and contour lines on land, depth bands and dashed depth contours at sea).
+          Country names are placed so they don&apos;t cover the route.
         </p>
         <dl className="man-dl">
           <dt>FIR / UIR</dt>
@@ -304,6 +305,12 @@ export function LogManual({ no }: { no: number }) {
           <dd>
             Triangles for waypoints (more names appear as you zoom in), circles for the airports, an amber diamond for the fuel ERA with a line to where you
             pass closest, and SIGMET / AIRMET areas (switch them off with <Ui>Show SIGMET / AIRMET areas</Ui>).
+          </dd>
+          <dt>Scale and key</dt>
+          <dd>
+            A scale bar in the bottom right of the map shows a round distance in nautical miles at the current zoom. The key under the waypoint card lists the
+            symbols on the map (route, waypoints, departure and arrival, FIR / UIR, fuel ERA, SIGMET areas) and, in the Elevation style, the height and depth
+            bands in metres.
           </dd>
         </dl>
       </Topic>

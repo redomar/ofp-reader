@@ -4,6 +4,17 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-10-07
+
+### Added
+
+- **Map key** under the waypoint card, its bottom level with the map's: route, waypoints, departure and arrival, FIR / UIR, fuel ERA and SIGMET areas as the map shows them, plus the height and depth bands in the Elevation style.
+- **Distance scale** on the route map: a round number of nautical miles for the current zoom.
+
+### Changed
+
+- **Height map is now Elevation** (Settings → Route map). The shaded-relief image is replaced by vector bands: height bands with contour lines on land, and depth bands with dashed depth contours at sea, in the style of the OFP Planner's charts. Panning and zooming no longer redraw it, and only the area around the route is downloaded. A saved Height map choice carries over.
+
 ## [1.14.0] - 2026-10-07
 
 ### Added
