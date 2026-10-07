@@ -1,6 +1,6 @@
 {
   "name": "ofp-reader",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "description": "Interactive pilot-chart reader for SimBrief OFP PDFs. Parses the plan entirely in the browser.",
   "keywords": [
     "simbrief",

@@ -4,6 +4,12 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.14.2] - 2026-10-07
+
+### Fixed
+
+- **Plans failed to open** with "API version 6.4.299 does not match the Worker version 6.3.289" in browsers that still had the previous pdf.js worker cached. The worker's address now includes the pdf.js version, so an upgrade always fetches the matching worker.
+
 ## [1.14.1] - 2026-10-07
 
 ### Added
