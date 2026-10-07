@@ -4,6 +4,8 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-10-07
+
 ### Added
 
 - **Manual** (`/manual`), on a full-width tab under the page tabs. It covers:
