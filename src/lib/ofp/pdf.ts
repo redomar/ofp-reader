@@ -11,8 +11,9 @@ let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
 
 function pdfjs() {
   pdfjsPromise ??= import("pdfjs-dist").then((m) => {
-    // Worker is copied to /public by the predev/prebuild scripts.
-    m.GlobalWorkerOptions.workerSrc = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/pdf.worker.min.mjs`;
+    // Worker is copied to /public by the predev/prebuild scripts. The pdf.js version is in the URL,
+    // so after an upgrade a browser can't pair the new library with a cached older worker.
+    m.GlobalWorkerOptions.workerSrc = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/pdf.worker.min.mjs?v=${m.version}`;
     return m;
   });
   return pdfjsPromise;
