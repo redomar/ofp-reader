@@ -736,7 +736,15 @@ export function RadioApp() {
         <Toc
           sections={sections}
           pending={loading}
-          links={flightId ? { plan: `/?flight=${encodeURIComponent(flightId)}`, radio: `/radio?flight=${encodeURIComponent(flightId)}` } : undefined}
+          links={
+            flightId
+              ? {
+                  plan: `/?flight=${encodeURIComponent(flightId)}`,
+                  radio: `/radio?flight=${encodeURIComponent(flightId)}`,
+                  simple: `/simple?flight=${encodeURIComponent(flightId)}`,
+                }
+              : undefined
+          }
         />
         <main id="main" className={ofp ? "is-filled" : ""} data-skin={skin}>
           {!loading && (

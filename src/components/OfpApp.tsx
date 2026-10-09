@@ -528,7 +528,10 @@ export function OfpApp() {
               sections={SECTIONS}
               groups={GROUPS}
               saved={savedSections}
-              links={{ radio: `/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}` }}
+              links={{
+                radio: `/radio${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}`,
+                simple: `/simple${flightId ? `?flight=${encodeURIComponent(flightId)}` : ""}`,
+              }}
             />
             <main id="main" className={ofp ? "is-filled" : ""} key={ofp?.source ?? "empty"} aria-busy={busy}>
               {!ofp && booted && !busy && (

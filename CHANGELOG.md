@@ -4,6 +4,19 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-10-09
+
+### Added
+
+- **Simple page** (`/simple`), on a Simple tab with the other pages: the essentials of the active plan on one read-only page, built from the reader's own sheets so it reads the same.
+  - **Flight:** the vital data first: route, take-off and landing times, air and block time, cruise level, **step climb** (or None), distance with the average wind component, average ISA, alternate, take-off alternate, CTOT and MEL items. Dispatcher remarks appear when there are any.
+  - **Fuel:** block fuel large, the margin above ALTN + FINRES, the block fuel make-up as a bar, and landing fuel. PIC extra entered in the reader is included.
+  - **Weights:** TOW, LAW and ZFW against their maximums as gauges, amber from 95%.
+  - **Runways:** planned take-off and landing runways with V-speeds, flaps, FLEX, QNH, remarks such as TOGA, and head- and crosswind components.
+  - **Weather:** a card per airport with the METAR in plain words, and for departure, destination and alternate the forecast at your time there.
+  - **Watch out for** (critical NOTAMs at departure and destination, SIGMETs on the route) and **Route** (the route and waypoint list, with TOC and TOD) start folded, with their headers saying what's inside.
+  - **Print MCDU set-up sheet** from the Flight header.
+
 ## [1.14.2] - 2026-10-07
 
 ### Fixed
