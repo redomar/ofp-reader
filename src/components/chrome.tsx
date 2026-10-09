@@ -85,33 +85,52 @@ const PageIcon = ({ k, size = 22 }: { k: keyof typeof PAGE_ICONS; size?: number 
 );
 
 /**
- * The app's pages as a 2×2 block of tabs (the page you're on is marked), the Manual on a
- * full-width tab under them, and the experimental Wind lab on a dashed, hatched tab below that.
+ * The app's pages as a row of folder tabs (icons), with the page's name and what it's for on
+ * the strip below: the page you're on, or the tab you're pointing at. The experimental Wind lab
+ * sits apart on a dashed, hatched tab.
  */
 function PageTabs({ links }: { links?: { plan?: string; radio?: string; simple?: string } }) {
   const path = (usePathname() ?? "/").replace(/\/$/, "") || "/";
   const tabs = [
-    ["plan", "Plan", links?.plan ?? "/", "/"],
-    ["weather", "Weather", "/weather", "/weather"],
-    ["radio", "Radio", links?.radio ?? "/radio", "/radio"],
-    ["settings", "Settings", "/settings", "/settings"],
+    ["plan", "Plan", "full flight plan", links?.plan ?? "/", "/"],
+    ["simple", "Simple", "at a glance", links?.simple ?? "/simple", "/simple"],
+    ["weather", "Weather", "METAR & TAF decoded", "/weather", "/weather"],
+    ["radio", "Radio", "flight frequencies", links?.radio ?? "/radio", "/radio"],
+    ["settings", "Settings", "saved flights", "/settings", "/settings"],
+    ["manual", "Manual", "how-to guide", "/manual", "/manual"],
   ] as const;
+  const [peek, setPeek] = useState<string | null>(null);
+  const current = tabs.find((t) => t[4] === path) ?? (path === "/wind-lab" ? (["lab", "Wind lab", "experimental", "/wind-lab", "/wind-lab"] as const) : null);
+  const shown = tabs.find((t) => t[0] === peek) ?? current;
   return (
     <div className="toc-pages">
-      {tabs.map(([k, label, href, at]) => (
-        <Link key={k} href={href} className="toc-tab" aria-current={path === at ? "page" : undefined}>
-          <PageIcon k={k} />
-          {label}
-        </Link>
-      ))}
-      <Link href={links?.simple ?? "/simple"} className="toc-tab wide" aria-current={path === "/simple" ? "page" : undefined}>
-        <PageIcon k="simple" size={18} />
-        Simple
-      </Link>
-      <Link href="/manual" className="toc-tab wide" aria-current={path === "/manual" ? "page" : undefined}>
-        <PageIcon k="manual" size={18} />
-        Manual
-      </Link>
+      <div className="toc-tabs" onMouseLeave={() => setPeek(null)}>
+        {tabs.map(([k, label, , href, at]) => (
+          <Link
+            key={k}
+            href={href}
+            className="toc-tab"
+            aria-current={path === at ? "page" : undefined}
+            aria-label={label}
+            title={label}
+            onMouseEnter={() => setPeek(k)}
+            onFocus={() => setPeek(k)}
+            onBlur={() => setPeek(null)}
+          >
+            <PageIcon k={k} size={19} />
+          </Link>
+        ))}
+      </div>
+      <p className={`toc-here${shown && shown !== current ? " peek" : ""}`} aria-hidden="true">
+        {shown ? (
+          <>
+            <b>{shown[1]}</b>
+            <i>{shown[2]}</i>
+          </>
+        ) : (
+          <i>Pick a page</i>
+        )}
+      </p>
       <Link href="/wind-lab" className="toc-tab lab" aria-current={path === "/wind-lab" ? "page" : undefined} title="Experimental">
         <span className="toc-hatch" aria-hidden="true" />
         <PageIcon k="lab" size={18} />

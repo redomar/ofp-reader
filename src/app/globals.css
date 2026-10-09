@@ -5142,29 +5142,42 @@ main[data-skin="dots"] .rmp .rmp-val {
   gap: 14px;
   padding: 1px 0 0 1px; /* room for the tabs' overlapping borders */
 }
+/* the pages as folder tabs: icons on tabs, the page's name on the strip below */
 .toc-pages {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
+}
+.toc-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 42px;
+  border-bottom: 2px solid var(--rule-strong);
 }
 .toc .toc-tab {
   position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  margin: -1px 0 0 -1px;
-  padding: 10px 4px 8px;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  margin: 0;
+  padding: 0;
   border: 1px solid var(--rule-strong);
-  letter-spacing: 0.06em;
-  background: var(--sheet);
-  color: var(--ink);
-  font: 700 13.5px var(--font-cond);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-decoration: none;
-}
-.toc .toc-tab:hover {
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
   background: var(--sunk);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    height 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.18s;
+}
+.toc .toc-tab:hover,
+.toc .toc-tab:focus-visible {
+  height: 40px;
+  background: var(--sheet);
 }
 .toc-ic {
   flex: none;
@@ -5175,35 +5188,77 @@ main[data-skin="dots"] .rmp .rmp-val {
   stroke-linejoin: round;
   color: var(--blue);
 }
-/* the page you're on: the same magenta edge and fade as the current section */
+/* the page you're on: the tallest tab, joined to the strip, with the magenta edge on top */
 .toc .toc-tab[aria-current="page"] {
   z-index: 1;
-  color: var(--magenta);
-  background: linear-gradient(90deg, var(--magenta-bg), var(--sheet) 85%);
-  box-shadow: inset 3px 0 0 var(--magenta);
+  height: 42px;
+  margin-bottom: -2px;
+  background: var(--sheet);
+  box-shadow: inset 0 3px 0 var(--magenta);
 }
 .toc .toc-tab[aria-current="page"] .toc-ic {
   color: var(--magenta);
 }
-.toc .toc-tab.lab {
-  grid-column: 1 / -1;
-  flex-direction: row;
-  justify-content: center;
-  gap: 10px;
-  padding: 8px 4px;
-  border-style: dashed;
-  background: var(--paper);
+.toc-here {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  margin: 0;
+  padding: 9px 12px 8px;
+  border: 1px solid var(--rule-strong);
+  border-top: 0;
+  background: var(--sheet);
 }
-/* full-width tab under the 2×2 (the Manual): like Wind lab's shape, solid like the page tabs */
-.toc .toc-tab.wide {
-  grid-column: 1 / -1;
+.toc-here b {
+  font: 700 15px var(--font-cond);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--magenta);
+}
+.toc-here i {
+  overflow: hidden;
+  font: 400 12px var(--font-sans);
+  font-style: normal;
+  color: var(--ink-3);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* pointing at another tab: its name, in ink rather than magenta */
+.toc-here.peek b {
+  color: var(--ink);
+}
+.toc .toc-tab.lab {
+  flex: none;
   flex-direction: row;
-  justify-content: center;
   gap: 10px;
+  height: auto;
+  margin-top: 10px;
   padding: 8px 4px;
+  border: 1px dashed var(--rule-strong);
+  border-radius: 0;
+  background: var(--paper);
+  font: 700 13.5px var(--font-cond);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.toc .toc-tab.lab:hover {
+  height: auto;
+  background: var(--sunk);
 }
 .toc .toc-tab.lab[aria-current="page"] {
+  height: auto;
+  margin-bottom: 0;
+  color: var(--magenta);
   background: linear-gradient(90deg, var(--magenta-bg), var(--paper) 85%);
+  box-shadow: inset 3px 0 0 var(--magenta);
+}
+@media (prefers-reduced-motion: reduce) {
+  .toc .toc-tab {
+    transition: none;
+  }
 }
 .toc-hatch {
   width: 24px;
