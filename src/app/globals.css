@@ -6101,3 +6101,450 @@ main[data-skin="dots"] .rmp .rmp-val {
   background: var(--map-d3);
   border-color: var(--map-depth-line);
 }
+
+/* ---------- Simple page: the plan's essentials, read-only ----------
+ * Built from the reader's own pieces (sheets, idbar, fields, gauges, folded weather cards);
+ * the values are a size up so they read at a glance.
+ */
+
+.simple {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.s-card {
+  min-width: 0;
+  animation: s-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes s-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.s-card.wide {
+  grid-column: 1 / -1;
+}
+/* sheet headers here don't collapse (only the folds do) */
+.s-head {
+  cursor: default;
+}
+.s-head:hover {
+  background: transparent;
+}
+.sheet-meta .badge {
+  font-size: 11px;
+}
+.s-line {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.s-none {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+/* flight: the reader's field grid, values a size up */
+.s-vital {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+}
+.s-vital .field {
+  padding: 8px 12px 10px;
+}
+.s-vital .field-value {
+  font-size: 22px;
+  font-weight: 600;
+}
+.s-vital .field-sub {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.s-vital .badge {
+  font-size: 13px;
+}
+.s-vital .s-span {
+  grid-column: 1 / -1;
+}
+.s-vital .s-span .field-value {
+  font-size: 15px;
+  font-weight: 500;
+}
+/* the MCDU sheet button, compact in the Flight header: title only */
+.sheet-meta:has(.s-mcdu) {
+  padding: 4px 10px;
+}
+.s-mcdu .mcdu-btn {
+  gap: 8px;
+  width: auto;
+  padding: 4px 10px;
+  box-shadow: 2px 2px 0 var(--magenta);
+}
+.s-mcdu .mcdu-btn-icon {
+  width: 20px;
+  height: 20px;
+}
+.s-mcdu .mcdu-btn-text b {
+  font-size: 14px;
+}
+.s-mcdu .mcdu-btn-pages,
+.s-mcdu .mcdu-btn-sub {
+  display: none;
+}
+
+/* figures */
+.s-figs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 12px 16px;
+}
+.s-figs.s-tight {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
+}
+.s-fig {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.s-k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 12px var(--font-cond);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.s-sw {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+}
+.s-v {
+  font: 500 24px/1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.s-v small {
+  margin-left: 4px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.s-fig.lead .s-v {
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1.05;
+}
+.s-fig.lead .s-v small {
+  font-size: 15px;
+  font-weight: 400;
+}
+.s-pill.t-red {
+  color: var(--red);
+}
+.s-pill.t-amber {
+  color: var(--amber);
+}
+.s-pill.t-green {
+  color: var(--green);
+}
+
+/* fuel */
+.s-lead-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.s-pill {
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.s-pill b {
+  font: 600 15px var(--font-mono);
+}
+.s-bar {
+  display: flex;
+  height: 14px;
+  margin: 14px 0 16px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--sunk);
+}
+.s-bar i {
+  flex-basis: 0;
+  min-width: 3px;
+  border-right: 1px solid var(--sheet);
+}
+.s-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--rule-strong);
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.s-foot b {
+  font: 600 22px var(--font-mono);
+  color: var(--ink);
+}
+
+/* weights: the summary's gauges, with the number above each */
+.s-wts {
+  display: grid;
+  gap: 16px;
+}
+.s-wt-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+.s-wt-top .field-label {
+  width: 40px;
+  margin: 0;
+}
+.s-wt-top b {
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.s-pct {
+  margin-left: auto;
+  color: var(--ink-2);
+}
+.s-wt.warn .s-pct,
+.s-wt.warn b {
+  color: var(--amber);
+}
+.s-wt.bad .s-pct,
+.s-wt.bad b {
+  color: var(--red);
+}
+.s-wt-left {
+  margin: 4px 0 0 48px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.s-wt .gauge-track {
+  margin-left: 48px;
+}
+
+/* runways */
+.s-rwy + .s-rwy {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--rule-strong);
+}
+.s-rwy-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  font: 600 15px var(--font-cond);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.s-rwy-h b {
+  margin-left: 4px;
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+.s-plate {
+  padding: 1px 8px;
+  background: var(--ink);
+  color: var(--sheet);
+  font: 600 16px var(--font-mono);
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+}
+.s-vs .vspeed {
+  flex: 1;
+  min-width: 0;
+}
+.s-vs .vspeed .val {
+  font-size: 32px;
+}
+.s-wind {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.s-wind .muted {
+  margin-right: 4px;
+}
+.s-note {
+  margin: 12px 0 0;
+  padding: 6px 10px;
+  border: 1px solid var(--amber);
+  background: var(--amber-bg);
+  color: var(--amber);
+  font: 500 14px var(--font-mono);
+}
+
+/* weather: the reader's folded airport cards */
+.s-wxs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.s-wx-cat {
+  margin-left: auto;
+}
+.s-wxrow .wx-fold-summary {
+  font-size: 15px;
+  color: var(--ink);
+}
+.s-wxrow .s-wx-fc {
+  color: var(--ink-2);
+}
+.s-wx-fc b {
+  margin-right: 4px;
+  font: 600 13px var(--font-mono);
+  color: var(--ink-3);
+}
+
+/* folded sheets: Watch out for, Route (closed like the reader's collapsed sections) */
+.s-fold > summary {
+  list-style: none;
+}
+.s-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.s-fold:not([open]) > summary {
+  min-height: 39px;
+  border-bottom: 0;
+}
+.s-fold .sheet-title {
+  gap: 10px;
+}
+.s-chev {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--ink-3);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.s-fold > summary:hover .s-chev {
+  color: var(--magenta);
+}
+.s-fold[open] .s-chev {
+  transform: rotate(90deg);
+}
+.s-fold[open] > .sheet-body {
+  animation: s-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.s-alerts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.s-alerts li {
+  padding: 8px 12px;
+  border: 1px solid var(--amber);
+  background: var(--amber-bg);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.s-alerts li.sev {
+  border-color: var(--red);
+  background: var(--red-bg);
+}
+.s-alerts li b {
+  margin-right: 6px;
+  font-family: var(--font-mono);
+}
+.s-raw {
+  margin: 0;
+  padding: 7px 10px;
+  background: var(--sunk);
+  font: 400 13px/1.5 var(--font-mono);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.s-logs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 0 28px;
+  align-items: start;
+  margin-top: 12px;
+}
+.s-log {
+  font: 400 14px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.s-log > div {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.6fr 0.9fr 0.8fr;
+  gap: 8px;
+  padding: 5px 2px;
+  border-bottom: 1px solid var(--grid);
+}
+.s-log > div > span:nth-child(n + 3) {
+  text-align: right;
+}
+.s-log > .s-log-h {
+  font: 600 12px var(--font-cond);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom-color: var(--rule-strong);
+}
+.s-log > .mark {
+  color: var(--magenta);
+  background: var(--magenta-bg);
+}
+
+@media (max-width: 640px) {
+  .s-vital {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .s-vital .field-value {
+    font-size: 20px;
+  }
+  .s-fig.lead .s-v {
+    font-size: 38px;
+  }
+  .s-v {
+    font-size: 21px;
+  }
+  .s-figs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .s-mcdu .mcdu-btn-text b {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s-card,
+  .s-fold[open] > .sheet-body {
+    animation: none;
+  }
+  .s-chev {
+    transition: none;
+  }
+}

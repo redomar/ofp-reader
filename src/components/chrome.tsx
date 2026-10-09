@@ -74,6 +74,7 @@ const PAGE_ICONS = {
       <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" />
     </>
   ),
+  simple: <path d="M4 6.5h3M10 6.5h10M4 12h3M10 12h10M4 17.5h3M10 17.5h10" />,
   lab: <path d="M4 3v18M4 4l15 2.5v5L4 14zM9 4.8v8.4M14 5.7v6.6" />,
   manual: <path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5zM12 6.5v13" />,
 };
@@ -87,7 +88,7 @@ const PageIcon = ({ k, size = 22 }: { k: keyof typeof PAGE_ICONS; size?: number 
  * The app's pages as a 2×2 block of tabs (the page you're on is marked), the Manual on a
  * full-width tab under them, and the experimental Wind lab on a dashed, hatched tab below that.
  */
-function PageTabs({ links }: { links?: { plan?: string; radio?: string } }) {
+function PageTabs({ links }: { links?: { plan?: string; radio?: string; simple?: string } }) {
   const path = (usePathname() ?? "/").replace(/\/$/, "") || "/";
   const tabs = [
     ["plan", "Plan", links?.plan ?? "/", "/"],
@@ -103,6 +104,10 @@ function PageTabs({ links }: { links?: { plan?: string; radio?: string } }) {
           {label}
         </Link>
       ))}
+      <Link href={links?.simple ?? "/simple"} className="toc-tab wide" aria-current={path === "/simple" ? "page" : undefined}>
+        <PageIcon k="simple" size={18} />
+        Simple
+      </Link>
       <Link href="/manual" className="toc-tab wide" aria-current={path === "/manual" ? "page" : undefined}>
         <PageIcon k="manual" size={18} />
         Manual
@@ -135,7 +140,7 @@ export function Toc({
   sections: readonly (readonly [string, string])[];
   groups?: readonly (readonly [string, readonly string[]])[];
   saved?: ReadonlySet<string>;
-  links?: { plan?: string; radio?: string };
+  links?: { plan?: string; radio?: string; simple?: string };
   footer?: ReactNode;
   /** The page's sections aren't known yet: show the tabs only, so the card doesn't grow in later. */
   pending?: boolean;
