@@ -159,7 +159,7 @@ export function LabManual({ no }: { no: number }) {
     <Section id="m-lab" no={no} title="Wind lab" meta={<span>/wind-lab · experimental</span>}>
       <Topic id="lab-what" title="An experimental page">
         <p>
-          Wind lab (the hatched tab at the bottom of the page tabs) is where the swaying wind arrows are tuned: how fast they swing for a given wind, how gusts
+          Wind lab (the dashed, hatched tab under the page tabs) is where the swaying wind arrows are tuned: how fast they swing for a given wind, how gusts
           kick them, and how irregular the motion is. <Ui>Controls</Ui> has presets and every setting; <Ui>Filters &amp; custom card</Ui> narrows the sample
           arrows and can add a card from values you type (off by default); <Ui>Arrows</Ui> shows METAR, PWIND and AVG WIND samples.
         </p>
