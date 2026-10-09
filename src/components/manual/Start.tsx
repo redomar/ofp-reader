@@ -45,9 +45,10 @@ export function StartSection({ no }: { no: number }) {
           </dd>
           <dt>Left rail</dt>
           <dd>
-            The page tabs (<Ui>Plan</Ui>, <Ui>Weather</Ui>, <Ui>Radio</Ui>, <Ui>Settings</Ui>, <Ui>Manual</Ui>, <Ui>Wind lab</Ui>), then the <Ui>Contents</Ui>{" "}
-            card. Contents lists the page&apos;s numbered sections grouped by phase of flight, highlights the one you&apos;re reading, and shows <b>01 / 14</b>{" "}
-            style progress. A blue dot means that section holds something you typed.
+            The page tabs: icons for <Ui>Plan</Ui>, <Ui>Simple</Ui>, <Ui>Weather</Ui>, <Ui>Radio</Ui>, <Ui>Settings</Ui> and <Ui>Manual</Ui>, with the
+            page&apos;s name and what it&apos;s for on the strip below (point at a tab to see its name), and <Ui>Wind lab</Ui> on its own dashed tab. Then the{" "}
+            <Ui>Contents</Ui> card. Contents lists the page&apos;s numbered sections grouped by phase of flight, highlights the one you&apos;re reading, and
+            shows <b>01 / 14</b> style progress. A blue dot means that section holds something you typed.
           </dd>
           <dt>Sections</dt>
           <dd>

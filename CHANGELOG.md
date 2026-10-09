@@ -4,6 +4,12 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.15.1] - 2026-10-09
+
+### Changed
+
+- **Page tabs are folder tabs:** a row of icon tabs (Plan, Simple, Weather, Radio, Settings, Manual) with the current page's name and what it's for on the strip below; point at a tab to see its name there. Wind lab keeps its own dashed tab underneath.
+
 ## [1.15.0] - 2026-10-09
 
 ### Added
