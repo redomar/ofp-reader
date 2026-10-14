@@ -395,15 +395,16 @@ function parseAtis(raw: string): Report {
   const kind = both ? null : named("ARR(?:IVALS?)?") ? "ARR" : named("DEP(?:ARTURES?)?") ? "DEP" : null;
 
   const runways: AtisInfo["runways"] = [];
-  const RWY_ID = String.raw`\d{2}\s*(?:LEFT|RIGHT|CENTRE|CENTER|[LRC])?\b`;
+  const SIDE = String.raw`(?:LEFT|RIGHT|CENTRE|CENTER|[LRC])`;
+  // One or two digits ("RWY 4R", "RWY 27"); in a list joined only by spaces a lone digit needs
+  // its L / R / C, so "RWY 27 5 KM" doesn't read 5 as a runway.
+  const RWY_ID = String.raw`\d{1,2}\s*${SIDE}?\b`;
+  const RWY_NEXT = String.raw`(?:\s*(?:,|AND|&|\/)\s*${RWY_ID}|\s+(?:\d{2}\s*${SIDE}?|\d${SIDE})\b)`;
   const ROLE = String.raw`(?:LANDING|LDG|ARRIVALS?|ARRIVING|ARVG|ARR|TAKE-?OFFS?|T\/O|DEPARTURES?|DEPARTING|DPTG|DEP)`;
   // Roles may come in pairs ("ARVG AND DPTG RWYS 36R, 36C"), before the list or after it
   // ("RWY 24 IN USE FOR ARRIVALS AND DEPARTURES"); runways may be listed with commas, AND or spaces.
   const ROLES = String.raw`${ROLE}(?:\s*(?:,|AND|&|\/)\s*${ROLE})*`;
-  const listRe = new RegExp(
-    String.raw`\b(?:(${ROLES})\s+)?(?:RWYS?|RUNWAYS?)(?:\s+IN\s+USE)?(?:\s+FOR\s+(${ROLES}))?\s+(${RWY_ID}(?:\s*(?:,|AND|&|\/)?\s*${RWY_ID})*)`,
-    "g",
-  );
+  const listRe = new RegExp(String.raw`\b(?:(${ROLES})\s+)?(?:RWYS?|RUNWAYS?)(?:\s+IN\s+USE)?(?:\s+FOR\s+(${ROLES}))?\s+(${RWY_ID}${RWY_NEXT}*)`, "g");
   const CLOSED = /^\s*(?:(?:IS|ARE)\s+)?(?:CLSD|CLOSED|NOT AVBL|NOT AVAILABLE|U\/S|UNSERVICEABLE)\b/;
   const usesIn = (roles: string) => [
     ...new Set([...roles.matchAll(new RegExp(ROLE, "g"))].map((r) => (/LAND|LDG|ARR|ARV/.test(r[0]) ? ("landing" as const) : ("take-off" as const)))),
@@ -412,9 +413,13 @@ function parseAtis(raw: string): Report {
     // what follows the list, up to the end of its sentence: "… IN USE FOR ARRIVALS", "… CLSD"
     const tail = s.slice((m.index ?? 0) + m[0].length).split(/\.(?:\s|$)/)[0];
     const after = tail.match(new RegExp(String.raw`^\s*(?:(?:IS|ARE)\s+)?(?:IN\s+USE\s+)?FOR\s+(${ROLES})`))?.[1];
-    const closed = CLOSED.test(tail) || /\b(?:CLSD|CLOSED)\s*$/.test(s.slice(0, m.index));
-    const uses = closed ? ["closed" as const] : usesIn([m[1], m[2], after].filter(Boolean).join(" "));
-    for (const id of m[3].matchAll(/(\d{2})\s*(LEFT|RIGHT|CENTRE|CENTER|[LRC])?/g)) {
+    const before = s.slice(0, m.index);
+    const closed = CLOSED.test(tail) || /\b(?:CLSD|CLOSED)\s*$/.test(before);
+    // an approach runway is a landing runway: "ILS RWY 4R APPROACH", "EXP ILS APCH RWY 27L"
+    const approach =
+      /\b(?:ILS|RNP|RNAV|VOR|NDB|LOC|VISUAL)(?:\s+[XYZ])?(?:\s+(?:APPROACH(?:ES)?|APCH|APP))?\s*$/.test(before) || /^\s*(?:APPROACH|APCH|APP)\b/.test(tail);
+    const uses = closed ? ["closed" as const] : usesIn([m[1], m[2], after, approach ? "LANDING" : null].filter(Boolean).join(" "));
+    for (const id of m[3].matchAll(/(\d{1,2})\s*(LEFT|RIGHT|CENTRE|CENTER|[LRC])?/g)) {
       const rwy = id[1] + (id[2] ? id[2][0] : "");
       for (const use of uses.length ? uses : [null]) if (!runways.some((r) => r.rwy === rwy && r.use === use)) runways.push({ rwy, use });
     }
