@@ -56,7 +56,8 @@ export interface AtisInfo {
   letter: string | null;
   kind: "ARR" | "DEP" | null;
   name: string | null;
-  runways: { rwy: string; use: "landing" | "take-off" | null }[];
+  /** One entry per runway and use; "closed" for CLSD / NOT AVBL, null when the ATIS just says in use. */
+  runways: { rwy: string; use: "landing" | "take-off" | "closed" | null }[];
   approach: string | null;
   transitionLevel: string | null;
   /** True when the weather came from plain-language phrases rather than coded groups. */
@@ -387,20 +388,35 @@ function parseAtis(raw: string): Report {
     [...s.matchAll(/\b([A-Z]{4})\s+(?:ARR\s+|DEP\s+)?ATIS\b/g)].map((m) => m[1]).find((c) => !NOT_ICAO.test(c)) ??
     null;
   const nameM = s.match(/^(?:THIS IS\s+)?([A-Z][A-Z .]+?)[\s,]+(?:ARR\w*\s+|DEP\w*\s+)?(?:INFORMATION|INFO|ATIS)\b/);
-  const kind = /\bARR(?:IVAL)?\b/.test(s) ? "ARR" : /\bDEP(?:ARTURE)?\b/.test(s) ? "DEP" : null;
+  // ARR / DEP only where it names the broadcast ("EGLL ARR ATIS", "ARRIVAL INFORMATION"), not in
+  // the text ("EXPECT DELAYS ON ARR").
+  const named = (w: string) => new RegExp(String.raw`\b${w}\s+(?:ATIS|INFORMATION|INFO)\b|\b(?:ATIS|INFORMATION|INFO)\s+${w}\b`).test(s);
+  const both = /\b(?:ARR|DEP)\w*\s+(?:AND|&|\/)\s+(?:ARR|DEP)\w*\s+(?:ATIS|INFORMATION|INFO)\b/.test(s);
+  const kind = both ? null : named("ARR(?:IVALS?)?") ? "ARR" : named("DEP(?:ARTURES?)?") ? "DEP" : null;
 
   const runways: AtisInfo["runways"] = [];
   const RWY_ID = String.raw`\d{2}\s*(?:LEFT|RIGHT|CENTRE|CENTER|[LRC])?\b`;
+  const ROLE = String.raw`(?:LANDING|LDG|ARRIVALS?|ARRIVING|ARVG|ARR|TAKE-?OFFS?|T\/O|DEPARTURES?|DEPARTING|DPTG|DEP)`;
+  // Roles may come in pairs ("ARVG AND DPTG RWYS 36R, 36C"), before the list or after it
+  // ("RWY 24 IN USE FOR ARRIVALS AND DEPARTURES"); runways may be listed with commas, AND or spaces.
+  const ROLES = String.raw`${ROLE}(?:\s*(?:,|AND|&|\/)\s*${ROLE})*`;
   const listRe = new RegExp(
-    String.raw`\b(?:(LANDING|LDG|ARRIVALS?|ARRIVING|ARVG|ARR|TAKE-?OFF|T\/O|DEPARTURES?|DEPARTING|DPTG|DEP)\s+)?(?:RWYS?|RUNWAYS?)(?:\s+IN\s+USE)?(?:\s+FOR\s+(LANDING|TAKE-?OFF|ARRIVALS?|DEPARTURES?))?\s+(${RWY_ID}(?:\s*(?:,|AND|&)\s*${RWY_ID})*)`,
+    String.raw`\b(?:(${ROLES})\s+)?(?:RWYS?|RUNWAYS?)(?:\s+IN\s+USE)?(?:\s+FOR\s+(${ROLES}))?\s+(${RWY_ID}(?:\s*(?:,|AND|&|\/)?\s*${RWY_ID})*)`,
     "g",
   );
+  const CLOSED = /^\s*(?:(?:IS|ARE)\s+)?(?:CLSD|CLOSED|NOT AVBL|NOT AVAILABLE|U\/S|UNSERVICEABLE)\b/;
+  const usesIn = (roles: string) => [
+    ...new Set([...roles.matchAll(new RegExp(ROLE, "g"))].map((r) => (/LAND|LDG|ARR|ARV/.test(r[0]) ? ("landing" as const) : ("take-off" as const)))),
+  ];
   for (const m of s.matchAll(listRe)) {
-    const role = m[1] ?? m[2];
-    const use = role ? (/LAND|LDG|ARR|ARV/.test(role) ? "landing" : "take-off") : null;
+    // what follows the list, up to the end of its sentence: "… IN USE FOR ARRIVALS", "… CLSD"
+    const tail = s.slice((m.index ?? 0) + m[0].length).split(/\.(?:\s|$)/)[0];
+    const after = tail.match(new RegExp(String.raw`^\s*(?:(?:IS|ARE)\s+)?(?:IN\s+USE\s+)?FOR\s+(${ROLES})`))?.[1];
+    const closed = CLOSED.test(tail) || /\b(?:CLSD|CLOSED)\s*$/.test(s.slice(0, m.index));
+    const uses = closed ? ["closed" as const] : usesIn([m[1], m[2], after].filter(Boolean).join(" "));
     for (const id of m[3].matchAll(/(\d{2})\s*(LEFT|RIGHT|CENTRE|CENTER|[LRC])?/g)) {
       const rwy = id[1] + (id[2] ? id[2][0] : "");
-      if (!runways.some((r) => r.rwy === rwy && r.use === use)) runways.push({ rwy, use });
+      for (const use of uses.length ? uses : [null]) if (!runways.some((r) => r.rwy === rwy && r.use === use)) runways.push({ rwy, use });
     }
   }
   for (let k = runways.length - 1; k >= 0; k--)
