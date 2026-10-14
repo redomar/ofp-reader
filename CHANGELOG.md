@@ -4,6 +4,16 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.15.2] - 2026-10-14
+
+### Fixed
+
+- **Closed runways in an ATIS showed as in use.** "RWYS 18R AND 36L CLSD" (also CLOSED, NOT AVBL, U/S) now shows a red **RWY 18R CLSD** chip on the weather card.
+- **Runways for arrivals and departures showed T/O only.** "ARVG AND DPTG RWYS 36R, 36C" and "RWY 24 IN USE FOR ARRIVALS AND DEPARTURES" now mark each runway **LDG · T/O**.
+- **Runways were missed:** single-digit runways ("RWY 4R", "DEPARTING RWY 9") and lists joined only by spaces ("RWY 35L 35R") are read in full.
+- **Approach runways** ("ILS RWY 4R APPROACH", "EXP ILS APCH RWY 27L") are marked for landing.
+- **ATIS ARR / DEP label** comes only from the broadcast's name ("EGLL ARR ATIS", "ARRIVAL INFORMATION"), not from text such as "EXPECT DELAYS ON ARR"; a combined DEP AND ARR ATIS shows as plain ATIS.
+
 ## [1.15.1] - 2026-10-09
 
 ### Changed
