@@ -383,12 +383,29 @@ export function ObsCard({ r }: { r: Report }) {
         </div>
         {a && (a.runways.length > 0 || a.approach || a.transitionLevel) && (
           <div className="row atis-ops">
-            {a.runways.map((rw) => (
-              <span key={rw.rwy + rw.use} className="code" title={rw.use ? `Runway for ${rw.use}` : "Runway in use"}>
-                {rw.use === "landing" ? "LDG " : rw.use === "take-off" ? "T/O " : ""}
-                RWY {rw.rwy}
-              </span>
-            ))}
+            {[...new Set(a.runways.map((rw) => rw.rwy))].map((rwy) => {
+              // one chip per runway: closed, or what it's used for (both when the ATIS says so)
+              const uses = a.runways.filter((rw) => rw.rwy === rwy).map((rw) => rw.use);
+              if (uses.includes("closed"))
+                return (
+                  <span key={rwy} className="code rwy-clsd" title="Runway closed">
+                    RWY {rwy} CLSD
+                  </span>
+                );
+              const ldg = uses.includes("landing");
+              const to = uses.includes("take-off");
+              return (
+                <span
+                  key={rwy}
+                  className="code"
+                  title={ldg && to ? "Runway for landing and take-off" : ldg ? "Runway for landing" : to ? "Runway for take-off" : "Runway in use"}
+                >
+                  {[ldg && "LDG", to && "T/O"].filter(Boolean).join(" · ")}
+                  {(ldg || to) && " "}
+                  RWY {rwy}
+                </span>
+              );
+            })}
             {a.approach && <Badge tone="blue">{a.approach} approach</Badge>}
             {a.transitionLevel && (
               <Badge tone="ink" tip="Transition level">

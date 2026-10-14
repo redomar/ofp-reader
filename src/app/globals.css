@@ -2949,6 +2949,12 @@ dialog.lightbox img {
   gap: 6px;
   padding: 0 12px 8px;
 }
+/* a closed runway */
+.atis-ops .rwy-clsd {
+  color: var(--red);
+  background: var(--red-bg);
+  border-color: var(--red);
+}
 .wxc-facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
