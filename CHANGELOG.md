@@ -4,6 +4,12 @@ All notable changes to OFP Reader. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+## [1.15.3] - 2026-10-29
+
+### Security
+
+- **Next.js 16.4.0 → 16.4.3**, which fixes two critical advisories in 16.0–16.4.0 ([GHSA-2464-fhr4-w9xw](https://github.com/advisories/GHSA-2464-fhr4-w9xw), [GHSA-673q-mjm6-r5xr](https://github.com/advisories/GHSA-673q-mjm6-r5xr)) and a high one. The reader is a static export and uses neither the image optimiser nor `use cache`, so it wasn't exposed, but the build no longer stops on the warning. `source-map-js` (a build-time dependency) to 1.2.2 for [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q). No change to how the reader works.
+
 ## [1.15.2] - 2026-10-14
 
 ### Fixed
